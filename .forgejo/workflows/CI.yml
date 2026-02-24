@@ -1,0 +1,107 @@
+name: Vyroda
+permissions:
+  contents: read
+  security-events: write
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        language: [cpp]
+        cmake_preset: [linux-release]
+        include:
+          - os: ubuntu-latest
+            cmake_preset: linux-release
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: main
+
+      - name: Install Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo add-apt-repository universe || true
+          sudo apt-get update
+          sudo apt-get install -y build-essential xorg-dev libglu1-mesa-dev \
+            libvulkan1 mesa-vulkan-drivers clang ninja-build sqlite3 libsqlite3-dev \
+            tcl tcl-dev tk tk-dev libwayland-dev libxkbcommon-dev wayland-protocols \
+            extra-cmake-modules  libglfw3-dev
+
+      - name: Install Clang 22
+        if: runner.os == 'Linux'
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 22 all
+          sudo apt-get install -y libc++-22-dev libc++abi-22-dev
+
+      - name: Set Compiler Environment
+        run: |
+          echo "CC=clang-22" >> $GITHUB_ENV
+          echo "CXX=clang++-22" >> $GITHUB_ENV
+
+      - name: Install Vulkan SDK
+        uses: humbletim/install-vulkan-sdk@v1.2
+        with:
+          version: 1.4.335.0
+          cache: true
+
+      - name: Check VulkanSDK
+        run: vulkaninfo
+
+      - name: Checks
+        run: |
+          clang --version
+          gcc --version
+          cmake --version
+          $CXX --version
+          echo "CC is $CC"
+          echo "CXX is $CXX"
+          which $CC
+          which $CXX
+
+      - name: Clean previous build
+        run: rm -rf main/build
+      
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: main/build/_deps
+          key: ${{ runner.os }}-fetchcontent-${{ hashFiles('main/cmake/modules/fetchDeps.cmake') }}-${{ hashFiles('main/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-fetchcontent-
+
+      - name: Set CMake variable for module std
+        run: echo 'CMAKE_EXPERIMENTAL_CXX_MODULE_DYNDEP=ON' >> $GITHUB_ENV
+
+      - name: List Presets
+        run: cd main && cmake --list-presets
+
+      - name: Configure preset
+        run: cd main && cmake --preset ${{ matrix.cmake_preset }}
+
+      - name: Perform CodeQL init
+        uses: github/codeql-action/init@v3
+        with:
+          config-file: main/.github/codeql/codeql-config.yml
+          languages: ${{ matrix.language }}
+          build-mode: manual
+
+      - name: Build Vyroda
+        run: cd main && cmake --build --preset ${{ matrix.cmake_preset }} -- -j8
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

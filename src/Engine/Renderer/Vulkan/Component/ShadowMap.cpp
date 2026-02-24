@@ -1,0 +1,108 @@
+module Engine.Renderer.Vulkan.ShadowMap;
+
+import std;
+
+import Engine.Core.Constants;
+import Engine.Core.MaterialTypes;
+import Engine.Core.MeshTypes;
+import Engine.Core.GLM;
+import Engine.Core.PlpTypedef;
+import Engine.Core.Volk;
+
+import Engine.Renderer.RendererComponentTypes;
+import Engine.Renderer.VulkanRenderer;
+
+namespace Poulpe
+{
+  void ShadowMap::operator()(
+    Renderer & renderer,
+    Mesh & mesh,
+    RendererContext const& render_context)
+  {
+    stage_flag_bits = VK_SHADER_STAGE_VERTEX_BIT;
+
+    // auto const& mesh = render_context.mesh;
+
+    // if (!mesh && !mesh.isDirty()) return;
+
+    // auto cmd_pool = renderer.getAPI().createCommandPool();
+    // auto const ubo_count { 1 };
+
+    // for (std::size_t i{ 0 }; i < ubo_count; ++i) {
+    //   Buffer uniformBuffer = renderer.getAPI().createUniformBuffers(1, cmd_pool);
+    //   mesh.getUniformBuffers().emplace_back(uniformBuffer);
+    // }
+
+    // auto const& data = mesh.getData();
+
+    // data->_vertex_buffer = renderer.getAPI().createVertexBuffer(cmd_pool, data->_vertices);
+    // data->_indices_buffer = renderer.getAPI().createIndexBuffer(cmd_pool, data->_indices);
+    // data->_texture_index = 0;
+
+    // vkDestroyCommandPool(renderer.getDevice(), cmd_pool, nullptr);
+
+    // for (std::size_t i{ 0 }; i < mesh.getData()->_ubos.size(); i++) {
+    //   std::ranges::for_each(mesh.getData()->_ubos.at(i), [&](auto& ubo) {
+    //     ubo.projection = renderer.getPerspective();
+    //   });
+    // }
+
+      // Material material{};
+
+      // ObjectBuffer objectBuffer{};
+      // objectBuffer.point_lights[0] = render_context.point_lights.at(0);
+      // objectBuffer.point_lights[1] = render_context.point_lights.at(1);
+      // objectBuffer.spot_light = render_context.spot_lights.at(0);
+      // objectBuffer.sun_light = render_context.sun_light;
+      // objectBuffer.material = material;
+
+      // auto storageBuffer{ renderer.getAPI().createStorageBuffers(objectBuffer, cmd_pool) };
+
+      // mesh.setObjectBuffer(objectBuffer);
+      // mesh.addStorageBuffer(storageBuffer);
+      // mesh.setHasBufferStorage();
+
+    // if (mesh.getData()->_ubos_offset.empty()) {
+    //   std::ranges::for_each(mesh.getData()->_bones, [&](auto const& bone) {
+
+    //     auto const& b{ bone.second };
+
+    //     Buffer uniformBuffer = renderer.getAPI().createUniformBuffers(b.weights.size(), cmd_pool);
+    //     mesh.getUniformBuffers().emplace_back(uniformBuffer);
+    //   });
+    // }
+
+    createDescriptorSet(renderer, mesh, render_context);
+    //mesh.setIsDirty(false);
+  }
+
+  void ShadowMap::createDescriptorSet(
+    Renderer &,
+    Mesh &,
+    RendererContext const&)
+  {
+    // auto const& mesh = render_context.mesh;
+    // auto const& tex{ render_context.textures->at(mesh.getData()->_textures.at(0)) };
+
+    // std::vector<VkDescriptorImageInfo> image_infos{};
+    // image_infos.emplace_back(tex.getSampler(), tex.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
+    // std::vector<VkDescriptorImageInfo> depth_map_image_infos{};
+    // std::vector<VkDescriptorImageInfo> cube_maps_infos{};
+
+    // auto const pipeline = renderer.getPipeline(mesh.getShaderName());
+    // VkDescriptorSet descset = renderer.getAPI().createDescriptorSets(pipeline->desc_pool, { pipeline->descset_layout }, 1);
+
+    // for (std::size_t i{ 0 }; i < mesh.getUniformBuffers().size(); ++i) {
+
+    //   renderer.getAPI().updateDescriptorSets(
+    //     mesh.getUniformBuffers(),
+    //     *mesh.getStorageBuffers(),
+    //     descset,
+    //     image_infos,
+    //     depth_map_image_infos,
+    //     cube_maps_infos);
+    // }
+
+    // mesh.setDescSet(descset);
+  }
+}
