@@ -8,7 +8,7 @@ import Engine.Core.VulkanTypes;
 
 import Engine.Renderer;
 
-namespace Poulpe
+namespace Vyroda
 {
   export enum class DescSetLayoutType : std::uint8_t
   {

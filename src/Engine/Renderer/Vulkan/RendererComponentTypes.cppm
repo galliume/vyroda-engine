@@ -14,7 +14,7 @@ import Engine.Core.MeshTypes;
 import Engine.Core.PlpTypedef;
 import Engine.Core.Volk;
 
-namespace Poulpe {
+namespace Vyroda {
   export struct RendererContext
   {
     enum class Mode {

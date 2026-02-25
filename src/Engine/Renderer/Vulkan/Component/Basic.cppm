@@ -9,7 +9,7 @@ import Engine.Renderer.RendererComponentTypes;
 import Engine.Renderer.VulkanRenderer;
 import Engine.Core.Volk;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class Basic
   {

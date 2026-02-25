@@ -5,7 +5,7 @@ import std;
 import Engine.Core.Logger;
 import Engine.Core.Volk;
 
-namespace Poulpe
+namespace Vyroda
 {
   DeviceMemoryPool::DeviceMemoryPool(
     VkPhysicalDeviceProperties2 device_props,

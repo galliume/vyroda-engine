@@ -3,7 +3,7 @@ module;
 
 export module Engine.Managers.DbManager;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class DbManager
   {

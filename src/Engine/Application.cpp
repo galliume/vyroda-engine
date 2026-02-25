@@ -1,6 +1,3 @@
-module;
-#include "PoulpeEngineConfig.h"
-
 module Engine.Application;
 
 import std;
@@ -14,7 +11,7 @@ import Engine.Managers.DbManager;
 import Engine.Managers.FontManager;
 import Engine.Managers.UIManager;
 
-namespace Poulpe
+namespace Vyroda
 {
   void Application::init(bool const editor_mode)
   {
@@ -28,7 +25,7 @@ namespace Poulpe
     auto const& appConfig { ConfigManagerLocator::get()->appConfig()["resolution"] };
 
     auto* window = new Window();
-    window->init("PoulpeEngine",
+    window->init("Vyroda",
       root_path + "/vampyropoda.jpg",
       appConfig["width"].get<std::uint16_t>(),
       appConfig["height"].get<std::uint16_t>(),
@@ -55,6 +52,9 @@ namespace Poulpe
   {
     using namespace std::chrono;
 
+    auto const Vyroda_VERSION_MAJOR { 0 };
+    auto const Vyroda_VERSION_MINOR { 2 };
+    
     //duration<double> const title_rate{1.0};
     //duration<double> title_update{ title_rate};
 
@@ -108,8 +108,8 @@ namespace Poulpe
     release_build = false;
   #endif
 
-    std::string const title { std::format("PoulpeEngine v{}.{} Vulkan version: {} {}",
-      PoulpeEngine_VERSION_MAJOR, PoulpeEngine_VERSION_MINOR,
+    std::string const title { std::format("Vyroda v{}.{} Vulkan version: {} {}",
+      Vyroda_VERSION_MAJOR, Vyroda_VERSION_MINOR,
       _render_manager->getRenderer().getAPI().getAPIVersion(),
       (release_build ? "Release build" : "Debug build")) };
 

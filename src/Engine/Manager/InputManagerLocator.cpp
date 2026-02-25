@@ -6,7 +6,7 @@ import Engine.GUI.Window;
 
 import Engine.Managers.InputManager;
 
-namespace Poulpe
+namespace Vyroda
 {
    [[clang::no_destroy]] std::unique_ptr<InputManager> InputManagerLocator::_input_manager;
 

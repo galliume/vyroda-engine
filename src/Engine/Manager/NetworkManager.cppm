@@ -6,7 +6,7 @@ import Engine.Network.Server;
 
 import Engine.Managers.APIManager;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class NetworkManager
   {

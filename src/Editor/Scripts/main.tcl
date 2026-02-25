@@ -1,6 +1,6 @@
 package require Tk
 
-wm title . "PoulpeEdit : game level editor"
+wm title . "VyrodaEdit : game level editor"
 
 option add *tearOff 0
 

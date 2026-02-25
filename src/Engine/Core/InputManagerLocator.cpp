@@ -2,9 +2,9 @@ module Engine.Core.InputManagerLocator;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
-  std::unique_ptr<Poulpe::InputManager> Poulpe::InputManagerLocator::_input_manager;
+  std::unique_ptr<Vyroda::InputManager> Vyroda::InputManagerLocator::_input_manager;
 
   InputManager* InputManagerLocator::get()
   {

@@ -1,6 +1,6 @@
 module Engine.Component.Mesh;
 
-namespace Poulpe
+namespace Vyroda
 {
   void Mesh::addUbos(std::vector<std::vector<UniformBufferObject>> const& ubos)
   {

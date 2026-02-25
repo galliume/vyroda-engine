@@ -9,7 +9,7 @@ import Editor.Managers.LevelManager;
 
 import Engine.Application;
 
-namespace Poulpe {
+namespace Vyroda {
 
   export class EditorManager
   {

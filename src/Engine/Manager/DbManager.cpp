@@ -1,6 +1,6 @@
 module Engine.Managers.DbManager;
 
-namespace Poulpe
+namespace Vyroda
 {
   DbManager::DbManager()
   {

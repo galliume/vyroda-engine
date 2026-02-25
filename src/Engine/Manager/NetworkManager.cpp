@@ -6,7 +6,7 @@ import Engine.Core.Logger;
 
 import Engine.Network.Server;
 
-namespace Poulpe
+namespace Vyroda
 {
   NetworkManager::NetworkManager(APIManager* apiManager)
     : _api_manager(apiManager)

@@ -13,6 +13,6 @@
 #   PUBLIC
 #     tcl)
 
-# set_poulpe_definitions(Editor)
-# set_poulpe_links(Editor)
-# set_poulpe_compiler_flags(Editor)
+# set_vyroda_definitions(Editor)
+# set_vyroda_links(Editor)
+# set_vyroda_compiler_flags(Editor)

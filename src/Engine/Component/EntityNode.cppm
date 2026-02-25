@@ -4,7 +4,7 @@ import std;
 
 import Engine.Component.Entity;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class EntityNode : public std::enable_shared_from_this<EntityNode>
   {

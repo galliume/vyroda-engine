@@ -65,6 +65,6 @@ target_link_libraries(
     stb
     sqlite3)
 
-set_poulpe_definitions(EngineManagers)
-set_poulpe_links(EngineManagers)
-set_poulpe_compiler_flags(EngineManagers)
+set_vyroda_definitions(EngineManagers)
+set_vyroda_links(EngineManagers)
+set_vyroda_compiler_flags(EngineManagers)

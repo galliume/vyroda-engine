@@ -31,7 +31,7 @@ import Engine.Renderer.RendererComponentTypes;
 
 import Engine.Utils.IDHelper;
 
-namespace Poulpe
+namespace Vyroda
 {
   struct FrameContext
   {

@@ -19,7 +19,7 @@ target_link_libraries(
   PRIVATE
     Components
     EngineManagers
-    PoulpeEngineLib
+    VyrodaLib
     EngineCommon
 
   PUBLIC
@@ -27,6 +27,6 @@ target_link_libraries(
     tcl
     tk)
 
-set_poulpe_definitions(EditorManagers)
-set_poulpe_links(EditorManagers)
-set_poulpe_compiler_flags(EditorManagers)
+set_vyroda_definitions(EditorManagers)
+set_vyroda_links(EditorManagers)
+set_vyroda_compiler_flags(EditorManagers)

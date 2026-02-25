@@ -8,7 +8,7 @@ import Engine.Core.Vertex;
 import Engine.Core.PlpTypedef;
 import Engine.Core.Volk;
 
-namespace Poulpe
+namespace Vyroda
 {
   export struct Buffer {
     VkBuffer buffer{ VK_NULL_HANDLE };

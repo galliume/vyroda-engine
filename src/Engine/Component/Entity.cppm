@@ -7,7 +7,7 @@ import Engine.Core.Logger;
 import Engine.Core.GLM;
 import Engine.Utils.IDHelper;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class Entity : public std::enable_shared_from_this<Entity>
   {

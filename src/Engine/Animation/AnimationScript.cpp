@@ -5,7 +5,7 @@ import std;
 import Engine.Core.GLM;
 import Engine.Core.LUA;
 
-namespace Poulpe
+namespace Vyroda
 {
   static int wrapMove(lua_State* L)
   {

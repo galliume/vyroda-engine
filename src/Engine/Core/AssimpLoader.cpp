@@ -12,7 +12,7 @@ import std;
 
 import Engine.Core.GLM;
 
-namespace Poulpe
+namespace Vyroda
 {
   //helper from learnopengl
   static inline glm::mat4 ConvertMatrixToGLMFormat(const aiMatrix4x4& from)

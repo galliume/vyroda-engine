@@ -2,7 +2,7 @@ export module Engine.Utils.IDHelper;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   export using IDType = std::uint64_t;
   export using ComponentTypeID = IDType;

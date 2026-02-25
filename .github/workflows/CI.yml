@@ -1,4 +1,4 @@
-name: PoulpeEngine
+name: Vyroda
 permissions:
   contents: read
   security-events: write
@@ -98,7 +98,7 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: manual
 
-      - name: Build PoulpeEngine
+      - name: Build Vyroda
         run: cd main && cmake --build --preset ${{ matrix.cmake_preset }} -- -j8
 
       - name: Perform CodeQL analysis

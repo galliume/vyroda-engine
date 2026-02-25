@@ -2,7 +2,7 @@ module;
 
 module Engine.Component.Entity;
 
-namespace Poulpe
+namespace Vyroda
 {
   Entity::Entity()
   {

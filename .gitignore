@@ -48,15 +48,15 @@ VTune Profiler Results/
 debug.log
 *.bin
 
-PoulpeEngine.cflags
-PoulpeEngine.config
-PoulpeEngine.creator
-PoulpeEngine.creator.user
-PoulpeEngine.cxxflags
-PoulpeEngine.files
-PoulpeEngine.includes
+Vyroda.cflags
+Vyroda.config
+Vyroda.creator
+Vyroda.creator.user
+Vyroda.cxxflags
+Vyroda.files
+Vyroda.includes
 .qtc_clangd/
-PoulpeEngine.creator.user
+Vyroda.creator.user
 cache/
 .clang-tidy
 Directory.build.props

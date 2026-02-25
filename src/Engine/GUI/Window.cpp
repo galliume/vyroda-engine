@@ -6,7 +6,7 @@ import Engine.Core.GLFW;
 import Engine.Core.StbImage;
 
 //bool _FramebufferResized = false;
-namespace Poulpe
+namespace Vyroda
 {
   GLFWwindow* Window::getGlfwWindow() const { return _window; }
 

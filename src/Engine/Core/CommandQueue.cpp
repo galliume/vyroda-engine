@@ -2,7 +2,7 @@ module Engine.Core.CommandQueue;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   // void CommandQueue::add(Command& cmd)
   // {

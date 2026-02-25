@@ -4,7 +4,7 @@ import std;
 
 import Engine.Core.Logger;
 
-namespace Poulpe
+namespace Vyroda
 {
   void APIManager::received(std::string const& message)
   {

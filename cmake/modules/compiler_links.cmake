@@ -1,4 +1,4 @@
-function(set_poulpe_links target)
+function(set_vyroda_links target)
 
   if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     list(APPEND EXTRA_LIBS

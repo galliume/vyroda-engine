@@ -2,7 +2,7 @@ export module Engine.Utils.ScopedTimer;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class ScopedTimer
   {

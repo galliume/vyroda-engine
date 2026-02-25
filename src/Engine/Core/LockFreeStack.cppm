@@ -2,7 +2,7 @@ export module Engine.Core.LockFreeStack;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   export template<typename T>
   class LockFreeStack

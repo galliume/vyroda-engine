@@ -4,7 +4,7 @@ import std;
 
 import Engine.Core.Volk;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class DeviceMemory
   {

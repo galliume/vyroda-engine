@@ -13,7 +13,7 @@ import Engine.Core.MeshTypes;
 
 import Engine.Utils.LuaScript;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class AnimationScript : public AnimationComponentConcept
   {

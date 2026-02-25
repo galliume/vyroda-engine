@@ -6,7 +6,7 @@ import Engine.Core.JoinThreads;
 import Engine.Core.LockFreeStack;
 import Engine.Core.ThreadSafeQueue;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class ThreadPool
   {

@@ -8,7 +8,7 @@ export module Engine.Core.Logger;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class Logger
   {

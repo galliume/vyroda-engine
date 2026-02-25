@@ -2,7 +2,7 @@ export module Engine.Core.Command;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   export enum class WhenToExecute : std::uint8_t
   {

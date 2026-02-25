@@ -1,4 +1,4 @@
-function(set_poulpe_compiler_flags target)
+function(set_vyroda_compiler_flags target)
 
   message(STATUS "Setting compiler flags for ${target}.")
 

@@ -4,9 +4,9 @@ import std;
 
 import Engine.Core.CommandQueue;
 
-namespace Poulpe
+namespace Vyroda
 {
-  Poulpe::CommandQueue* Poulpe::CommandQueueLocator::_cmd_queue = nullptr;
+  Vyroda::CommandQueue* Vyroda::CommandQueueLocator::_cmd_queue = nullptr;
 
   CommandQueue* CommandQueueLocator::get()
   {
@@ -16,7 +16,7 @@ namespace Poulpe
   void CommandQueueLocator::init()
   {
     if (!_cmd_queue) {
-      _cmd_queue = new Poulpe::CommandQueue();
+      _cmd_queue = new Vyroda::CommandQueue();
     }
   }
 }

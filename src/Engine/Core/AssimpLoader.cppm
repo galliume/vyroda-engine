@@ -19,7 +19,7 @@ import Engine.Core.PlpTypedef;
 import Engine.Core.Vertex;
 import Engine.Core.Logger;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class AssimpLoader
   {

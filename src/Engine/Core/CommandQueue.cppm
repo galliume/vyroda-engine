@@ -4,7 +4,7 @@ import std;
 
 import Engine.Core.Command;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class CommandQueue
   {

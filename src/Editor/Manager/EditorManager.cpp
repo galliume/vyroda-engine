@@ -26,7 +26,7 @@ import Engine.Managers.RenderManager;
 import Engine.Renderer.RendererComponent;
 import Engine.Renderer.RendererComponentTypes;
 
-namespace Poulpe {
+namespace Vyroda {
 
   static int plp_test_callback(
     ClientData,

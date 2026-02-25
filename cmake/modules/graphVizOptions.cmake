@@ -1,4 +1,4 @@
-set(GRAPHVIZ_GRAPH_NAME "PoulpeEngine dependency graph")
+set(GRAPHVIZ_GRAPH_NAME "Vyroda dependency graph")
 set(GRAPHVIZ_CUSTOM_TARGETS TRUE)
 set(GRAPHVIZ_EXTERNAL_LIBS FALSE)
 set(GRAPHVIZ_UNKNOWN_LIBS TRUE)

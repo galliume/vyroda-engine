@@ -12,7 +12,7 @@ import Engine.Core.Volk;
 
 import Engine.Managers.ConfigManagerLocator;
 
-namespace Poulpe
+namespace Vyroda
 {
   FontManager::FontManager(Renderer& renderer)
     : _renderer(renderer)

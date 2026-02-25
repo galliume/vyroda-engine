@@ -15,7 +15,7 @@ import Engine.Core.Volk;
 
 import Engine.Renderer.VulkanDeviceMemory;
 
-namespace Poulpe
+namespace Vyroda
 {
   void Renderer::init(GLFWwindow* const window)
   {

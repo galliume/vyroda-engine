@@ -2,9 +2,9 @@ module Engine.Core.ConfigManagerLocator;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
-  std::unique_ptr<Poulpe::ConfigManager> Poulpe::ConfigManagerLocator::_config_manager;
+  std::unique_ptr<Vyroda::ConfigManager> Vyroda::ConfigManagerLocator::_config_manager;
 
   ConfigManager* ConfigManagerLocator::get()
   {

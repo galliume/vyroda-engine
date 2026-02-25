@@ -10,7 +10,7 @@ import Engine.Core.GLM;
 /**
  * @todo States machine for movements / animations
  */
-namespace Poulpe
+namespace Vyroda
 {
   void PlayerManager::jump()
   {

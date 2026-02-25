@@ -21,7 +21,7 @@ import Engine.Managers.ConfigManagerLocator;
 
 import Engine.Renderer;
 
-namespace Poulpe
+namespace Vyroda
 {
   std::vector<std::array<float, 3>> TextureManager::addNormalMapTexture(std::string const& name)
   {

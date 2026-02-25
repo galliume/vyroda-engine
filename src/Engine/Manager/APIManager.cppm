@@ -2,7 +2,7 @@ export module Engine.Managers.APIManager;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class APIManager
   {

@@ -6,7 +6,7 @@ import std;
 
 import Engine.Core.GLM;
 
-namespace Poulpe
+namespace Vyroda
 {
   export enum class CameraType : std::uint8_t
   {

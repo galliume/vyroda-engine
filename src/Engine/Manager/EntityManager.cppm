@@ -19,7 +19,7 @@ import Engine.Renderer.RendererComponentFactory;
 
 import Engine.Utils.IDHelper;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class EntityManager
   {

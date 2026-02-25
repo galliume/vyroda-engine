@@ -17,6 +17,6 @@ target_link_libraries(
   PRIVATE
     Core)
 
-set_poulpe_definitions(Network)
-set_poulpe_links(Network)
-set_poulpe_compiler_flags(Network)
+set_vyroda_definitions(Network)
+set_vyroda_links(Network)
+set_vyroda_compiler_flags(Network)

@@ -2,7 +2,7 @@ module Engine.Core.Command;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   Command::Command(
     std::function<void()> request

@@ -19,6 +19,6 @@ target_link_libraries(
     glfw
     stb)
 
-set_poulpe_definitions(GUI)
-set_poulpe_links(GUI)
-set_poulpe_compiler_flags(GUI)
+set_vyroda_definitions(GUI)
+set_vyroda_links(GUI)
+set_vyroda_compiler_flags(GUI)

@@ -4,7 +4,7 @@ import std;
 
 import Engine.Managers.ConfigManager;
 
-namespace Poulpe
+namespace Vyroda
 {
   [[clang::no_destroy]] std::unique_ptr<ConfigManager> ConfigManagerLocator::_config_manager;
 

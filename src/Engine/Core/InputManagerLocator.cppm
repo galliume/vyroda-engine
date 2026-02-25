@@ -5,7 +5,7 @@ import std;
 import Engine.GUI.Window;
 import Engine.Manager.InputManager;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class InputManagerLocator
   {

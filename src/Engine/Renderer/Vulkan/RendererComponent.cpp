@@ -15,7 +15,7 @@ import Engine.Renderer.Vulkan.Terrain;
 import Engine.Renderer.Vulkan.Text;
 import Engine.Renderer.Vulkan.Water;
 
-namespace Poulpe
+namespace Vyroda
 {
   template<typename Class>
   RenderComponent<Class>::~RenderComponent() = default;

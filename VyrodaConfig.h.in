@@ -1,0 +1,2 @@
+#define Vyroda_VERSION_MAJOR @Vyroda_VERSION_MAJOR@
+#define Vyroda_VERSION_MINOR @Vyroda_VERSION_MINOR@

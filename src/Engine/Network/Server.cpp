@@ -12,7 +12,7 @@ module Engine.Network.Server;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   #if defined(_WIN64)
     WinServer::~WinServer()
@@ -163,7 +163,7 @@ namespace Poulpe
             //std::lock_guard<std::mutex> guard(_mutexSockets);
             _socket = socket;
           }
-          send("Connected to PoulpeEngine!\0");
+          send("Connected to Vyroda!\0");
 
           std::jthread readServer([this]() {
             read();

@@ -1,6 +1,6 @@
-add_library(PoulpeEngineLib STATIC)
+add_library(VyrodaLib STATIC)
 
-target_sources(PoulpeEngineLib
+target_sources(VyrodaLib
   PUBLIC
     FILE_SET cxx_modules TYPE CXX_MODULES
       BASE_DIRS .
@@ -9,10 +9,10 @@ target_sources(PoulpeEngineLib
   PRIVATE
     Application.cpp)
 
-target_include_directories(PoulpeEngineLib PRIVATE ${CMAKE_BINARY_DIR})
+target_include_directories(VyrodaLib PRIVATE ${CMAKE_BINARY_DIR})
 
 target_link_libraries(
-  PoulpeEngineLib
+  VyrodaLib
 
   PRIVATE
     miniaudio
@@ -23,6 +23,6 @@ target_link_libraries(
     tcl
     tk)
 
-set_poulpe_definitions(PoulpeEngineLib)
-set_poulpe_links(PoulpeEngineLib)
-set_poulpe_compiler_flags(PoulpeEngineLib)
+set_vyroda_definitions(VyrodaLib)
+set_vyroda_links(VyrodaLib)
+set_vyroda_compiler_flags(VyrodaLib)

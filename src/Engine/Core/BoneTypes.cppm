@@ -4,7 +4,7 @@ import std;
 
 import Engine.Core.GLM;
 
-namespace Poulpe
+namespace Vyroda
 {
   export struct BoneWeight {
     std::uint32_t vertex_id;
