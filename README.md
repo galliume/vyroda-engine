@@ -28,7 +28,7 @@ See the engine rendering advanced glTF assets:
 
 | Basic Scene | PBR Materials Test | Rungholt |
 | :---: | :---: | :---: |
-| <img src="https://codeberg.org/galliume/vyroda-engine/src/branch/main/screenshots/plp.png" width="400"> | <img src="https://codeberg.org/galliume/vyroda-engine/src/branch/main/screenshots/helmet.png" width="400"> | <img src="https://codeberg.org/galliume/vyroda-engine/src/branch/main/screenshots/rungholt.png" width="400"> |
+| <img src="https://codeberg.org/galliume/vyroda-engine/raw/branch/main/screenshots/plp.png" width="400"> | <img src="https://codeberg.org/galliume/vyroda-engine/raw/branch/main/screenshots/helmet.png" width="400"> | <img src="https://codeberg.org/galliume/vyroda-engine/raw/branch/main/screenshots/rungholt.png" width="400"> |
 
 ---
 
