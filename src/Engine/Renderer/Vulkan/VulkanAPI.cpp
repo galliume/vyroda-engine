@@ -1996,6 +1996,7 @@ Buffer VulkanAPI::createIndexBuffer(
   std::vector<std::uint32_t> const& indices,
   std::size_t const image_index)
 {
+  std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize const buffer_size { sizeof(std::uint32_t) * indices.size() };
 
   auto & staging_buffer { _staging_buffer[image_index] };
@@ -2040,6 +2041,7 @@ Buffer VulkanAPI::createVertexBuffer(
   std::vector<Vertex> const& vertices,
   std::size_t const image_index)
 {
+  std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize const buffer_size { sizeof(Vertex) * vertices.size() };
   auto & staging_buffer { _staging_buffer[image_index] };
   std::size_t const current_offset { _update_vertex_offsets[image_index] };
@@ -2100,6 +2102,7 @@ void VulkanAPI::updateVertexBuffer(
     VkBuffer buffer_to_update,
     std::size_t const image_index)
 {
+  std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize buffer_size = sizeof(Vertex) * new_vertices.size();
   auto &transfer_cmd_buffer = _transfer_cmd_buffer[image_index];
   std::size_t const current_offset { _update_vertex_offsets[image_index] };
@@ -2144,6 +2147,7 @@ Buffer VulkanAPI::createUniformBuffers(
   std::uint64_t const uniform_buffers_count,
   std::size_t const image_index)
 {
+  std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize buffer_size = sizeof(UniformBufferObject) * uniform_buffers_count;
   std::vector<UniformBufferObject> dummy {};
   dummy.reserve(uniform_buffers_count);
@@ -2271,6 +2275,7 @@ void VulkanAPI::updateUniformBuffer(
   std::size_t const image_index)
 {
   {
+  std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize buffer_size = sizeof(UniformBufferObject) * uniform_buffer_objects->size();
   //auto &copy_cmd_buffer = _copy_cmd_buffer[image_index];
   std::size_t const current_offset { _update_vertex_offsets[image_index] };

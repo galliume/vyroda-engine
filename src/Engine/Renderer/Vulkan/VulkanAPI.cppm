@@ -276,6 +276,7 @@ namespace Vyroda
       T const& storage_buffer,
       std::size_t const image_index)
     {
+      std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
       VkDeviceSize const buffer_size { sizeof(T) };
 
       auto & staging_buffer { _staging_buffer[image_index] };
@@ -323,6 +324,7 @@ namespace Vyroda
     template <IsObjectBufferOrLightBuffer T>
     void updateStorageBuffer(Buffer& buffer, T& object_buffer, std::size_t const image_index)
     {
+      std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
       VkDeviceSize buffer_size { sizeof(T) };
       std::size_t const current_offset { _update_vertex_offsets[image_index] };
 
@@ -706,6 +708,7 @@ namespace Vyroda
     std::vector<std::vector<BufferCopyRequest>> _buffer_copy_request;
     std::mutex _mutex_buffer_copy_request;
     std::mutex _mutex_pipeline;
+    std::recursive_mutex _mutex_staging_buffer;
 
     std::map<LayoutPair, TransitionSyncData> const _transition_map {
         {
