@@ -1,3 +1,12 @@
+/**
+* @file   DeviceMemoryPool.cppm
+* @author  <Guillaume PERCEPIED>
+* @date   Sun Mar  8 16:31:45 2026
+*
+* @brief  Pool of Device Memory
+*
+*
+*/
 export module Engine.Renderer.VulkanDeviceMemoryPool;
 
 import std;
@@ -10,6 +19,7 @@ import Engine.Renderer.VulkanDeviceMemory;
 namespace Vyroda
 {
   //@todo manage memory fragmentation
+
   export class DeviceMemoryPool
   {
   public:
@@ -18,11 +28,32 @@ namespace Vyroda
       UNIFORM, STAGING, VERTEX
     };
 
+  /**
+   * Create a device memory pool that will manage different kinds
+   * of memory
+   *
+   * @param VkPhysicalDeviceProperties2 device_props
+   * @param VkPhysicalDeviceMaintenance3Properties maintenance_props
+   * @param VkPhysicalDeviceMemoryProperties memory_props
+   */
     DeviceMemoryPool(
       VkPhysicalDeviceProperties2 device_props,
       VkPhysicalDeviceMaintenance3Properties maintenance_props,
       VkPhysicalDeviceMemoryProperties memory_props);
 
+    /**
+   * Request a memory device
+   *
+   * @param VkDevice device
+   * @param VkDevicesize size
+   * @param uint32_t memory_type
+   * @param VkBufferusageflags usage
+   * @param VkDevicesize alignment
+   * @param Devicebuffertype buffer_type
+   * @param bool forceNew
+   *
+   * @return DeviceMemory*
+   */
     DeviceMemory* get(
       VkDevice const & device,
       VkDeviceSize const size,
@@ -32,10 +63,17 @@ namespace Vyroda
       DeviceBufferType const buffer_type,
       bool force_new = false) __attribute__((no_thread_safety_analysis));
 
-    std::unordered_map<VkMemoryPropertyFlags, std::unordered_map<VkBufferUsageFlags,
-      std::vector<std::unique_ptr<DeviceMemory>>>>* getPool() { return & _pool; }
+    /**
+     * Clear a device memory
+     *
+     * @param DeviceMemory* deviceMemory
+     */
+    void clear(DeviceMemory& device_memory);
 
-    void clear(DeviceMemory * device_memory);
+    /**
+     * Clear the pool
+     *
+     */
     void clear();
 
   private:
@@ -50,5 +88,8 @@ namespace Vyroda
     std::atomic<std::uint32_t> _device_memory_count{ 0 };
     std::uint32_t const _max_staging{ 8 };
     std::mutex _mutex;
+
+    std::unordered_map<VkMemoryPropertyFlags, std::unordered_map<VkBufferUsageFlags,
+      std::vector<std::unique_ptr<DeviceMemory>>>>* getPool() { return & _pool; }
   };
 }

@@ -52,16 +52,16 @@ namespace Vyroda
 
       _draw_cmds[i].init(buffer_size);
 
-      VkImage image { _vulkan->createImage(
-        _vulkan->getSwapChainExtent().width,
-        _vulkan->getSwapChainExtent().height, 1,
-        VK_SAMPLE_COUNT_1_BIT,
-        _vulkan->PLP_VK_FORMAT_COLOR,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) };
+      // VkImage image { _vulkan->createImage(
+      //   _vulkan->getSwapChainExtent().width,
+      //   _vulkan->getSwapChainExtent().height, 1,
+      //   VK_SAMPLE_COUNT_1_BIT,
+      //   _vulkan->PLP_VK_FORMAT_COLOR,
+      //   VK_IMAGE_TILING_OPTIMAL,
+      //   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+      //   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) };
 
-      _images[i] = std::move(image);
+      // _images[i] = std::move(image);
 
       _imageviews[i] = _vulkan->createImageView(
         _images[i],
@@ -284,8 +284,8 @@ namespace Vyroda
     vertices_to_update.clear();
 
     auto& cmd_buffer = _cmd_buffer_entities[_current_frame];
-    auto& colorview = _imageviews[_current_frame];
-    auto& color = _images[_current_frame];
+    auto& colorview = _imageviews[_image_index];
+    auto& color = _images[_image_index];
     auto& depthview = _depth_imageviews[_current_frame];
     auto& depthimage = _depth_images[_current_frame];
     auto const load_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -650,7 +650,7 @@ namespace Vyroda
   void Renderer::endRender()
   {
     auto& cmd_buffer = _cmd_buffer_entities[_current_frame];
-    auto& color = _images[_current_frame];
+    auto& color = _images[_image_index];
     auto& depthimage = _depth_images[_current_frame];
     std::uint32_t const thread_id {2};
     auto const is_attachment {false};
@@ -872,21 +872,21 @@ namespace Vyroda
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
     vkBeginCommandBuffer(_cmd_buffer_entities[_current_frame], &begin_info);
-    vkCmdClearColorImage(_cmd_buffer_entities[_current_frame], _images[_current_frame], VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &image_range);
-    vkCmdClearDepthStencilImage(_cmd_buffer_entities[_current_frame], _depth_images[_current_frame], VK_IMAGE_LAYOUT_GENERAL, &depth_stencil_clear_color, 1, &depth_image_range);
+    vkCmdClearColorImage(_cmd_buffer_entities[_current_frame], _images[_image_index], VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &image_range);
+    vkCmdClearDepthStencilImage(_cmd_buffer_entities[_current_frame], _depth_images[_image_index], VK_IMAGE_LAYOUT_GENERAL, &depth_stencil_clear_color, 1, &depth_image_range);
     vkEndCommandBuffer(_cmd_buffer_entities[_current_frame]);
 
     vkBeginCommandBuffer(_cmd_buffer_entities2[_current_frame], &begin_info);
-    vkCmdClearColorImage(_cmd_buffer_entities2[_current_frame], _images[_current_frame], VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &image_range);
-    vkCmdClearDepthStencilImage(_cmd_buffer_entities2[_current_frame], _depth_images2[_current_frame], VK_IMAGE_LAYOUT_GENERAL, &depth_stencil_clear_color, 1, &depth_image_range);
+    vkCmdClearColorImage(_cmd_buffer_entities2[_current_frame], _images2[_image_index], VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &image_range);
+    vkCmdClearDepthStencilImage(_cmd_buffer_entities2[_current_frame], _depth_images2[_image_index], VK_IMAGE_LAYOUT_GENERAL, &depth_stencil_clear_color, 1, &depth_image_range);
     vkEndCommandBuffer(_cmd_buffer_entities2[_current_frame]);
 
     vkBeginCommandBuffer(_cmd_buffer_entities3[_current_frame], &begin_info);
-    vkCmdClearColorImage(_cmd_buffer_entities3[_current_frame], _images[_current_frame], VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &image_range);
+    vkCmdClearColorImage(_cmd_buffer_entities3[_current_frame], _images3[_image_index], VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &image_range);
     vkEndCommandBuffer(_cmd_buffer_entities3[_current_frame]);
 
     vkBeginCommandBuffer(_cmd_buffer_entities4[_current_frame], &begin_info);
-    vkCmdClearColorImage(_cmd_buffer_entities4[_current_frame], _images[_current_frame], VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &image_range);
+    vkCmdClearColorImage(_cmd_buffer_entities4[_current_frame], _images2[_image_index], VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &image_range);
     vkEndCommandBuffer(_cmd_buffer_entities4[_current_frame]);
   }
 

@@ -1,3 +1,11 @@
+/**
+ * @file   Basic.cpp
+ * @author  <Guillaume PERCEPIED>
+ * @date   Sun Mar  8 19:39:22 2026
+ * 
+ * @brief  Most generic renderable component 
+ * 
+ */
 module Engine.Renderer.Vulkan.Basic;
 
 import std;
@@ -322,6 +330,7 @@ namespace Vyroda
 
     vkUpdateDescriptorSets(renderer.getDevice(), static_cast<std::uint32_t>(descset_writes.size()), descset_writes.data(), 0, nullptr);
 
+    
     mesh.setShadowMapDescSet(shadow_map_descset);
 
     VkDescriptorSet csm_descset {
