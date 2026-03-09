@@ -70,3 +70,4 @@ CMakeUserPresets.json
 *.sqlite
 html/
 graph/
+.agent

@@ -45,9 +45,12 @@ import Engine.Utils.ScopedTimer;
 
 namespace Vyroda
 {
-  RenderManager::RenderManager(Window* const window)
+  RenderManager::RenderManager(std::unique_ptr<Window> window)
   {
-    _window = std::unique_ptr<Window>(window);
+    _window = std::move(window);
+
+    InputManagerLocator::init(_window.get());
+ 
     _cameras.emplace_back(std::make_unique<Camera>());
     _renderer = std::make_unique<Renderer>();
     _renderer->init(_window->getGlfwWindow());

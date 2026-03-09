@@ -24,3 +24,4 @@ target_link_libraries(
 set_vyroda_definitions(Renderer)
 set_vyroda_links(Renderer)
 set_vyroda_compiler_flags(Renderer)
+set_vyroda_target_properties(Renderer)

@@ -44,7 +44,7 @@ namespace Vyroda
     void interpolate(double alpha) {
           _pos_rendered = glm::mix(_pos_previous, _pos, alpha);
       }
-
+    
     std::vector<glm::vec4> getFrustumPlanes(glm::mat4 const vp);
 
     private:

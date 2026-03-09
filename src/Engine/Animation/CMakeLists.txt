@@ -24,3 +24,4 @@ target_link_libraries(
 set_vyroda_definitions(Animation)
 set_vyroda_links(Animation)
 set_vyroda_compiler_flags(Animation)
+set_vyroda_target_properties(Animation)

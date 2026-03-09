@@ -22,3 +22,4 @@ target_link_libraries(
 set_vyroda_definitions(GUI)
 set_vyroda_links(GUI)
 set_vyroda_compiler_flags(GUI)
+set_vyroda_target_properties(GUI)

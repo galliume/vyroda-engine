@@ -27,3 +27,4 @@ target_link_libraries(
 set_vyroda_definitions(Components)
 set_vyroda_links(Components)
 set_vyroda_compiler_flags(Components)
+set_vyroda_target_properties(Components)

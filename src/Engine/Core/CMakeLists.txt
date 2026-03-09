@@ -65,3 +65,4 @@ target_link_libraries(
 set_vyroda_definitions(Core)
 set_vyroda_links(Core)
 set_vyroda_compiler_flags(Core)
+set_vyroda_target_properties(Core)
