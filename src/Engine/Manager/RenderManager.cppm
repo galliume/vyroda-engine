@@ -72,8 +72,8 @@ namespace Vyroda
     /** 
      * Create a RenderManager
      *
-     * @param Window window 
-     *
+     * @param std::unique_ptr<Window> window 
+     * @todo was it not better with a simple * ?
      */
     RenderManager(std::unique_ptr<Window> window);
 

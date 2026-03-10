@@ -2,10 +2,10 @@
  * @file   VulkanAPI.cpp
  * @author  <Guillaume PERCEPIED>
  * @date   Sun Mar  8 19:38:52 2026
- * 
+ *
  * @brief  Vulkan API
  * @todo huge clean and simplification are needed here
- * 
+ *
  */
 module;
 
@@ -134,7 +134,7 @@ VulkanAPI::VulkanAPI(GLFWwindow* window)
   _update_vertex_offsets.resize(buffer_size);
   _buffer_copy_request.resize(buffer_size);
   for (auto& buffers : _buffer_copy_request) {
-    buffers.reserve(256); 
+    buffers.reserve(256);
   }
 
   for (std::size_t i {0}; i < buffer_size; i++) {
@@ -211,6 +211,7 @@ void VulkanAPI::createInstance()
   app_info.pApplicationName = "Vyroda";
   app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+  app_info.pNext = VK_NULL_HANDLE;
 
   VkInstanceCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -221,9 +222,8 @@ void VulkanAPI::createInstance()
   create_info.enabledLayerCount = 0;
   create_info.pNext = VK_NULL_HANDLE;
 
+  VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
   if (_enable_validation_layers) {
-    VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
-
     debug_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     debug_create_info.messageSeverity =
           VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
@@ -2015,7 +2015,7 @@ Buffer VulkanAPI::createIndexBuffer(
   VkDeviceSize const size { mem_requirements.size };
 
   assert(size >= buffer_size && "requirements size must at least equals to the buffer_size");
-  
+
   auto const memory_type { findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) };
   auto device_memory { _device_memory_pool->get(
     _device,
@@ -2064,7 +2064,7 @@ Buffer VulkanAPI::createVertexBuffer(
   VkDeviceSize const size { mem_requirements.size };
 
   assert(size >= buffer_size && "requirements size must at least equals to the buffer_size");
- 
+
   auto device_memory { _device_memory_pool->get(
     _device,
     size,
@@ -2173,7 +2173,7 @@ Buffer VulkanAPI::createUniformBuffers(
   VkDeviceSize const size { mem_requirements.size };
 
   assert(size >= buffer_size && "requirements size must at least equals to the buffer_size");
- 
+
   auto device_memory = _device_memory_pool->get(
     _device,
     size,
@@ -2187,7 +2187,7 @@ Buffer VulkanAPI::createUniformBuffers(
 
   addCopyBufferRequest(staging_buffer, buffer, buffer_size, image_index, current_offset, 0);
   //copyBuffer(staging_buffer, buffer, buffer_size, current_offset, 0, image_index);
-  
+
   Buffer uniform_buffer;
   uniform_buffer.buffer = std::move(buffer);
   uniform_buffer.memory = device_memory;
@@ -2244,7 +2244,7 @@ Buffer VulkanAPI::createIndirectCommandsBuffer(std::vector<VkDrawIndexedIndirect
 
   auto const memory_type{ findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) };
   VkDeviceSize const size{ mem_requirements.size };
- 
+
   auto device_memory{ _device_memory_pool->get(
     _device,
     size,
@@ -3020,7 +3020,7 @@ VkSampler VulkanAPI::createTextureSampler(std::uint32_t const mip_lvl)
     VkDeviceSize const size { mem_requirements.size};
 
     assert(size >= ktx_texture->dataSize && "requirements size must at least equals to the buffer_size");
-    
+
     void* data;
     vkMapMemory(_device, staging_device_memory, 0, size, 0, &data);
     std::memcpy(data, ktx_texture->pData, static_cast<std::size_t>(size));
@@ -3508,7 +3508,7 @@ VkSampler VulkanAPI::createTextureSampler(std::uint32_t const mip_lvl)
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &_copy_cmd_buffer[image_index];
-    
+
     VkResult result;
     {
       std::lock_guard<std::mutex> guard(_mutex_queue_submit);
