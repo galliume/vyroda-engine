@@ -1,0 +1,60 @@
+{
+  "shader": {
+    "main_basic": {
+      "vert": "assets/shaders/spv/main_basic_vert.spv",
+      "frag": "assets/shaders/spv/main_basic_frag.spv",
+      "geom": "",
+      "tesc": "",
+      "tese": ""
+    },
+    "skybox": {
+      "vert": "assets/shaders/spv/skybox_vert.spv",
+      "frag": "assets/shaders/spv/skybox_frag.spv",
+      "geom": "",
+      "tesc": "",
+      "tese": ""
+    },
+    "shadow_map": {
+      "vert": "assets/shaders/spv/shadow_map_vert.spv",
+      "frag": "assets/shaders/spv/shadow_map_frag.spv",
+      "geom": "",
+      "tesc": "",
+      "tese": ""
+    },
+    "normal_debug": {
+      "vert": "assets/shaders/spv/normal_vert.spv",
+      "frag": "assets/shaders/spv/normal_frag.spv",
+      "geom": "assets/shaders/spv/normal_geom.spv",
+      "tesc": "",
+      "tese": ""
+    },
+    "terrain": {
+      "vert": "assets/shaders/spv/terrain_vert.spv",
+      "frag": "assets/shaders/spv/terrain_frag.spv",
+      "geom": "",
+      "tesc": "assets/shaders/spv/terrain_tesc.spv",
+      "tese": "assets/shaders/spv/terrain_tese.spv"
+    },
+    "water": {
+      "vert": "assets/shaders/spv/water_vert.spv",
+      "frag": "assets/shaders/spv/water_frag.spv",
+      "geom": "",
+      "tesc": "assets/shaders/spv/water_tesc.spv",
+      "tese": "assets/shaders/spv/water_tese.spv"
+    },
+    "text": {
+      "vert": "assets/shaders/spv/text_vert.spv",
+      "frag": "assets/shaders/spv/text_frag.spv",
+      "geom": "",
+      "tesc": "",
+      "tese": ""
+    },
+    "csm": {
+      "vert": "assets/shaders/spv/csm_vert.spv",
+      "frag": "assets/shaders/spv/csm_frag.spv",
+      "geom": "",
+      "tesc": "",
+      "tese": ""
+    }
+  }
+}

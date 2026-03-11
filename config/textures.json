@@ -1,0 +1,52 @@
+{
+  "textures": {
+    "mpoulpe": {
+      "path": "assets/texture/mpoulpe.png"
+    },
+    "vampyropoda": {
+      "path": "assets/texture/vampyropoda.jpg"
+    },
+    "_plp_empty": {
+      "path": "assets/texture/_plp_empty.png"
+    },
+    "_plp_error": {
+      "path": "assets/texture/_plp_error.png"
+    },
+    "grass": {
+      "path": "assets/texture/terrain/grass.jpg"
+    },
+    "snow": {
+      "path": "assets/texture/terrain/snow.jpg"
+    },
+    "ground": {
+      "path": "assets/texture/terrain/ground.jpg"
+    },
+    "sand": {
+      "path": "assets/texture/terrain/sand.png"
+    },
+    "low_noise": {
+      "path": "assets/texture/terrain/low_noise.png"
+    },
+    "hi_noise": {
+      "path": "assets/texture/terrain/hi_noise.png"
+    }
+  },
+  "skybox": {
+    "night": [
+      "assets/texture/skybox/night/night.png",
+      "assets/texture/skybox/night/night.png",
+      "assets/texture/skybox/night/night.png",
+      "assets/texture/skybox/night/night.png",
+      "assets/texture/skybox/night/night.png",
+      "assets/texture/skybox/night/night.png"
+    ],
+    "desert_road": [
+      "assets/texture/skybox/desert_road/right.png",
+      "assets/texture/skybox/desert_road/left.png",
+      "assets/texture/skybox/desert_road/top.png",
+      "assets/texture/skybox/desert_road/bottom.png",
+      "assets/texture/skybox/desert_road/front.png",
+      "assets/texture/skybox/desert_road/back.png"
+    ]
+  }
+}
