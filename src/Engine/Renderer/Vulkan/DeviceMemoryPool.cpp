@@ -72,6 +72,7 @@ namespace Vyroda
       break;
     }
 
+    /*
     using MiB = std::ratio<1024 * 1024>;
 
     Logger::debug("type: {} {} allocated size: {}mib size: {}mib buffer size: {}mib max: {}mib",
@@ -81,6 +82,7 @@ namespace Vyroda
                   size/MiB::num,
                   buffer_size/MiB::num,
                   max_buffer_size/MiB::num);
+    */
     DeviceMemory* device_memory{};
 
     {

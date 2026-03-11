@@ -894,6 +894,7 @@ namespace Vyroda
     Data * data,
     std::size_t const image_index)
   {
+    std::lock_guard<std::mutex> guard(_mutex_vertices_update);
     _vertices_to_update[image_index].push_back(data);
   }
 }

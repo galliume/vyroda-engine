@@ -212,7 +212,7 @@ namespace Vyroda
 
       _renderer->submit();
 
-      //updateBuffers();
+      updateBuffers();
       updatePlayer();
       _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
 

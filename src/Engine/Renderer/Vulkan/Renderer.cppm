@@ -256,5 +256,7 @@ Mesh const& mesh,
 
     std::vector<VkSemaphore> _timeline_semaphores;
     std::vector<std::uint64_t> _current_timeline_values;
+
+    std::mutex _mutex_vertices_update;
   };
 }
