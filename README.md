@@ -6,7 +6,7 @@ A continuously evolving, cross-platform game engine built from the ground up usi
 
 | **CI Service** | Build Status |
 |:---------------|-------------:|
-| GitHub Actions | [![VyrodaEngine](https://codeberg.org/galliume/vyroda-engine/actions/workflows/CI.yml/badge.svg?branch=main)](https://codeberg.org/galliume/vyroda-engine/actions/workflows/CI.yml)
+| GitHub Actions | (todo)       |
 
 ### Key Features
 
@@ -19,7 +19,7 @@ A continuously evolving, cross-platform game engine built from the ground up usi
 ### Media & Development
 
 * **Development Blog:** Follow the journey and technical deep-dives on [Vampyropoda-Studio](https://vampyropoda-studio.com/).
-* **Project Kanban:** See what's next and the current development state on the [Project Board](https://github.com/users/galliume/projects/4/views/1).
+* **Project Kanban:** See what's next and the current development state on the [Project Board](https://codeberg.org/Vampyropoda-Studio/-/projects/41050).
 * **Video Showcase:** Watch the engine in action on [YouTube](https://www.youtube.com/@vampyropoda-studio).
 
 ### Screenshots
@@ -28,7 +28,7 @@ See the engine rendering advanced glTF assets:
 
 | Basic Scene | PBR Materials Test | Rungholt |
 | :---: | :---: | :---: |
-| <img src="https://codeberg.org/galliume/vyroda-engine/raw/branch/main/screenshots/plp.png" width="400"> | <img src="https://codeberg.org/galliume/vyroda-engine/raw/branch/main/screenshots/helmet.png" width="400"> | <img src="https://codeberg.org/galliume/vyroda-engine/raw/branch/main/screenshots/rungholt.png" width="400"> |
+| <img src="https://codeberg.org/Vampyropoda-Studio/vyroda-engine/raw/branch/main/screenshots/plp.png" width="400"> | <img src="https://codeberg.org/Vampyropoda-Studio/vyroda-engine/raw/branch/main/screenshots/helmet.png" width="400"> | <img src="https://codeberg.org/Vampyropoda-Studio/vyroda-engine/raw/branch/main/screenshots/rungholt.png" width="400"> |
 
 ---
 
