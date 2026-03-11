@@ -61,29 +61,21 @@ To build and run the Vyroda Engine, you need recent and specific tooling:
 ### Build Steps
 
 1.  **Compile Shaders** (Windows & Linux):
-    ```bash
-    bin/shaders_compil.sh
-    ```
+    `bin/shaders_compil.s`
 
 2.  **List Presets:** Check available build configurations.
-    ```bash
-    cmake --list-presets
-    # Available presets:
-    # "windows-debug"   - Debug
-    # "windows-release" - Release
-    # "linux-debug"     - Debug
-    # "linux-release"   - Release
-    ```
+    `cmake --list-presets`
+    
+    - "windows-debug"   - Debug
+    - "windows-release" - Release
+    - "linux-debug"     - Debug
+    - "linux-release"   - Release
 
 3.  **Configure:** Use a preset to set up the build environment (Example: Windows Release).
-    ```bash
-    cmake --preset windows-release
-    ```
+    `cmake --preset windows-release`
 
 4.  **Compile:** Build the project.
-    ```bash
-    cmake --build --preset windows-release
-    ```
+    `cmake --build --preset windows-release`
 
 ### Running the Engine
 
