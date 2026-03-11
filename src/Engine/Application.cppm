@@ -1,3 +1,12 @@
+/**
+ * @file   Application.cppm
+ * @author  <Guillaume PERCEPIED>
+ * @date   Mon Mar  9 21:21:07 2026
+ * 
+ * @brief  main entrance
+ * 
+ * 
+ */
 module;
 #include "VyrodaConfig.h"
 
@@ -26,11 +35,32 @@ namespace Vyroda
     Application() = default;
     ~Application() = default;
 
+    /** 
+     * init the application
+     *
+     * @param bool editor_mode 
+     */
     void init(bool const editor_mode);
+
+    /** 
+     * Run the game
+     *
+     */
     void run() const;
+
+    /** 
+     * Start the server with the specified port
+     *
+     * @param string port 
+     */
     void startServer(std::string const& port);
 
-    RenderManager const * getRenderManager() const { return _render_manager.get(); }
+    /** 
+     * Get the RenderManager
+     *
+     * @return RenderManager&
+     */
+    RenderManager& getRenderManager() const { return *_render_manager; }
 
   private:
     std::unique_ptr<APIManager> _api_manager;

@@ -1,3 +1,12 @@
+/**
+ * @file   Application.cpp
+ * @author  <Guillaume PERCEPIED>
+ * @date   Mon Mar  9 21:20:32 2026
+ * 
+ * @brief  main application entrance
+ * 
+ * 
+ */
 module Engine.Application;
 
 import std;
@@ -24,16 +33,14 @@ namespace Vyroda
     ConfigManagerLocator::init(root_path);
     auto const& appConfig { ConfigManagerLocator::get()->appConfig()["resolution"] };
 
-    auto* window = new Window();
+    auto window { std::make_unique<Window>() };
     window->init("Vyroda",
       root_path + "/vampyropoda.jpg",
       appConfig["width"].get<std::uint16_t>(),
       appConfig["height"].get<std::uint16_t>(),
       editor_mode);
 
-    InputManagerLocator::init(window);
-
-    _render_manager = std::make_unique<RenderManager>(window);
+    _render_manager = std::make_unique<RenderManager>(std::move(window));
     _render_manager->init();
 
     _api_manager = std::make_unique<APIManager>();
@@ -163,7 +170,7 @@ namespace Vyroda
       _render_manager->updateText(elapsed_time.id, std::format("Elapsed time {:<.2f}", _elapsed_time));
       _render_manager->setElapsedTime(_elapsed_time);
 
-      auto const& current_camera_pos = _render_manager->getCamera().getPos();
+      auto const& current_camera_pos {  _render_manager->getCamera().getPos() };
       _render_manager->updateText(
         camera_pos.id,
         std::format("Position x: {:<.2f} y: {:<.2f} z: {:<.2f}",

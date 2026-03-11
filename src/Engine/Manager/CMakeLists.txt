@@ -68,3 +68,4 @@ target_link_libraries(
 set_vyroda_definitions(EngineManagers)
 set_vyroda_links(EngineManagers)
 set_vyroda_compiler_flags(EngineManagers)
+set_vyroda_target_properties(EngineManagers)

@@ -26,3 +26,4 @@ target_link_libraries(
 set_vyroda_definitions(VyrodaLib)
 set_vyroda_links(VyrodaLib)
 set_vyroda_compiler_flags(VyrodaLib)
+set_vyroda_target_properties(VyrodaLib)

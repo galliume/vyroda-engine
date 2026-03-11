@@ -75,7 +75,7 @@ namespace Vyroda
      * @param Window window 
      *
      */
-    RenderManager(Window* window);
+    RenderManager(std::unique_ptr<Window> window);
 
     /** 
      * Clean up
@@ -261,7 +261,6 @@ namespace Vyroda
      * @return RenderContext&
      */
     RendererContext& getRendererContext(glm::mat4 const& camera_view = glm::mat4(1.0f));
-
 
     /** 
      * Update renderer context

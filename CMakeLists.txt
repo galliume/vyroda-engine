@@ -29,6 +29,7 @@ include(common_deps)
 include(compiler_definitions)
 include(compiler_flags)
 include(compiler_links)
+include(target_properties)
 include(subdirs)
 include(install)
 
@@ -44,6 +45,7 @@ target_link_libraries(
 set_vyroda_definitions(${PROJECT_NAME})
 set_vyroda_links(${PROJECT_NAME})
 set_vyroda_compiler_flags(${PROJECT_NAME})
+set_vyroda_target_properties(${PROJECT_NAME})
 
 #include(CheckIPOSupported)
 #check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)

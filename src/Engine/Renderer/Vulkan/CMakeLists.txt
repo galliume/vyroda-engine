@@ -47,3 +47,4 @@ target_link_libraries(
 set_vyroda_definitions(Vulkan)
 set_vyroda_links(Vulkan)
 set_vyroda_compiler_flags(Vulkan)
+set_vyroda_target_properties(Vulkan)

@@ -46,15 +46,18 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessenger
   }
 }
 
-//static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-//    VkAllocationCallbacks const * allocattor)
-//{
-//    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance,
-//        "vkDestroyDebugUtilsMessengerEXT");
-//    if (func != nullptr) {
-//        func(instance, debugMessenger, allocattor);
-//    }
-//}
+/*
+static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+    VkAllocationCallbacks const * allocattor)
+{
+  auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+    reinterpret_cast<void*>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT")));
+
+    if (func != nullptr) {
+        func(instance, debugMessenger, allocattor);
+    }
+}
+*/
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
   VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -241,9 +244,9 @@ void VulkanAPI::createInstance()
     //Logger::trace("Validations enabled");
   }
 
-  VkResult result = VK_SUCCESS;
+  VkResult result { VK_SUCCESS };
 
-  result = vkCreateInstance(& create_info, nullptr, &_instance);
+  result = vkCreateInstance(&create_info, nullptr, &_instance);
 
   if (VK_SUCCESS != result) {
     //Logger::critical("Can't create VK instance : {}", static_cast<int>(result));

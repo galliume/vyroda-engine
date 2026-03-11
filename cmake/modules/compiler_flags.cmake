@@ -2,18 +2,12 @@ function(set_vyroda_compiler_flags target)
 
   message(STATUS "Setting compiler flags for ${target}.")
 
-  target_compile_features(${target}
-    PRIVATE   cxx_std_26
-    INTERFACE cxx_std_26)
-
-  set_target_properties(${target} PROPERTIES
-    CXX_SCAN_FOR_MODULES ON)
-
   set(DEBUG_OPTIONS
     -g
     -Og
     -Werror
     -fno-inline
+    -fno-limit-debug-info
     -fno-inline-functions
     -fno-omit-frame-pointer)
 
@@ -29,11 +23,11 @@ function(set_vyroda_compiler_flags target)
     -g
     -O3
     -Werror
+    -fno-limit-debug-info
     #-ffast-math
     -march=native
     -fvisibility=hidden
-    -fno-omit-frame-pointer
-    -DNDEBUG)
+    -fno-omit-frame-pointer)
 
   target_compile_options(${target} PRIVATE
     $<$<CONFIG:DEBUG>:${DEBUG_OPTIONS}>
