@@ -1,0 +1,138 @@
+/* 1. IMPORTS (Must be at the top) */
+@import url('https://fonts.googleapis.com/css2?family=Bentham&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap');
+
+/* 2. VARIABLES & GLOBAL RESET */
+:root {
+    --page-background-color: #1a1a1a !important;
+    --page-foreground-color: #d1d1d1 !important;
+    --fragment-background: #0f0f0f !important;
+    --side-nav-background: #121212 !important;
+    --code-background: #0f0f0f !important;
+    --accent-blue: #4db8ff; /* Bioluminescent highlight */
+}
+
+/* Force dark background on all layout wrappers and containers */
+body, #doc-content, #main-nav, .header, .contents, .footer, 
+div.contents, .memberdecls, .memberlist, .memitem, .memproto, .memdoc {
+    background-color: var(--page-background-color) !important;
+    background-image: none !important;
+    color: var(--page-foreground-color) !important;
+    border-color: #333 !important;
+}
+
+/* 3. TYPOGRAPHY */
+body, table, div, p, dl {
+    font-family: 'Old Standard TT', serif !important;
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    line-height: 1.6;
+}
+
+/* Engraved header style */
+h1, h2, h3, h4, .title, .sm-dox a, #titlearea {
+    font-family: 'Bentham', serif !important;
+    text-transform: none;
+    letter-spacing: 0.05em;
+}
+
+/* Code legibility */
+span.tt, .inline-code, code, kbd, pre, samp, .fragment, .memproto {
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 14px;
+    /* Use a lighter, warmer charcoal to separate it from the deep background */
+    background-color: #252525 !important; 
+    color: #e0e0e0 !important; /* Brighter text for contrast */
+    border: 1px solid #3a3a3a !important;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+/* 4. NAVIGATION & MENUS */
+#titlearea, #nav-tree, .sm-dox, .tabs, .tabs2, .tabs3 {
+    background-color: #121212 !important;
+    background-image: none !important;
+    border-bottom: 1px solid #333 !important;
+}
+
+/* Main Menu Items */
+.sm-dox li, .sm-dox a {
+    background-color: transparent !important;
+    color: #a0a0a0 !important;
+    text-shadow: none !important;
+    border-top: none !important;
+}
+
+/* Navigation Embellishments */
+.sm-dox {
+    border-top: 2px solid #333 !important;
+    border-bottom: 2px solid var(--accent-blue) !important;
+}
+
+/* Hover & Active States */
+.sm-dox a:hover, #nav-tree .selected {
+    color: var(--accent-blue) !important;
+    background-color: #1a1a1a !important;
+}
+
+.sm-dox li.current a, .tabs .current a {
+    background-color: #1f1f1f !important;
+    color: #ffffff !important;
+    border-bottom: 2px solid var(--accent-blue) !important;
+}
+
+/* 5. SEARCH BAR */
+#MSearchBox, #MSearchSelectWindow, #MSearchResultsWindow {
+    background-color: var(--page-background-color) !important;
+    border: 1px solid #444 !important;
+    color: #fff !important;
+}
+
+#MSearchField {
+    background-color: transparent !important;
+    color: #fff !important;
+}
+
+/* 6. SIDE NAVIGATION (Treeview) */
+#nav-tree .item, #nav-tree .label {
+    color: var(--page-foreground-color) !important;
+}
+
+#nav-tree .selected {
+    background-color: #252525 !important;
+}
+
+/* Large code blocks (fragments) */
+.fragment {
+    display: block;
+    padding: 10px !important;
+    margin: 10px 0;
+    line-height: 1.4;
+    /* Subtle inner shadow to make it feel "recessed" into the page */
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* Syntax Highlighting Tweaks: Softening the "Glow" */
+.hl-keyword { color: #4db8ff !important; font-weight: bold; } /* Bioluminescent blue */
+.hl-string { color: #8abeb7 !important; }  /* Muted teal */
+.hl-comment { color: #666666 !important; font-style: italic; } /* Faded ink */
+
+/* 4. NAVIGATION & MENUS (Consolidated) */
+#titlearea, #nav-tree, .sm-dox, .tabs, .tabs2, .tabs3 {
+    background-color: #121212 !important;
+    background-image: none !important;
+    border-bottom: 1px solid #333 !important;
+}
+
+/* Target every possible container Doxygen uses for diagrams */
+.dotgraph, .mscgraph, .inheritancegraph, .dyncontent, .dynheader, .legend {
+    background-color: #1a1a1a !important;
+    background-image: none !important;
+    border: none !important;
+}
+
+/* Force the SVG internal background if it's being stubborn */
+div.dyncontent object, div.dyncontent svg, div.dyncontent img {
+    background-color: #1a1a1a !important;
+    /* This filter is a safety net: it turns white to dark and black to light */
+    filter: invert(93%) hue-rotate(180deg) brightness(0.8) contrast(1.2);
+}
