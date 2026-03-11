@@ -10,7 +10,7 @@ export namespace nlohmann
   using namespace ::nlohmann;
 }
  
-export namespace Poulpe
+export namespace Vyroda
 {
   using json = nlohmann::json;
 }

@@ -6,7 +6,7 @@ import Engine.Core.Json;
 import Engine.Core.Logger;
 import Engine.Core.MiniAudio;
 
-namespace Poulpe
+namespace Vyroda
 {
   AudioManager::~AudioManager()
   {

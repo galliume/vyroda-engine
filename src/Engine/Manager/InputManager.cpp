@@ -9,7 +9,7 @@ import Engine.GUI.Window;
 import Engine.Managers.ConfigManagerLocator;
 import Engine.Managers.InputManagerLocator;
 
-namespace Poulpe
+namespace Vyroda
 {
   bool InputManager::_can_move_camera = false;
   bool InputManager::_first_move_mouse = true;

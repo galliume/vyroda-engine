@@ -1,5 +1,5 @@
 
-function(set_poulpe_definitions target)
+function(set_vyroda_definitions target)
 
   message(STATUS "Setting compiler definitions for ${target}.")
 

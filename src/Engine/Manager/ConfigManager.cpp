@@ -6,7 +6,7 @@ import std;
 import Engine.Core.Json;
 import Engine.Core.Logger;
 
-namespace Poulpe
+namespace Vyroda
 {
   namespace fs = std::filesystem;
 
@@ -22,7 +22,7 @@ namespace Poulpe
     fs::path path{};
     std::ifstream f;
 
-    path = _root_path + "/config/poulpeEngine.json";
+    path = _root_path + "/config/Vyroda.json";
 
     f.open(fs::absolute(path));
     if (f.is_open()) _app_config = json::parse(f);

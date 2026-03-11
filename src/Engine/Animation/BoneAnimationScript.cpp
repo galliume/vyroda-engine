@@ -5,7 +5,7 @@ import std;
 import Engine.Core.MeshTypes;
 import Engine.Core.GLM;
 
-namespace Poulpe
+namespace Vyroda
 {
   BoneAnimationScript::BoneAnimationScript(
     std::unordered_map<std::size_t, std::vector<Animation>> const& animations,

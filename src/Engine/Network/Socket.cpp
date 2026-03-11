@@ -10,7 +10,7 @@ module Engine.Network.Socket;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   #if defined(_WIN64)
     WinSocket::WinSocket()

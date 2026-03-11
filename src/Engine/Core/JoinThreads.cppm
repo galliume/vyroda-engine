@@ -2,7 +2,7 @@ export module Engine.Core.JoinThreads;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class JoinThreads
   {

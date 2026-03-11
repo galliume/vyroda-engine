@@ -7,7 +7,7 @@ import Engine.Core.Volk;
 //import Engine.Core.Logger;
 import Engine.Renderer.VulkanDeviceMemory;
 
-namespace Poulpe
+namespace Vyroda
 {
   //@todo manage memory fragmentation
   export class DeviceMemoryPool

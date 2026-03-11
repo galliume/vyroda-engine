@@ -21,6 +21,6 @@ target_link_libraries(
   PUBLIC
     lua)
 
-set_poulpe_definitions(Animation)
-set_poulpe_links(Animation)
-set_poulpe_compiler_flags(Animation)
+set_vyroda_definitions(Animation)
+set_vyroda_links(Animation)
+set_vyroda_compiler_flags(Animation)

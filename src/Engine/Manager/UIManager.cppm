@@ -6,7 +6,7 @@ import Engine.Core.TclTk;
 
 import Engine.GUI.Window;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class UIManager
   {

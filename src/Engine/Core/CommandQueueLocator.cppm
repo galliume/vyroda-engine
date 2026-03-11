@@ -4,7 +4,7 @@ import std;
 
 import Engine.Core.CommandQueue;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class CommandQueueLocator
   {
@@ -13,6 +13,6 @@ namespace Poulpe
     static void init();
 
   private:
-    static Poulpe::CommandQueue* _cmd_queue;
+    static Vyroda::CommandQueue* _cmd_queue;
   };
 }

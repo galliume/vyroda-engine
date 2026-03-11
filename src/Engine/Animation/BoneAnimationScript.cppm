@@ -10,7 +10,7 @@ import Engine.Core.Logger;
 import Engine.Core.GLM;
 import Engine.Core.MeshTypes;
 
-namespace Poulpe
+namespace Vyroda
 {
   export struct BoneAnimation
   {

@@ -2,7 +2,7 @@ export module Engine.Core.Constants;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   //default textures const, needs a real assets management (unique id etc.)
   export inline constexpr std::string PLP_EMPTY{ "_plp_empty" };

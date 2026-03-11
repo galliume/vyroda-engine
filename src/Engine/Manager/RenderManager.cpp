@@ -37,7 +37,7 @@ import Engine.Renderer.Vulkan.Water;
 
 import Engine.Utils.ScopedTimer;
 
-namespace Poulpe
+namespace Vyroda
 {
   RenderManager::RenderManager(Window* const window)
   {

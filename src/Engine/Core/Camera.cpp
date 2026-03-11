@@ -5,7 +5,7 @@ import std;
 import Engine.Core.Logger;
 import Engine.Core.GLM;
 
-namespace Poulpe
+namespace Vyroda
 {
   void Camera::init(glm::vec3 const& start_pos)
   {

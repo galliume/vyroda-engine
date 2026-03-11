@@ -6,7 +6,7 @@ import Engine.Core.Json;
 
 import Engine.Component.Mesh;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class ConfigManager
   {

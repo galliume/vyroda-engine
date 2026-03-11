@@ -15,7 +15,7 @@ import std;
 import Engine.Core.Constants;
 import Engine.Core.Logger;
 
-namespace Poulpe
+namespace Vyroda
 {
   #if defined(_WIN64)
     export class WinServer

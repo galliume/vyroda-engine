@@ -13,7 +13,7 @@ import Engine.Core.Logger;
 
 import Engine.Utils.IDHelper;
 
-namespace Poulpe
+namespace Vyroda
 {
   struct TypeIdGenerator
   {
@@ -106,5 +106,5 @@ namespace Poulpe
         std::unordered_map<std::size_t, std::unique_ptr<IPool>> _component_pools;
     };
 
-    Poulpe::ComponentManager::IPool::~IPool() = default;
+    Vyroda::ComponentManager::IPool::~IPool() = default;
 }

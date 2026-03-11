@@ -7,7 +7,7 @@ import Engine.Core.Logger;
 
 import Engine.Managers.RenderManager;
 
-namespace Poulpe
+namespace Vyroda
 {
   static int plp_quit_game (
     ClientData client_data,

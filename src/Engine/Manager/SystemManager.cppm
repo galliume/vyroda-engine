@@ -1,6 +1,6 @@
 export module Engine.Managers.SystemManager;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class SystemManager
   {

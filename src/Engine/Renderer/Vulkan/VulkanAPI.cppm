@@ -18,7 +18,7 @@ import Engine.Core.Volk;
 import Engine.Renderer.VulkanDeviceMemoryPool;
 import Engine.Renderer.VulkanDeviceMemory;
 
-namespace Poulpe
+namespace Vyroda
 {
   template <typename T>
   concept IsObjectBufferOrLightBuffer = std::same_as<T, ObjectBuffer> || std::same_as<T, LightObjectBuffer>;

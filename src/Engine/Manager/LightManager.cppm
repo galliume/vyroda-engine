@@ -6,7 +6,7 @@ import Engine.Core.Camera;
 import Engine.Core.LightTypes;
 import Engine.Core.GLM;
 
-namespace Poulpe
+namespace Vyroda
 {
   struct CSM
   {

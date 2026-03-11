@@ -4,7 +4,7 @@ import std;
 
 import Engine.Core.GLFW;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class Window
   {

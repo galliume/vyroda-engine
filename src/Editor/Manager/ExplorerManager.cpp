@@ -11,7 +11,7 @@ import Engine.Managers.AudioManager;
 import Engine.Managers.TextureManager;
 import Engine.Managers.ConfigManagerLocator;
 
-namespace Poulpe {
+namespace Vyroda {
   static int plp_list_ambient_sound (
     ClientData,
     Tcl_Interp* interp,

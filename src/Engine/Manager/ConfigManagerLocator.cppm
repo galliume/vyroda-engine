@@ -4,7 +4,7 @@ import std;
 
 import Engine.Managers.ConfigManager;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class ConfigManagerLocator
   {

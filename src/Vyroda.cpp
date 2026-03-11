@@ -1,5 +1,3 @@
-#include "PoulpeEngineConfig.h"
-
 import std;
 
 import Engine.Application;
@@ -11,7 +9,11 @@ import Editor.Managers.EditorManager;
 
 int main(int argc, char** argv)
 {
-  std::cout << argv[0] << " Version " << PoulpeEngine_VERSION_MAJOR << "." << PoulpeEngine_VERSION_MINOR << std::endl;
+  //@todo config broken ?
+  auto const Vyroda_VERSION_MAJOR { 0 };
+  auto const Vyroda_VERSION_MINOR { 2 };
+
+  std::cout << argv[0] << " Version " << Vyroda_VERSION_MAJOR << "." << Vyroda_VERSION_MINOR << std::endl;
   
   bool server_mode{ false };
   std::string port{ "9371" };
@@ -25,7 +27,7 @@ int main(int argc, char** argv)
     } else if (argument.find("--port") != std::string::npos) {
       std::size_t pos = argument.find("=");
       if (pos == std::string::npos) {
-        Poulpe::Logger::warn("bad argument {}", argument);
+        Vyroda::Logger::warn("bad argument {}", argument);
       } else {
         port = argument.substr(++pos, argument.size());
       }
@@ -35,23 +37,22 @@ int main(int argc, char** argv)
     }
   }
 
-  
-  auto app { std::make_unique<Poulpe::Application>() };
+  auto app { std::make_unique<Vyroda::Application>() };
   app->init(editor_mode);
 
-  Poulpe::Logger::trace("server_mode {}", server_mode);
+  Vyroda::Logger::trace("server_mode {}", server_mode);
 
   if (server_mode) {
-    Poulpe::Logger::trace("port {}", port);
+    Vyroda::Logger::trace("port {}", port);
     app->startServer(port);
   }
 
-  Poulpe::Logger::trace("editor_mode : {}", editor_mode);
+  Vyroda::Logger::trace("editor_mode : {}", editor_mode);
 
   if (editor_mode) {
     Tcl_FindExecutable(argv[0]);
 
-    auto _editor_manager = std::make_unique<Poulpe::EditorManager>(app.get());
+    auto _editor_manager = std::make_unique<Vyroda::EditorManager>(app.get());
   } else {
     app->run();
   }

@@ -62,6 +62,6 @@ target_link_libraries(
     tk
     volk)
 
-set_poulpe_definitions(Core)
-set_poulpe_links(Core)
-set_poulpe_compiler_flags(Core)
+set_vyroda_definitions(Core)
+set_vyroda_links(Core)
+set_vyroda_compiler_flags(Core)

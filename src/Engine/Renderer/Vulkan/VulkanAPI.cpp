@@ -19,7 +19,7 @@ import Engine.Core.PlpTypedef;
 import Engine.Core.StbImage;
 import Engine.Core.Volk;
 
-namespace Poulpe
+namespace Vyroda
 {
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT const * create_info,
     VkAllocationCallbacks const * allocattor, VkDebugUtilsMessengerEXT* callback)
@@ -195,7 +195,7 @@ void VulkanAPI::createInstance()
 
   app_info.apiVersion = VK_API_VERSION_1_4;
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  app_info.pApplicationName = "PoulpeEngine";
+  app_info.pApplicationName = "Vyroda";
   app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 

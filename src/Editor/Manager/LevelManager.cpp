@@ -23,7 +23,7 @@ import Engine.Renderer.RendererComponent;
 import Engine.Renderer.RendererComponentTypes;
 import Engine.Renderer.VulkanRenderer;
 
-namespace Poulpe {
+namespace Vyroda {
   static int plp_update_skybox(
     ClientData client_data,
     Tcl_Interp*,

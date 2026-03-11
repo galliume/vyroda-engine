@@ -11,7 +11,7 @@ import Engine.Core.Volk;
 
 import Engine.Renderer;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class FontManager
   {

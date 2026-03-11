@@ -44,6 +44,6 @@ target_link_libraries(
     ktx
     stb)
 
-set_poulpe_definitions(Vulkan)
-set_poulpe_links(Vulkan)
-set_poulpe_compiler_flags(Vulkan)
+set_vyroda_definitions(Vulkan)
+set_vyroda_links(Vulkan)
+set_vyroda_compiler_flags(Vulkan)

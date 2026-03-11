@@ -9,7 +9,7 @@ import Engine.Component.Mesh;
 
 import Engine.Utils.IDHelper;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class PlayerManager
   {

@@ -10,7 +10,7 @@ import Engine.GUI.Window;
 
 import Engine.Managers.PlayerManager;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class InputManager
   {

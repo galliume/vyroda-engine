@@ -1,4 +1,4 @@
-name: PoulpeEngine CodeQL config
+name: Vyroda CodeQL config
 
 languages: 
   - cpp

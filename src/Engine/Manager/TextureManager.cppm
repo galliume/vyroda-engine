@@ -12,7 +12,7 @@ import Engine.Core.Volk;
 
 import Engine.Renderer;
 
-namespace Poulpe
+namespace Vyroda
 {
   export enum class TEXTURE_TYPE : std::uint8_t
   {

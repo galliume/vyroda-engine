@@ -20,6 +20,6 @@ target_link_libraries(
   PUBLIC
     lua)
 
-set_poulpe_definitions(Utils)
-set_poulpe_links(Utils)
-set_poulpe_compiler_flags(Utils)
+set_vyroda_definitions(Utils)
+set_vyroda_links(Utils)
+set_vyroda_compiler_flags(Utils)

@@ -5,7 +5,7 @@ import std;
 import Engine.Core.Json;
 import Engine.Core.MiniAudio;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class AudioManager
   {

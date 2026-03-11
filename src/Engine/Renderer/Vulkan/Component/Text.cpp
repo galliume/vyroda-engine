@@ -21,7 +21,7 @@ import Engine.Core.Volk;
 import Engine.Renderer.RendererComponentTypes;
 import Engine.Renderer.VulkanRenderer;
 
-namespace Poulpe
+namespace Vyroda
 {
   void Text::operator()(
     Renderer & renderer,

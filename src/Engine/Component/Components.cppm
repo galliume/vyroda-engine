@@ -12,7 +12,7 @@ import Engine.Core.Volk;
 
 import Engine.Utils.IDHelper;
 
-namespace Poulpe {
+namespace Vyroda {
 
   export class AnimationComponentConcept
   {

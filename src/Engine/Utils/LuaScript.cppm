@@ -4,7 +4,7 @@ import std;
 
 import Engine.Core.LUA;
 
-namespace Poulpe
+namespace Vyroda
 {
   export bool checkLua(lua_State* L, int r);
 }

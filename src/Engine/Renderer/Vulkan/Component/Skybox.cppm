@@ -7,7 +7,7 @@ import Engine.Core.Volk;
 import Engine.Renderer.RendererComponentTypes;
 import Engine.Renderer.VulkanRenderer;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class Skybox
   {

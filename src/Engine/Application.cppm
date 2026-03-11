@@ -1,5 +1,5 @@
 module;
-#include "PoulpeEngineConfig.h"
+#include "VyrodaConfig.h"
 
 export module Engine.Application;
 
@@ -18,7 +18,7 @@ import Engine.Managers.UIManager;
 
 import Engine.GUI.Window;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class Application
   {

@@ -2,7 +2,7 @@ module Engine.Managers.ComponentManager;
 
 import Engine.Component.Mesh;
 
-namespace Poulpe
+namespace Vyroda
 {
   void ComponentManager::clear()
   {

@@ -5,7 +5,7 @@ import std;
 import Engine.Core.Constants;
 import Engine.Core.GLM;
 
-namespace Poulpe
+namespace Vyroda
 {
   export struct Material
   {

@@ -1,7 +1,7 @@
 message(STATUS "Setting install.")
 
 install(TARGETS ${PROJECT_NAME}
-    EXPORT PoulpeEngineTargets
+    EXPORT VyrodaTargets
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib

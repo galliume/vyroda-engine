@@ -4,7 +4,7 @@ import std;
 
 export import Engine.Core.Volk;
 
-namespace Poulpe
+namespace Vyroda
 {
   export struct VulkanShaders
   {

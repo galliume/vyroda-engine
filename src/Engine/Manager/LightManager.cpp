@@ -8,7 +8,7 @@ import Engine.Core.PlpTypedef;
 
 import Engine.Managers.ConfigManagerLocator;
 
-namespace Poulpe
+namespace Vyroda
 {
   LightManager::LightManager()
   {

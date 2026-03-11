@@ -16,7 +16,7 @@ import Engine.Core.Volk;
 import Engine.Renderer.RendererComponentTypes;
 import Engine.Renderer.VulkanRenderer;
 
-namespace Poulpe
+namespace Vyroda
 {
   struct Texture_Region
   {

@@ -8,7 +8,7 @@ import Engine.Core.GLM;
 import Engine.Core.Vertex;
 
 
-namespace Poulpe
+namespace Vyroda
 {
   export struct CameraUBO {
     alignas(16) glm::mat4 view;

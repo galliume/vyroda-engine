@@ -18,7 +18,7 @@ import Engine.Renderer.RendererComponentTypes;
 import Engine.Renderer.VulkanDeviceMemoryPool;
 import Engine.Renderer.VulkanAPI;
 
-namespace Poulpe
+namespace Vyroda
 {
   export struct DrawCommands {
 

@@ -5,7 +5,7 @@ import std;
 import Engine.Core.Logger;
 import Engine.Core.Volk;
 
-namespace Poulpe
+namespace Vyroda
 {
   DeviceMemory::DeviceMemory(
       VkDevice device,

@@ -21,6 +21,6 @@ target_link_libraries(
   PUBLIC
     freetype)
 
-set_poulpe_definitions(Renderer)
-set_poulpe_links(Renderer)
-set_poulpe_compiler_flags(Renderer)
+set_vyroda_definitions(Renderer)
+set_vyroda_links(Renderer)
+set_vyroda_compiler_flags(Renderer)

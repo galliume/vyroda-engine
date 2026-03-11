@@ -2,7 +2,7 @@ export module Engine.Renderer.RendererComponentFactory;
 
 import std;
 
-namespace Poulpe
+namespace Vyroda
 {
   export class RendererComponentFactory
   {

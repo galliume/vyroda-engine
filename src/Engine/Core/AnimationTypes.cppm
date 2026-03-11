@@ -6,7 +6,7 @@ import Engine.Core.GLM;
 import Engine.Core.BoneTypes;
 import Engine.Core.Constants;
 
-namespace Poulpe
+namespace Vyroda
 {
   export struct Animation {
     std::uint32_t id;

@@ -37,7 +37,7 @@ import Engine.Renderer.RendererComponentTypes;
 
 import Engine.Renderer.Vulkan.Basic;
 
-namespace Poulpe
+namespace Vyroda
 {
   EntityManager::EntityManager(
     ComponentManager& component_manager,

@@ -9,7 +9,7 @@ import Engine.Component.Texture;
 
 import Engine.Renderer;
 
-namespace Poulpe
+namespace Vyroda
 {
   void DestroyManager::cleanDeviceMemory()
   {
