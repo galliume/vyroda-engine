@@ -18,10 +18,11 @@ A continuously evolving, cross-platform game engine built from the ground up usi
 
 ### Media & Development
 
-* **Development Blog:** Follow the journey and technical deep-dives on [Vampyropoda-Studio](https://vampyropoda-studio.com/).
+* **Development Blog:** Follow the journey and technical deep-dives on [Vampyropoda-Studio](https://vyroda.com/).
 * **Project Kanban:** See what's next and the current development state on the [Project Board](https://codeberg.org/Vampyropoda-Studio/vyroda-engine/projects/41650).
 * **Video Showcase:** Watch the engine in action on [YouTube](https://www.youtube.com/@vampyropoda-studio).
 * **Documentation:** [Vyroda engine documentation](https://vampyropoda-studio.codeberg.page).
+* **Contact:** dev at vyroda dot com
 
 ### Screenshots
 
