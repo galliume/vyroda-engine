@@ -1,5 +1,15 @@
+/**
+ * @file   VulkanAPI.cpp
+ * @author  <Guillaume PERCEPIED>
+ * @date   Sun Mar  8 19:38:52 2026
+ * 
+ * @brief  Vulkan API
+ * @todo huge clean and simplification are needed here
+ * 
+ */
 module;
 
+#include <cassert>
 #include <stdlib.h>
 
 //@todo meh
@@ -1986,7 +1996,7 @@ Buffer VulkanAPI::createIndexBuffer(
   std::vector<std::uint32_t> const& indices,
   std::size_t const image_index)
 {
-  VkDeviceSize const buffer_size { sizeof(indices[0]) * indices.size() };
+  VkDeviceSize const buffer_size { sizeof(std::uint32_t) * indices.size() };
 
   auto & staging_buffer { _staging_buffer[image_index] };
   std::size_t const current_offset { _update_vertex_offsets[image_index] };
@@ -2000,6 +2010,8 @@ Buffer VulkanAPI::createIndexBuffer(
   vkGetBufferMemoryRequirements(_device, buffer, & mem_requirements);
   VkDeviceSize const size { mem_requirements.size };
 
+  assert(size >= buffer_size && "requirements size must at least equals to the buffer_size");
+  
   auto const memory_type { findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) };
   auto device_memory { _device_memory_pool->get(
     _device,
@@ -2019,7 +2031,7 @@ Buffer VulkanAPI::createIndexBuffer(
     .size = size,
     .index = index };
 
-  addCopyBufferRequest(staging_buffer, mesh_buffer.buffer, mesh_buffer.size, image_index, mesh_buffer.offset, 0);
+  addCopyBufferRequest(staging_buffer, mesh_buffer.buffer, buffer_size, image_index, current_offset, 0);
 
   return mesh_buffer;
 }
@@ -2046,6 +2058,8 @@ Buffer VulkanAPI::createVertexBuffer(
   auto const memory_type { findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) };
   VkDeviceSize const size { mem_requirements.size };
 
+  assert(size >= buffer_size && "requirements size must at least equals to the buffer_size");
+ 
   auto device_memory { _device_memory_pool->get(
     _device,
     size,
@@ -2064,7 +2078,7 @@ Buffer VulkanAPI::createVertexBuffer(
     .size = size,
     .index = index };
 
-  addCopyBufferRequest(staging_buffer, mesh_buffer.buffer, mesh_buffer.size, image_index, mesh_buffer.offset);
+  addCopyBufferRequest(staging_buffer, mesh_buffer.buffer, buffer_size, image_index, current_offset);
   //copyBuffer(staging_buffer, buffer, buffer_size, current_offset, 0, image_index);
 
   return mesh_buffer;
@@ -2151,6 +2165,8 @@ Buffer VulkanAPI::createUniformBuffers(
   auto memory_type = findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
   VkDeviceSize const size { mem_requirements.size };
 
+  assert(size >= buffer_size && "requirements size must at least equals to the buffer_size");
+ 
   auto device_memory = _device_memory_pool->get(
     _device,
     size,
@@ -2221,7 +2237,7 @@ Buffer VulkanAPI::createIndirectCommandsBuffer(std::vector<VkDrawIndexedIndirect
 
   auto const memory_type{ findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) };
   VkDeviceSize const size{ mem_requirements.size };
-
+ 
   auto device_memory{ _device_memory_pool->get(
     _device,
     size,
@@ -2995,6 +3011,8 @@ VkSampler VulkanAPI::createTextureSampler(std::uint32_t const mip_lvl)
 
     VkDeviceSize const size { mem_requirements.size};
 
+    assert(size >= ktx_texture->dataSize && "requirements size must at least equals to the buffer_size");
+    
     void* data;
     vkMapMemory(_device, staging_device_memory, 0, size, 0, &data);
     std::memcpy(data, ktx_texture->pData, static_cast<std::size_t>(size));

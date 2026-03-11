@@ -1,3 +1,12 @@
+/**
+ * @file   RenderManager.cppm
+ * @author  <Guillaume PERCEPIED>
+ * @date   Sun Mar  8 16:55:46 2026
+ * 
+ * @brief  Serves as the main controller
+ * @todo trim some fat here and delegate more
+ * 
+ */
 export module Engine.Managers.RenderManager;
 
 import std;
@@ -33,6 +42,10 @@ import Engine.Utils.IDHelper;
 
 namespace Vyroda
 {
+  /**
+   * @struct Framecontext
+   * @brief hold the current frame context
+  **/
   struct FrameContext
   {
     double delta_time{};
@@ -56,39 +69,205 @@ namespace Vyroda
   export class RenderManager : public std::enable_shared_from_this<RenderManager>
   {
   public:
+    /** 
+     * Create a RenderManager
+     *
+     * @param Window window 
+     *
+     */
     RenderManager(Window* window);
 
+    /** 
+     * Clean up
+     *
+     */
     void cleanUp();
+
+    /** 
+     * Force a refresh
+     *
+     */
     inline void forceRefresh() { _refresh = true; }
+
+    /** 
+     * Get application height
+     *
+     * @return 
+     */
     inline std::uint32_t getAppHeight() { return getRenderer().getAPI().getSwapChainExtent().height; }
+
+    /** 
+     * Get application width
+     *
+     * @return 
+     */
     inline std::uint32_t getAppWidth() { return getRenderer().getAPI().getSwapChainExtent().width; }
+
+    /** 
+     * Get AudioManager
+     *
+     * @return Audiomanager&
+     */
     inline AudioManager& getAudioManager() { return *_audio_manager; }
+
+    /** 
+     * Get current camera
+     *
+     * @return Camera& 
+     */
     inline Camera& getCamera() const { return *_cameras.at(_current_camera); }
+
+    /** 
+     * Get ComponentManager
+     *
+     * @return Componentmanager& 
+     */
     inline ComponentManager& getComponentManager() { return *_component_manager; }
+
+    /** 
+     * Get Destroymanager
+     *
+     * @return Destroymanager& 
+     */
     inline DestroyManager& getDestroyManager() { return *_destroy_manager; }
+
+    /** 
+     * Get EntityManager
+     *
+     * @return Entitymanager& 
+     */
     inline EntityManager& getEntityManager() { return *_entity_manager; }
+
+    /** 
+     * Get LightManager
+     *
+     * @return LightManager& 
+     */
     inline LightManager& getLightManager() { return *_light_manager; }
+
+    /** 
+     * Get Renderer
+     *
+     * @return Renderer& 
+     */
     inline Renderer& getRenderer() { return *_renderer; }
+
+    /** 
+     * Get ShaderManager
+     *
+     * @return ShaderManager& 
+     */
     inline ShaderManager& getShaderManager() { return *_shader_manager; }
+
+    /** 
+     * Get FontManager
+     *
+     * @return FontManager& 
+     */
     inline FontManager& getFontManager() { return *_font_manager; }
+
+    /** 
+     * Get TextureManager
+     *
+     * @return TextureManager& 
+     */
     inline TextureManager& getTextureManager() { return *_texture_manager; }
+
+    /** 
+     * Get Window
+     *
+     * @return Window& 
+     */
     Window& getWindow();
+
+    /** 
+     * Init the RenderManager
+     * Load the configuration, audio, input and load current level
+     * @todo does too much ?
+     */
     void init();
+
+    /** 
+     * Get if the level is loaded
+     *
+     * @return bool
+     */
     inline bool isLoaded()  { return _is_loaded; }
-    //void updateScene(double const delta_time);
+
+    /** 
+     * Render the scene
+     *
+     * @param double delta_time 
+     */
     void renderScene(double const delta_time);
+
+    /** 
+     * Set the is loaded flag
+     *
+     * @param bool loaded 
+     */
     inline void setIsLoaded(bool loaded = true) { _is_loaded = loaded; }
+
+    /** 
+     * Add text
+     *
+     * @param FontManager::Text& text 
+     */
     void addText(FontManager::Text & text);
 
+    /** 
+     * Update a text
+     *
+     * @param IDType entity_id 
+     * @param std::string text
+     * @todo move ?
+     */
     void updateText(IDType const entity_id, std::string const& text);
+
+    /** 
+     * Update text color
+     *
+     * @param IDType entity_id 
+     * @param glm::vec3 color 
+     */
     void updateTextColor(IDType const entity_id, glm::vec3 const& color);
 
+    /** 
+     * Set elapsed time
+     *
+     * @param double elapsed_time 
+     */
     void setElapsedTime(double const elapsed_time) { _elapsed_time = elapsed_time;}
+
+    /** 
+     * Get elapsed time
+     *
+     * @return double 
+     */
     double getElapsedTime() const { return _elapsed_time; }
 
+    /** 
+     * Get LightBuffer
+     *
+     * @return Buffer
+     */
     Buffer getLightBuffer();
 
+    /** 
+     * Get Renderer Context
+     *
+     * @param glm::mat4 camera_view 
+     *
+     * @return RenderContext&
+     */
     RendererContext& getRendererContext(glm::mat4 const& camera_view = glm::mat4(1.0f));
+
+
+    /** 
+     * Update renderer context
+     *
+     * @param glm::mat4 camera_view 
+     */
     void updateRendererContext(glm::mat4 const& camera_view);
 
   private:

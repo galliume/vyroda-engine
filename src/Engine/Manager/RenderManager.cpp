@@ -1,3 +1,9 @@
+/**
+ * @file   RenderManager.cpp
+ * @author  <Guillaume PERCEPIED>
+ * @date   Sun Mar  8 16:54:49 2026
+ * 
+ */
 module Engine.Managers.RenderManager;
 
 import std;

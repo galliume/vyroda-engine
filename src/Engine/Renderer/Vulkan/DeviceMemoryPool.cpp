@@ -1,3 +1,12 @@
+/**
+ * @file   DeviceMemoryPool.cpp
+ * @author  <Guillaume PERCEPIED>
+ * @date   Sun Mar  8 19:42:30 2026
+ * 
+ * @brief  Device memory pool
+ * @todo improve buffer size management
+ *
+ */
 module Engine.Renderer.VulkanDeviceMemoryPool;
 
 import std;
@@ -15,6 +24,7 @@ namespace Vyroda
     , _maintenance_props(maintenance_props)
     , _memory_props(memory_props)
   {
+    
     _memory_allocation_size.resize(_memory_props.memoryTypeCount);
   }
 
@@ -31,8 +41,8 @@ namespace Vyroda
       Logger::error("Max number of active allocations reached");
     }
 
-    VkDeviceSize buffer_size;
-    VkDeviceSize max_buffer_size = _memory_props.memoryHeaps[_memory_props.memoryTypes[memory_type].heapIndex].size;
+    VkDeviceSize buffer_size { 0 };
+    VkDeviceSize const max_buffer_size { _memory_props.memoryHeaps[_memory_props.memoryTypes[memory_type].heapIndex].size };
     std::string buffer_type_debug;
 
     switch (buffer_type) {
@@ -41,11 +51,11 @@ namespace Vyroda
         buffer_type_debug = "VERTEX";
       break;
       case DeviceBufferType::UNIFORM:
-      buffer_size = size;
+        buffer_size = size;        
 
-      if (buffer_size < _device_props.properties.limits.maxUniformBufferRange) {
-        buffer_size = _device_props.properties.limits.maxUniformBufferRange;
-      }
+      //if (buffer_size < _device_props.properties.limits.maxUniformBufferRange) {
+        //buffer_size = _device_props.properties.limits.maxUniformBufferRange;
+      //}
 
       buffer_type_debug = "UNIFORM";
       break;
@@ -54,17 +64,25 @@ namespace Vyroda
 
         buffer_size = size;
 
-        if (buffer_size < _device_props.properties.limits.maxStorageBufferRange / _max_staging) {
-          buffer_size = _device_props.properties.limits.maxStorageBufferRange / _max_staging;
-        }
+        //if (buffer_size < _device_props.properties.limits.maxStorageBufferRange / _max_staging) {
+        //buffer_size = _device_props.properties.limits.maxStorageBufferRange / _max_staging;
+        //}
 
         buffer_type_debug = "STAGING";
       break;
     }
 
-    //Logger::debug("type: {} {} allocated size: {} size: {} buffer size: {} max: {}", buffer_type_debug, memory_type, _memory_allocation_size.at(memory_type), size, buffer_size, max_buffer_size);
+    using MiB = std::ratio<1024 * 1024>;
+
+    Logger::debug("type: {} {} allocated size: {}mib size: {}mib buffer size: {}mib max: {}mib",
+                  buffer_type_debug,
+                  memory_type,
+                  _memory_allocation_size.at(memory_type)/MiB::num,
+                  size/MiB::num,
+                  buffer_size/MiB::num,
+                  max_buffer_size/MiB::num);
     DeviceMemory* device_memory{};
-    
+
     {
       std::lock_guard<std::mutex> lock(_mutex);
       auto pool_type { _pool.find(memory_type) };
@@ -85,7 +103,6 @@ namespace Vyroda
           }
         }
 
-
         if (_memory_allocation_size.at(memory_type) + buffer_size > max_buffer_size) {
           //Logger::debug("type: {} {} allocated size: {} size: {} buffer size: {} max: {}", buffer_type_debug, memory_type, _memory_allocation_size.at(memory_type), size, buffer_size, max_buffer_size);
           Logger::error("Max size of memory allocation reached");
@@ -103,7 +120,7 @@ namespace Vyroda
       } else {
 
         if (_memory_allocation_size.at(memory_type) + buffer_size > max_buffer_size) {
-          Logger::error("Max size of memory allocation reached");
+          Logger::error("Max size of memory allocation reached {}", __LINE__);
         }
 
           _pool[memory_type][usage].emplace_back(std::make_unique<DeviceMemory>(
@@ -126,7 +143,7 @@ namespace Vyroda
     for (auto& memory_type : _pool) {
       for (auto& usage : memory_type.second) {
         for (auto& mem : usage.second) {
-          clear(mem.get());
+          clear(*mem.get());
         }
       }
     }
@@ -139,12 +156,12 @@ namespace Vyroda
     _device_memory_count = 0; //should be zero anyway
   }
 
-  void DeviceMemoryPool::clear(DeviceMemory * deviceMemory)
+  void DeviceMemoryPool::clear(DeviceMemory& deviceMemory)
   {
-    _memory_allocation_size.at(deviceMemory->getType()) -= deviceMemory->getSize();
+    _memory_allocation_size.at(deviceMemory.getType()) -= deviceMemory.getSize();
     _memory_allocation_count -= 1;
     _device_memory_count -= 1;
-    deviceMemory->clear();
+    deviceMemory.clear();
     //Logger::debug("Clearing device memory id {}. {} left", deviceMemory->getID(), _device_memory_count);
-  }
+    }
 }
