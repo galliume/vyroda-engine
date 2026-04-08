@@ -51,7 +51,7 @@ namespace Vyroda
       mesh.getUniformBuffers().emplace_back(std::move(uniformBuffer));
     }
 
-    auto const& data = mesh.getData();
+    auto const& data { mesh.getData() };
     data->_texture_index = 0;
 
     if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {

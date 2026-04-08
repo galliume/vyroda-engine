@@ -701,7 +701,8 @@ namespace Vyroda
     std::vector<void*> _staging_data_ptr;
     std::size_t _staging_size { 512 * 1024 * 1024 };
 
-    std::vector<VkDeviceSize> _update_vertex_offsets{};
+    //3 is the max of images in flight
+    std::vector<std::atomic<VkDeviceSize>> _update_vertex_offsets = std::vector<std::atomic<VkDeviceSize>>(3);
     std::size_t _queue_index {0};
   
     GarbageCollector _garbage_collector{};
