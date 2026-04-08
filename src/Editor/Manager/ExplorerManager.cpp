@@ -58,20 +58,20 @@ namespace Vyroda {
 
   void ExplorerManager::registerCommand(
     Tcl_Interp * tcl_interp,
-    RenderManager const * render_manager)
+    RenderManager & render_manager)
     {
       Tcl_CreateObjCommand(
         tcl_interp,
         "plp_list_ambient_sound",
         plp_list_ambient_sound,
-        const_cast<RenderManager*>(render_manager),
+        &render_manager,
         nullptr);
 
       Tcl_CreateObjCommand(
         tcl_interp,
         "plp_play_sound",
         plp_play_sound,
-        const_cast<RenderManager*>(render_manager),
+        &render_manager,
         nullptr);
     }
 }

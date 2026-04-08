@@ -276,7 +276,7 @@ namespace Vyroda
       T const& storage_buffer,
       std::size_t const image_index)
     {
-      std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
+      //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
       VkDeviceSize const buffer_size { sizeof(T) };
 
       auto & staging_buffer { _staging_buffer[image_index] };
@@ -324,7 +324,7 @@ namespace Vyroda
     template <IsObjectBufferOrLightBuffer T>
     void updateStorageBuffer(Buffer& buffer, T& object_buffer, std::size_t const image_index)
     {
-      std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
+      //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
       VkDeviceSize buffer_size { sizeof(T) };
       std::size_t const current_offset { _update_vertex_offsets[image_index] };
 
@@ -437,7 +437,7 @@ namespace Vyroda
 
     inline std::uint32_t getQueueFamily() const { return _queue_family_indices.graphicsFamily.value(); }
 
-    inline VkInstance getInstance() const { return _instance; }
+    inline VkInstance getInstance() const { return *_instance; }
 
     inline VkPhysicalDevice getPhysicalDevice() const { return _physical_device; }
 
@@ -652,7 +652,7 @@ namespace Vyroda
     bool _instance_created{ false };
     bool _enable_validation_layers{ false };
 
-    VkInstance _instance = VK_NULL_HANDLE;
+    std::unique_ptr<VkInstance> _instance;
     VkPhysicalDevice _physical_device = VK_NULL_HANDLE;
     VkPhysicalDeviceProperties _device_props;
     VkPhysicalDeviceFeatures _device_features;

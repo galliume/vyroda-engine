@@ -246,7 +246,8 @@ void VulkanAPI::createInstance()
 
   VkResult result { VK_SUCCESS };
 
-  result = vkCreateInstance(&create_info, nullptr, &_instance);
+  _instance = std::make_unique<VkInstance>();
+  result = vkCreateInstance(&create_info, nullptr, _instance.get());
 
   if (VK_SUCCESS != result) {
     //Logger::critical("Can't create VK instance : {}", static_cast<int>(result));
@@ -255,7 +256,7 @@ void VulkanAPI::createInstance()
 
   _instance_created = true;
 
-  volkLoadInstance(_instance);
+  volkLoadInstance(*_instance);
 }
 
 void VulkanAPI::initDetails()
@@ -331,7 +332,10 @@ void VulkanAPI::setupDebugMessenger()
   create_info.pfnUserCallback = DebugCallback;
   create_info.pUserData = nullptr;
 
-  if (CreateDebugUtilsMessengerEXT(_instance, & create_info, nullptr, &_debug_msg_callback) != VK_SUCCESS) {
+  if (CreateDebugUtilsMessengerEXT(*_instance,
+                                   &create_info,
+                                   nullptr,
+                                   &_debug_msg_callback) != VK_SUCCESS) {
     Logger::error("Can't create debug messenger.");
   }
 }
@@ -339,7 +343,7 @@ void VulkanAPI::setupDebugMessenger()
 void VulkanAPI::pickPhysicalDevice()
 {
   std::uint32_t device_count{ 0 };
-  vkEnumeratePhysicalDevices(_instance, & device_count, nullptr);
+  vkEnumeratePhysicalDevices(*_instance, & device_count, nullptr);
 
   if (device_count == 0) {
     Logger::critical("failed to find GPUs with Vulkan support!");
@@ -347,7 +351,7 @@ void VulkanAPI::pickPhysicalDevice()
   }
 
   std::vector<VkPhysicalDevice> devices(device_count);
-  vkEnumeratePhysicalDevices(_instance, & device_count, devices.data());
+  vkEnumeratePhysicalDevices(*_instance, & device_count, devices.data());
 
   for (auto &device : devices) {
     if (isDeviceSuitable(device)) {
@@ -748,7 +752,7 @@ void VulkanAPI::createLogicalDevice()
 
 void VulkanAPI::createSurface()
 {
-  VkResult result = glfwCreateWindowSurface(_instance, _window, nullptr, & _surface);
+  VkResult result { glfwCreateWindowSurface(*_instance, _window, nullptr, & _surface) };
 
   if (result != VK_SUCCESS) {
     //Logger::critical("failed to create window surface!");
@@ -1999,7 +2003,7 @@ Buffer VulkanAPI::createIndexBuffer(
   std::vector<std::uint32_t> const& indices,
   std::size_t const image_index)
 {
-  std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
+  //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize const buffer_size { sizeof(std::uint32_t) * indices.size() };
 
   auto & staging_buffer { _staging_buffer[image_index] };
@@ -2044,7 +2048,7 @@ Buffer VulkanAPI::createVertexBuffer(
   std::vector<Vertex> const& vertices,
   std::size_t const image_index)
 {
-  std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
+  //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize const buffer_size { sizeof(Vertex) * vertices.size() };
   auto & staging_buffer { _staging_buffer[image_index] };
   std::size_t const current_offset { _update_vertex_offsets[image_index] };
@@ -2105,7 +2109,7 @@ void VulkanAPI::updateVertexBuffer(
     VkBuffer buffer_to_update,
     std::size_t const image_index)
 {
-  std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
+  //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize buffer_size = sizeof(Vertex) * new_vertices.size();
   auto &transfer_cmd_buffer = _transfer_cmd_buffer[image_index];
   std::size_t const current_offset { _update_vertex_offsets[image_index] };
@@ -2150,12 +2154,12 @@ Buffer VulkanAPI::createUniformBuffers(
   std::uint64_t const uniform_buffers_count,
   std::size_t const image_index)
 {
-  std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
+  //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize buffer_size = sizeof(UniformBufferObject) * uniform_buffers_count;
   std::vector<UniformBufferObject> dummy {};
   dummy.reserve(uniform_buffers_count);
 
-  auto & staging_buffer = _staging_buffer[image_index];
+  auto & staging_buffer { _staging_buffer[image_index] };
   std::size_t const current_offset { _update_vertex_offsets[image_index] };
 
   std::memcpy(static_cast<char*>(_staging_data_ptr[image_index]) + current_offset, dummy.data(), static_cast<std::size_t>(buffer_size));
@@ -2278,7 +2282,7 @@ void VulkanAPI::updateUniformBuffer(
   std::size_t const image_index)
 {
   {
-  std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
+    //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize buffer_size = sizeof(UniformBufferObject) * uniform_buffer_objects->size();
   //auto &copy_cmd_buffer = _copy_cmd_buffer[image_index];
   std::size_t const current_offset { _update_vertex_offsets[image_index] };

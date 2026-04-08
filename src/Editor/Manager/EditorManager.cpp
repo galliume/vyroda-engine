@@ -108,13 +108,13 @@ namespace Vyroda {
     Tcl_CreateObjCommand(_tcl_interp,
                   "plp_test_callback",
                   plp_test_callback,
-                  const_cast<RenderManager*>(_app->getRenderManager()),
+                  &_app->getRenderManager(),
                   nullptr);
 
     Tcl_CreateObjCommand(_tcl_interp,
       "plp_get_scene",
       plp_get_scene,
-      const_cast<RenderManager*>(_app->getRenderManager()),
+      &_app->getRenderManager(),
       nullptr);
 
     std::thread app_thread([&] {

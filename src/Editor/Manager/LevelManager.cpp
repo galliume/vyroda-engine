@@ -80,13 +80,13 @@ namespace Vyroda {
 
   void LevelManager::registerCommand(
     Tcl_Interp * tcl_interp,
-    RenderManager const * render_manager)
+    RenderManager & render_manager)
     {
       Tcl_CreateObjCommand(
         tcl_interp,
         "plp_update_skybox",
         plp_update_skybox,
-        const_cast<RenderManager*>(render_manager),
+        &render_manager,
         nullptr);
     }
 }

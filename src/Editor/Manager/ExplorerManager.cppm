@@ -14,6 +14,6 @@ namespace Vyroda {
 
       void registerCommand(
         Tcl_Interp * tcl_interp,
-        RenderManager const * render_manager);
+        RenderManager & render_manager);
   };
 }
