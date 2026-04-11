@@ -20,7 +20,7 @@ namespace Vyroda
     Data * getData() { return & _data; }
     Data const * getData() const { return & _data; }
     VkDescriptorSet const * getDescSet() const { return & _descset; }
-    VkDescriptorSet * getDescSet() { return & _descset; }
+    VkDescriptorSet getDescSet() { return _descset; }
     std::vector<material_t> const& getMaterials() const { return _materials; }
     std::vector<material_t> & getMaterials() { return _materials; }
     std::string const getName() const { return _name; }
@@ -46,10 +46,10 @@ namespace Vyroda
 
     void addUbos(std::vector<std::vector<UniformBufferObject>> const& ubos);
 
-    VkDescriptorSet const * getShadowMapDescSet() const { return & _shadowmap_descset; }
-    VkDescriptorSet * getShadowMapDescSet() { return & _shadowmap_descset; }
-    VkDescriptorSet const * getCSMDescSet() const { return & _csm_descset; }
-    VkDescriptorSet * getCSMDescSet() { return & _csm_descset; }
+    VkDescriptorSet getShadowMapDescSet() const { return _shadowmap_descset; }
+    VkDescriptorSet getShadowMapDescSet() { return _shadowmap_descset; }
+    VkDescriptorSet getCSMDescSet() const { return _csm_descset; }
+    VkDescriptorSet getCSMDescSet() { return _csm_descset; }
 
     bool hasAnimation() const { return _has_animation; }
     bool hasBufferStorage() const { return _has_storage_buffer; }
@@ -107,8 +107,8 @@ namespace Vyroda
     ObjectBuffer _object_buffer;
 
     Data _data{};
-    VkDescriptorSet _descset{};
-    VkDescriptorSet _shadowmap_descset{};
+    VkDescriptorSet _descset {VK_NULL_HANDLE};
+    VkDescriptorSet _shadowmap_descset{VK_NULL_HANDLE};
     VkDescriptorSet _csm_descset{};
     std::vector<material_t> _materials{};
 

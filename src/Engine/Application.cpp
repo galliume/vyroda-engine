@@ -40,8 +40,8 @@ namespace Vyroda
       appConfig["height"].get<std::uint16_t>(),
       editor_mode);
 
-    _render_manager = std::make_unique<RenderManager>(std::move(window));
-    _render_manager->init();
+    _render_manager = std::make_unique<RenderManager>();
+    _render_manager->init(std::move(window));
 
     _api_manager = std::make_unique<APIManager>();
     _network_manager = std::make_unique<NetworkManager>(_api_manager.get());

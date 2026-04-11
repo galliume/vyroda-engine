@@ -420,7 +420,7 @@ namespace Vyroda
         //if (mat->Get(AI_MATKEY_ILLUM, illumModel) == aiReturn_SUCCESS) {
         //  material.illum = material.illum;
         //}
-        int isDoubleSided = 0;
+        int isDoubleSided { 0 };
         if (mat->Get(AI_MATKEY_TWOSIDED, isDoubleSided) == aiReturn_SUCCESS) {
           material.double_sided = (isDoubleSided == 1) ? true : false;
         }
@@ -441,7 +441,7 @@ namespace Vyroda
 
     for (std::uint32_t i{ 0 }; i < scene->mNumAnimations; i++) {
 
-      aiAnimation const* animation = scene->mAnimations[i];
+      aiAnimation const* animation { scene->mAnimations[i] };
 
       auto const ticks_per_s = (animation->mTicksPerSecond > 0) ? animation->mTicksPerSecond : 25.0;
       animations.emplace_back(i, animation->mName.C_Str(), animation->mDuration, ticks_per_s);
@@ -585,7 +585,7 @@ namespace Vyroda
 
       for (std::uint32_t v{ 0 }; v < mesh->mNumVertices; v++) {
 
-        aiVector3D vertices = mesh->mVertices[v];
+        aiVector3D const& vertices { mesh->mVertices[v] };
 
         Vertex vertex{};
 

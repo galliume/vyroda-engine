@@ -144,7 +144,7 @@ namespace Vyroda
       renderer.getAPI().updateUniformBuffer(ubos, &ubos_data, renderer.getCurrentFrameIndex());
     }
 
-    if (*mesh.getDescSet() == nullptr) {
+    if (mesh.getDescSet() == VK_NULL_HANDLE) {
       createDescriptorSet(renderer, mesh, render_context);
     }
     mesh.setIsDirty(false);

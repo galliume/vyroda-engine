@@ -70,7 +70,7 @@ namespace Vyroda {
     }
 
     template<typename T>
-    T* has() const {
+    T* has() {
       if (auto ptr = std::get_if<std::unique_ptr<T>>(&_component)) {
         return ptr->get();
       }

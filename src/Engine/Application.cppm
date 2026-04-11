@@ -32,9 +32,6 @@ namespace Vyroda
   export class Application
   {
   public:
-    Application() = default;
-    ~Application() = default;
-
     /** 
      * init the application
      *

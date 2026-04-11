@@ -66,17 +66,31 @@ namespace Vyroda
     std::span<std::shared_ptr<Entity>> texts{};
   };
 
-  export class RenderManager : public std::enable_shared_from_this<RenderManager>
+  /**
+   * @struct BarrierCompletion
+   * @brief sync barrier used for multi threaded entities update
+  **/
+  struct BarrierCompletion
+  {
+    void operator()() noexcept {}
+  };
+
+  struct WorkerContext
+  {
+    std::span<IDType> chunk{};
+    double delta_time{};
+    glm::mat4 camera_view{}; 
+  };
+
+  struct BarrierData;
+
+  export class RenderManager
   {
   public:
-    /** 
-     * Create a RenderManager
-     *
-     * @param std::unique_ptr<Window> window 
-     * @todo was it not better with a simple * ?
-     */
-    RenderManager(std::unique_ptr<Window> window);
 
+    RenderManager();
+    ~RenderManager();
+    
     /** 
      * Clean up
      *
@@ -185,7 +199,7 @@ namespace Vyroda
      * Load the configuration, audio, input and load current level
      * @todo does too much ?
      */
-    void init();
+    void init(std::unique_ptr<Window> window);
 
     /** 
      * Get if the level is loaded
@@ -349,6 +363,14 @@ namespace Vyroda
 
     RendererContext _rendering_context;
 
-    std::vector<std::future<void>> _tasks{};
+    std::vector<IDType> _all_ids{};
+
+    //check std::execution: https://en.cppreference.com/w/cpp/experimental/execution.html
+    std::ptrdiff_t _thread_count { static_cast<std::ptrdiff_t>(std::thread::hardware_concurrency()) };
+    std::unique_ptr<BarrierData> _barrier_data;
+
+    std::vector<WorkerContext> _worker_contexts;
+    std::atomic<bool> _shutdown{false};
+    std::vector<std::jthread> _workers;
   };
 }

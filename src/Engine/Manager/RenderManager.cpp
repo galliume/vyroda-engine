@@ -45,10 +45,28 @@ import Engine.Utils.ScopedTimer;
 
 namespace Vyroda
 {
-  RenderManager::RenderManager(std::unique_ptr<Window> window)
+  struct BarrierData
+  {
+    std::ptrdiff_t thread_count{ static_cast<std::ptrdiff_t>(std::thread::hardware_concurrency()) };
+    std::barrier<BarrierCompletion> start{ thread_count + 1 };
+    std::barrier<BarrierCompletion> done{ thread_count + 1 };
+  };
+  
+  RenderManager::RenderManager()
+  : _barrier_data{ std::make_unique<BarrierData>() }
+  {
+  }
+  
+  RenderManager::~RenderManager()
+  {
+    _shutdown.store(true);
+    _barrier_data->start.arrive_and_wait();
+  }
+  
+  void RenderManager::init(std::unique_ptr<Window> window)
   {
     _window = std::move(window);
-
+ 
     InputManagerLocator::init(_window.get());
  
     _cameras.emplace_back(std::make_unique<Camera>());
@@ -96,25 +114,28 @@ namespace Vyroda
     //end @todo
 
     //_audio_manager->startAmbient(1);
-  }
-
-  void RenderManager::cleanUp()
-  {
-    // _destroy_manager->cleanShaders(_shader_manager->getShaders()->shaders);
-    // _destroy_manager->cleanTextures(_texture_manager->getTextures());
-    _audio_manager->clear();
-    _texture_manager->clear();
-    _entity_manager->clear();
-    _shader_manager->clear();
-    _renderer->clear();
-
-    //_component_manager->clear();
-  }
-
-  void RenderManager::init()
-  {
+    
     auto * const configManager = ConfigManagerLocator::get();
     auto const& appConfig { configManager->appConfig() };
+    
+    _worker_contexts.resize(static_cast<std::size_t>(_thread_count));
+    _workers.reserve(static_cast<std::size_t>(_thread_count));
+    
+    for (std::size_t t { 0 }; t < static_cast<std::size_t>(_thread_count); ++t) {
+      _workers.emplace_back([this, t]() {
+        while (!_shutdown.load(std::memory_order_relaxed)) {
+          _barrier_data->start.arrive_and_wait();
+          if (_shutdown.load(std::memory_order_relaxed)) return;
+          for (auto id : _worker_contexts[t].chunk) {
+              renderEntity(id,
+                _worker_contexts[t].delta_time,
+                _worker_contexts[t].camera_view);
+           }
+           _barrier_data->done.arrive_and_wait();
+         }
+      });
+    }
+
     _audio_manager->init();
     _audio_manager->load(configManager->soundConfig());
 
@@ -192,7 +213,7 @@ namespace Vyroda
       InputManagerLocator::get()->processGamepad(_player_manager.get(), frame_context.delta_time);
 
       _light_manager->computeCSM(frame_context.camera_view_matrix, frame_context.perspective);
-
+      
       updateRendererContext(frame_context.camera_view_matrix);
 
       //@todo improve this draft for simple shader hot reload
@@ -212,7 +233,7 @@ namespace Vyroda
 
       renderShadowmap(frame_context);
       renderEntities(frame_context);
-
+      
       _renderer->submit();
 
       updateBuffers();
@@ -222,7 +243,6 @@ namespace Vyroda
       _renderer->getAPI().collectGarbage();
     }
   }
-
   void RenderManager::updatePlayer()
   {
     if (_player_manager->hasMoved() && _current_camera == std::to_underlying(CameraType::THIRD_PERSON)) {
@@ -237,35 +257,8 @@ namespace Vyroda
 
   void RenderManager::updateEntities(FrameContext const& frame_context)
   {
-    _tasks.clear();
-
-    auto const optional_tasks {
-      (frame_context.skybox_entity ? 1u : 0u)
-      + (frame_context.terrain_entity ? 1u : 0u)
-      + (frame_context.water_entity ? 1u : 0u) };
-
-    _tasks.reserve(
-      optional_tasks
-      + static_cast<std::uint32_t>(frame_context.visible_ids.size())
-      + static_cast<std::uint32_t>(frame_context.transparent_ids.size())
-      + static_cast<std::uint32_t>(frame_context.texts.size()));
-
     auto const delta_time { frame_context.delta_time };
     auto const camera_view_matrix { frame_context.camera_view_matrix };
-
-    if (frame_context.skybox_entity != nullptr) {
-      auto const entity_id = frame_context.skybox_entity->getID();
-      _tasks.push_back(std::async(std::launch::async, [this, entity_id, delta_time, camera_view_matrix]() {
-        renderEntity(entity_id, delta_time, camera_view_matrix);
-      }));
-    }
-
-    if (frame_context.terrain_entity != nullptr) {
-      auto const entity_id { frame_context.terrain_entity->getID() };
-      _tasks.push_back(std::async(std::launch::async, [this, entity_id, delta_time, camera_view_matrix]() {
-        renderEntity(entity_id, delta_time, camera_view_matrix);
-      }));
-    }
 
     if (frame_context.water_entity != nullptr) {
       auto const entity_id { frame_context.water_entity->getID() };
@@ -279,32 +272,60 @@ namespace Vyroda
 
         mesh->setOptions(bitValue);
       }
-
-      _tasks.push_back(std::async(std::launch::async, [this, entity_id, delta_time, camera_view_matrix]() {
-        renderEntity(entity_id, delta_time, camera_view_matrix);
-      }));
     }
 
-    std::ranges::for_each(frame_context.visible_ids, [&](const auto& entity) {
-      _tasks.push_back(std::async(std::launch::async, [this, entity, delta_time, camera_view_matrix]() {
-        renderEntity(entity, delta_time, camera_view_matrix);
-      }));
-    });
+    _all_ids.clear();
+    _all_ids.reserve(
+      3
+      + frame_context.visible_ids.size()
+      + frame_context.transparent_ids.size()
+      + frame_context.texts.size());
 
-    std::ranges::for_each(frame_context.transparent_ids, [&](const auto& entity) {
-      _tasks.push_back(std::async(std::launch::async, [this, entity, delta_time, camera_view_matrix]() {
-        renderEntity(entity, delta_time, camera_view_matrix);
-      }));
-    });
+    if (frame_context.skybox_entity) {
+       _all_ids.push_back(frame_context.skybox_entity->getID());
+     }
+    
+    if (frame_context.terrain_entity) {
+       _all_ids.push_back(frame_context.terrain_entity->getID());
+     }
 
-    std::ranges::for_each(frame_context.texts, [&](auto const& entity) {
-      auto const entity_id { entity->getID() };
-      _tasks.push_back(std::async(std::launch::async, [this, entity_id, delta_time, camera_view_matrix]() {
-        renderEntity(entity_id, delta_time, camera_view_matrix);
-      }));
-    });
+    if (frame_context.water_entity) {
+      _all_ids.push_back(frame_context.water_entity->getID());
+    }
+    
+    for (auto id : frame_context.visible_ids) {
+      _all_ids.push_back(id);
+    }
+    for (auto id : frame_context.transparent_ids) {
+      _all_ids.push_back(id);
+    }
+    for (auto const& e : frame_context.texts) {
+      _all_ids.push_back(e->getID());
+    }
 
-    std::ranges::for_each(_tasks, &std::future<void>::wait);
+    if (_all_ids.empty()) {
+      return;
+    }
+
+    auto const count { _workers.size() };
+    auto const chunk_size { _all_ids.size() / count };
+    auto const remainder  { _all_ids.size() % count };
+
+    std::size_t offset { 0 };
+    for (std::size_t t { 0 }; t < count; ++t) {
+      auto const n { chunk_size + (t < remainder ? 1 : 0) };
+      std::vector<IDType> a {};
+ 
+      _worker_contexts[t] = {
+        .chunk = std::span{ _all_ids.data() + offset, n },
+        .delta_time = delta_time,
+        .camera_view = camera_view_matrix
+      };
+      offset += n;
+    }
+
+    _barrier_data->start.arrive_and_wait();
+    _barrier_data->done.arrive_and_wait();
   }
 
   void RenderManager::renderShadowmap(FrameContext const& frame_context)
@@ -388,11 +409,11 @@ namespace Vyroda
   void RenderManager::renderEntity(
     IDType const entity_id,
     double const delta_time,
-    glm::mat4 const& camera_view_matrix)
+    glm::mat4 const&)
   {
     auto* mesh_component { _component_manager->get<MeshComponent>(entity_id) };
     auto mesh { mesh_component->template has<Mesh>() };
-    auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
+    //    auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
 
     if (mesh->isRoot()) {
       AnimationInfo animation_info {
@@ -437,12 +458,6 @@ namespace Vyroda
         }
       }
     }
-
-    if (mesh && rdr_impl) {
-      if (mesh->isDirty()) {
-        (*rdr_impl)(*_renderer.get(), *mesh, getRendererContext(camera_view_matrix));
-      }
-    }
   }
 
   void RenderManager::drawEntity(
@@ -455,6 +470,10 @@ namespace Vyroda
     auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
 
     if (mesh && rdr_impl) {
+      if (mesh->isDirty()) {
+        (*rdr_impl)(*_renderer.get(), *mesh, getRendererContext(camera_view_matrix));
+        mesh->setIsDirty(false);
+      }
       RendererContext renderer_info { getRendererContext(camera_view_matrix) };
       renderer_info.stage_flag_bits = rdr_impl->getShaderStageFlags();
       renderer_info.has_alpha_blend = has_alpha_blend;
@@ -528,6 +547,7 @@ namespace Vyroda
     count_down.wait();
 
     std::jthread entities(_entity_manager->load(*_renderer, lvl_data));
+
     setIsLoaded();
   }
 
@@ -727,5 +747,18 @@ namespace Vyroda
       .water_entity = _entity_manager->getWater(),
       .texts = _entity_manager->getTexts()
     };
+  }
+
+ void RenderManager::cleanUp()
+ {
+    // _destroy_manager->cleanShaders(_shader_manager->getShaders()->shaders);
+    // _destroy_manager->cleanTextures(_texture_manager->getTextures());
+    _audio_manager->clear();
+    _texture_manager->clear();
+    _entity_manager->clear();
+    _shader_manager->clear();
+    _renderer->clear();
+
+    //_component_manager->clear();
   }
 }

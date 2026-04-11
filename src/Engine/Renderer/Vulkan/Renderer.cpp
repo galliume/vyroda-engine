@@ -244,7 +244,8 @@ namespace Vyroda
 
     vkWaitForFences(_vulkan->getDevice(), 1, &_fences_in_flight[_current_frame], VK_TRUE, max);
 
-    VkResult result = vkAcquireNextImageKHR(_vulkan->getDevice(), _swapchain, max, _image_available[_current_frame], VK_NULL_HANDLE, &_image_index);
+    VkResult result { vkAcquireNextImageKHR(_vulkan->getDevice(), _swapchain, max, _image_available[_current_frame], VK_NULL_HANDLE, &_image_index) };
+
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
       return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
@@ -370,6 +371,10 @@ namespace Vyroda
     auto const& camera { renderer_context.camera };
     auto & pipeline { getPipeline(mesh.getShaderName()) };
 
+    if (mesh.getDescSet() == VK_NULL_HANDLE || mesh.getShaderName().empty()) {
+      Logger::warn("bad desc set or shader name for mesh: {}", mesh.getName());
+      return;
+    }
     constants push_constants {
       .view = renderer_context.camera_view,
       .view_position = glm::vec4(camera->getPos(), 1.0f),
@@ -557,6 +562,11 @@ namespace Vyroda
     RendererContext const& renderer_context,
     SHADOW_TYPE const shadow_type)
   {
+    if (!mesh.getDescSet()) {
+      Logger::warn("bad desc set or shader name for mesh: {}", mesh.getName());
+      return;
+    }
+
     VkCommandBuffer cmd_buffer;
     std::string pipeline_name {"shadow_map"};
     std::uint32_t instance_count {6};
@@ -569,7 +579,7 @@ namespace Vyroda
       cmd_buffer = _cmd_buffer_entities3[_current_frame];
     }
     auto & pipeline { getPipeline(pipeline_name) };
-
+    
     constants const push_constants {
       .view = renderer_context.camera_view,
       .view_position = glm::vec4(renderer_context.camera->getPos(), 1.0f),
@@ -586,19 +596,23 @@ namespace Vyroda
       sizeof(constants),
       &push_constants);
 
+    auto desc_set { mesh.getShadowMapDescSet() };
+    
     if (shadow_type == SHADOW_TYPE::CSM) {
-      vkCmdBindDescriptorSets(
-        cmd_buffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        pipeline.pipeline_layout,
-        0, 1, mesh.getCSMDescSet(), 0, nullptr);
-    } else {
-      vkCmdBindDescriptorSets(
-        cmd_buffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        pipeline.pipeline_layout,
-        0, 1, mesh.getShadowMapDescSet(), 0, nullptr);
+      desc_set = mesh.getCSMDescSet();
     }
+
+    if (desc_set == VK_NULL_HANDLE) {
+      Logger::warn("shadow desc set empty: {}", mesh.getName());
+      return;
+    }
+    
+    vkCmdBindDescriptorSets(
+     cmd_buffer,
+     VK_PIPELINE_BIND_POINT_GRAPHICS,
+     pipeline.pipeline_layout,
+     0, 1, &desc_set, 0, nullptr);
+
     _vulkan->bindPipeline(cmd_buffer, pipeline.pipeline);
 
     _vulkan->draw(
@@ -746,7 +760,7 @@ namespace Vyroda
         | std::ranges::to<std::vector>() };
 
     if (cmds_buffer.empty()) {
-      vkResetFences(_vulkan->getDevice(), 1, &_fences_in_flight[_image_index]);
+      vkResetFences(_vulkan->getDevice(), 1, &_fences_in_flight[_current_frame]);
       _current_frame = (_current_frame + 1) % _max_frames_in_flight;
       return;
     }

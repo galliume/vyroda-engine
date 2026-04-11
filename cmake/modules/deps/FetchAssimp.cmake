@@ -69,7 +69,7 @@ FetchContent_Declare(
   fetch_assimp
   GIT_REPOSITORY https://github.com/assimp/assimp
   GIT_TAG ${ASSIMP_TAG}
-  PATCH_COMMAND ${assimp_patch}
+  #PATCH_COMMAND ${assimp_patch}
   GIT_SHALLOW ${FETCH_GIT_SHALLOW}
   GIT_PROGRESS ${FETCH_GIT_PROGRESS}
   UPDATE_DISCONNECTED ${FETCH_UPDATE_DISCONNECTED}
