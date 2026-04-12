@@ -66,6 +66,7 @@ layout(std430, binding = 3) readonly buffer LightBuffer {
 
 layout(location = 0) out vec2 out_texture_coord;
 layout(location = 1) out vec4 out_options;
+layout(location = 2) out mat4 out_inverse_camera;
 
 void main()
 {
@@ -73,6 +74,7 @@ void main()
 
   out_texture_coord = texture_coord;
   out_options = color;
-
+  out_inverse_camera = inverse(pc.view);
+  
   gl_Position = p;
 }

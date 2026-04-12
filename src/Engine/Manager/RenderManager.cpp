@@ -229,7 +229,7 @@ namespace Vyroda
       }
 
       updateEntities(frame_context);
-      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
+      //_renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
 
       renderShadowmap(frame_context);
       renderEntities(frame_context);
@@ -314,8 +314,6 @@ namespace Vyroda
     std::size_t offset { 0 };
     for (std::size_t t { 0 }; t < count; ++t) {
       auto const n { chunk_size + (t < remainder ? 1 : 0) };
-      std::vector<IDType> a {};
- 
       _worker_contexts[t] = {
         .chunk = std::span{ _all_ids.data() + offset, n },
         .delta_time = delta_time,

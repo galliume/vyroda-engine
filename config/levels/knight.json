@@ -23,23 +23,23 @@
     }
   },
   "hasFog": false,
-  "player": "",
+  "player" : "",
   "entities": {
-    "knight": {
+    "Knight_USD_002": {
       "mesh": "assets/mesh/pkg_e_knight_anim/Exports/FBX/Knight_USD_002.fbx",
       "shader": "main_basic",
       "positions": [
         {
           "x": 0.0,
-          "y": 1.0,
+          "y": 20.0,
           "z": 0.0
         }
       ],
       "scales": [
         {
-          "x": 0.5,
-          "y": 0.5,
-          "z": 0.5
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
         }
       ],
       "rotations": [
@@ -59,7 +59,7 @@
       "hasShadow": true,
       "isIndexed": true,
       "debugNormal": true,
-      "defaultAnim": 1
+      "defaultAnim": 0
     }
   }
 }

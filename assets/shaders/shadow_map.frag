@@ -52,9 +52,12 @@ layout(location = 2) in vec4 position;
 
 void main()
 {
-  Light light = lightData.lights[1];
+  // Light light = lightData.lights[1];
 
-  float light_distance = length(position.xyz - light.position.xyz);
-  light_distance = light_distance / 500.f;
-  gl_FragDepth = light_distance;
+  // float light_distance = length(position.xyz - light.position.xyz);
+  // light_distance = light_distance / 500.f;
+  vec3 diff = position.xyz - lightData.lights[1].position.xyz;
+  gl_FragDepth = dot(diff, diff) / (500.f * 500.f);
+ 
+// gl_FragDepth = light_distance;
 }

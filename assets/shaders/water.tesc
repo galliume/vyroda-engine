@@ -21,14 +21,20 @@ layout(push_constant) uniform constants
 } pc;
 
 layout(location = 0) in vec2 in_texture_coord[];
+layout(location = 1) in vec4 in_options[];
+layout(location = 2) in mat4 in_inverse_camera[];
 
-layout(location = 0) out vec2 out_texture_coord[];
+layout(location = 0) patch out vec2 out_texture_coord;
+layout(location = 1) patch out vec4 out_options;
+layout(location = 2) patch out mat4 out_inverse_camera;
 
 void main()
 {
   gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
-  out_texture_coord[gl_InvocationID] = in_texture_coord[gl_InvocationID];
-
+  out_texture_coord = in_texture_coord[gl_InvocationID];
+  out_options = in_options[gl_InvocationID];
+  out_inverse_camera = in_inverse_camera[gl_InvocationID];
+  
   if(gl_InvocationID == 0)
   {
     const int MIN_TESS_LEVEL = 4;

@@ -280,19 +280,19 @@ float CalculateInfiniteShadow(vec3 cascade_coord0, vec3 cascade_blend)
   float light1 = texture(csm, vec4(p1.xy, p1.z, depth1));
   p1.xy = shadow_coord1 + shadow_offset[0].zw;
   light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
-  p1.xy = shadow_coord1 + shadow_offset[1].xy;
-  light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
-  p1.xy = shadow_coord1 + shadow_offset[1].zw;
-  light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
+  //p1.xy = shadow_coord1 + shadow_offset[1].xy;
+  // light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
+  // p1.xy = shadow_coord1 + shadow_offset[1].zw;
+  //light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
 
   p2.xy = shadow_coord2 + shadow_offset[0].xy;
   float light2 = texture(csm, vec4(p2.xy, p2.z, depth2));
   p2.xy = shadow_coord2 + shadow_offset[0].zw;
   light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
-  p2.xy = shadow_coord2 + shadow_offset[1].xy;
-  light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
-  p2.xy = shadow_coord2 + shadow_offset[1].zw;
-  light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
+  //p2.xy = shadow_coord2 + shadow_offset[1].xy;
+  //light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
+  //p2.xy = shadow_coord2 + shadow_offset[1].zw;
+  //light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
 
   return (mix(light1, light2, weight) * 0.25);
 }

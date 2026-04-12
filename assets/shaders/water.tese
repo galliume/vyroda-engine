@@ -63,6 +63,7 @@ layout(std430, binding = 3) readonly buffer LightBuffer {
 
 layout(location = 0) in vec2 in_texture_coord[];
 layout(location = 1) in vec4 in_options[];
+layout(location = 2) in mat4 in_inverse_camera[];
 
 layout(location = 0) out vec2 out_texture_coord;
 layout(location = 1) out vec3 out_position;
@@ -77,7 +78,7 @@ layout(location = 12) out vec3 out_blend;
 
 void main()
 {
-  Light sun_light = lightData.lights[0];
+  //Light sun_light = lightData.lights[0];
   
   float u = gl_TessCoord.x;
   float v = gl_TessCoord.y;
@@ -135,7 +136,7 @@ void main()
   vec2 main_dir = vec2(0.0, 1.0); 
   float spread = 0.5;
 
-  const int waves_count = 32;
+  const int waves_count = 8;
   for (int i = 0; i < waves_count; i++) {
     //speed
     //S *= A/A_pic;
@@ -153,13 +154,18 @@ void main()
     float phase = seed * (2.0 * PI);
 
     //Wi(x, y, t) = Ai * sin(Di dot (x, y) * wi + t * phii);
-    float X = (dot(D, p.xz)) * w + t * phi + phase;
-    float W = A * sin(X);
+    // float X = (dot(D, p.xz)) * w + t * phi + phase;
+    // float W = A * sin(X);
 
     float WA = w * A;
-    float S = sin(w * dot(D, p.xz) + t * phi);
-    float C = cos(w * dot(D, p.xz) + t * phi);
-
+    // float S = sin(w * dot(D, p.xz) + t * phi);
+    // float C = cos(w * dot(D, p.xz) + t * phi);
+    float base = w * dot(D, p.xz) + t * phi;
+    float X = base + phase;
+    float W = A * sin(X);
+    float S = sin(base);
+    float C = cos(base);
+    
     //bitangent
     bi.x += steepness * (D.x * D.x) * WA * S;
     bi.z += steepness * (D.x * D.y) * WA * S;
@@ -207,19 +213,23 @@ void main()
   vec4 view_pos = pc.view * world_pos;
   out_depth = -view_pos.z;
 
-  out_cascade_coord = sun_light.cascade0 * world_pos;
+  out_cascade_coord = lightData.lights[0].cascade0 * world_pos;
 
-  mat4 camera_inverse = inverse(pc.view);
-  vec3 nI = -camera_inverse[2].xyz;
-  vec3 c = camera_inverse[3].xyz;
+  //mat4 camera_inverse = inverse(pc.view);
+  vec3 nI = -in_inverse_camera[0][2].xyz;
+  vec3 c = in_inverse_camera[0][3].xyz;
 
-  float inv_z_dist0 = 1.0 / (sun_light.cascade_max_splits.x - sun_light.cascade_min_splits.y);
-  float inv_z_dist1 = 1.0 / (sun_light.cascade_max_splits.y - sun_light.cascade_min_splits.z);
-  float inv_z_dist2 = 1.0 / (sun_light.cascade_max_splits.z - sun_light.cascade_min_splits.w);
 
-  vec4 d1 = (inv_z_dist0 * (vec4(nI, (-dot(nI, c) - sun_light.cascade_min_splits.y))));
-  vec4 d2 = (inv_z_dist1 * (vec4(nI, (-dot(nI, c) - sun_light.cascade_min_splits.z))));
-  vec4 d3 = (inv_z_dist2 * (vec4(nI, (-dot(nI, c) - sun_light.cascade_min_splits.w))));
+  vec4 max_splits = lightData.lights[0].cascade_max_splits;
+  vec4 min_splits = lightData.lights[0].cascade_min_splits;
+  
+  float inv_z_dist0 = 1.0 / (max_splits.x - min_splits.y);
+  float inv_z_dist1 = 1.0 / (max_splits.y - min_splits.z);
+  float inv_z_dist2 = 1.0 / (max_splits.z - min_splits.w);
+
+  vec4 d1 = (inv_z_dist0 * (vec4(nI, (-dot(nI, c) - min_splits.y))));
+  vec4 d2 = (inv_z_dist1 * (vec4(nI, (-dot(nI, c) - min_splits.z))));
+  vec4 d3 = (inv_z_dist2 * (vec4(nI, (-dot(nI, c) - min_splits.w))));
 
   out_blend = vec3(dot(d1, world_pos),  dot(d2, world_pos), dot(d3, world_pos));
 

@@ -83,14 +83,13 @@ void main()
   out_color = color;
   out_position = ubo.model * position;
   
-  Light light = lightData.lights[1];
   mat4 light_matrices[6] = mat4[6](
-    light.light_space_matrix_right,  // face 0
-    light.light_space_matrix_left,   // face 1
-    light.light_space_matrix_top,    // face 2
-    light.light_space_matrix_bottom, // face 3
-    light.light_space_matrix,        // face 4 (front)
-    light.light_space_matrix_back    // face 5
+    lightData.lights[1].light_space_matrix_right,  // face 0
+    lightData.lights[1].light_space_matrix_left,   // face 1
+    lightData.lights[1].light_space_matrix_top,    // face 2
+    lightData.lights[1].light_space_matrix_bottom, // face 3
+    lightData.lights[1].light_space_matrix,        // face 4 (front)
+    lightData.lights[1].light_space_matrix_back    // face 5
   );
 
   //vec4 p = ubo.projection * pc.view * position;

@@ -2,7 +2,8 @@
 
 SECONDS=0
 ROOT_DIR="$(dirname "$0")"
-GLSLC_BIN="glslc"
+GLSLC_BIN="glslangValidator"
+#"glslc"
 VERBOSE=true
 
 _print()
@@ -52,7 +53,7 @@ compile()
     if  md5sum --status -c ./assets/shaders/${shader}.${type}.checksum; then
         print_text "Shader [${shader}.${type}] already up to date"
     else
-        ${GLSLC_BIN} -O ./assets/shaders/${shader}.${type} -o ./assets/shaders/spv/${shader}_${type}.spv
+        ${GLSLC_BIN} -V ./assets/shaders/${shader}.${type} -o ./assets/shaders/spv/${shader}_${type}.spv -gVS
         retval=$?
         
         if [ "$retval" != 0 ]
