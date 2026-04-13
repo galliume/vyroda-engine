@@ -20,12 +20,18 @@ import Engine.Managers.DbManager;
 import Engine.Managers.FontManager;
 import Engine.Managers.UIManager;
 
+import Engine.Managers.ConfigManagerLocator;
+import Engine.Managers.InputManagerLocator;
+import Engine.Managers.ParallelManagerLocator;
+
 namespace Vyroda
 {
   void Application::init(bool const editor_mode)
   {
     _start_run = std::chrono::steady_clock::now();
 
+    ParallelManagerLocator::init();
+    
     //CommandQueueManagerLocator::init();
     //@todo ugly fix
     auto const root_path { std::filesystem::absolute(__FILE__).parent_path().parent_path().parent_path().string() };

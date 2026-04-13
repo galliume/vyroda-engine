@@ -1,6 +1,6 @@
 function(set_vyroda_links target)
 
-  if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  if(WIN32)
     list(APPEND EXTRA_LIBS
       Ws2_32 user32 gdi32 winspool shell32 ole32 oleaut32 uuid comdlg32 advapi32)
   endif()

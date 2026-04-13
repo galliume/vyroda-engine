@@ -1,6 +1,6 @@
 message(NOTICE "Fetching FMT from https://github.com/fmtlib/fmt ...")
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+if(WIN32)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDebugDLL" CACHE STRING "" FORCE)
   endif()

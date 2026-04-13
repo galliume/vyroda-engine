@@ -17,6 +17,8 @@ target_sources(EngineManagers
         InputManagerLocator.cppm
         LightManager.cppm
         NetworkManager.cppm
+        ParallelManager.cppm
+        ParallelManagerLocator.cppm
         PlayerManager.cppm
         RenderManager.cppm
         ShaderManager.cppm
@@ -38,6 +40,8 @@ target_sources(EngineManagers
     InputManagerLocator.cpp
     LightManager.cpp
     NetworkManager.cpp
+    ParallelManager.cpp
+    ParallelManagerLocator.cpp
     PlayerManager.cpp
     RenderManager.cpp
     ShaderManager.cpp

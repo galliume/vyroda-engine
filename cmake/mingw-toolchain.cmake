@@ -1,9 +1,11 @@
 set(CMAKE_SYSTEM_NAME Windows)
 
 if(NOT DEFINED CMAKE_SYSROOT)
-  set(CMAKE_SYSROOT "G:/llvm-mingw")
+  set(CMAKE_SYSROOT "C:/msys64/clang64/")
   message(STATUS "CMAKE_SYSROOT not defined, defaulting to ${CMAKE_SYSROOT}")
 endif()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_C_COMPILER   "${CMAKE_SYSROOT}/bin/clang.exe")
 set(CMAKE_CXX_COMPILER "${CMAKE_SYSROOT}/bin/clang++.exe")

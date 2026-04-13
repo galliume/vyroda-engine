@@ -9,7 +9,7 @@ function(set_vyroda_definitions target)
       GLM_FORCE_DEPTH_ZERO_TO_ONE
       GLM_ENABLE_EXPERIMENTAL)
 
-  if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  if(WIN32)
     target_compile_definitions(${target} PRIVATE
         VOLK_STATIC_DEFINES
         _CRT_SECURE_NO_WARNINGS

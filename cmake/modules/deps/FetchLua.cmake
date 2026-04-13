@@ -48,6 +48,7 @@ add_library(
   ${fetch_lua_SOURCE_DIR}/lzio.c
   ${fetch_lua_SOURCE_DIR}/lauxlib.h
   ${fetch_lua_SOURCE_DIR}/lua.h
+  ${fetch_lua_SOURCE_DIR}/lua.c
   ${fetch_lua_SOURCE_DIR}/luaconf.h
   ${fetch_lua_SOURCE_DIR}/lualib.h
 )

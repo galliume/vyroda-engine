@@ -49,7 +49,7 @@ To build and run the Vyroda Engine, you need recent and specific tooling:
 ### Platform-Specific Setup
 
 #### 💻 Windows
-* **Toolchain:** Use **`llvm-mingw`** from [mstorsjo/llvm-mingw](https://github.com/mstorsjo/llvm-mingw/releases).
+* **Toolchain:** Use **`msys2`** from [msys2](https://www.msys2.org/).
     * Add the `bin` folder to your `$PATH`.
     * Set the `CMAKE_SYSROOT` variable (or update `mingw-toolchain.cmake` directly).
 * **Editor:** The engine editor relies on **Tcl/Tk 9.0**.

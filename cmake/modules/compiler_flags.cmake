@@ -26,8 +26,7 @@ function(set_vyroda_compiler_flags target)
     -fno-limit-debug-info
     #-ffast-math
     -march=native
-    -fvisibility=hidden
-    -fno-omit-frame-pointer)
+    -fvisibility=hidden)
 
   target_compile_options(${target} PRIVATE
     $<$<CONFIG:DEBUG>:${DEBUG_OPTIONS}>

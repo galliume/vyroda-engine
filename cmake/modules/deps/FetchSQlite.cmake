@@ -3,7 +3,7 @@ message(NOTICE "Fetching SQLite from https://www.sqlite.org/2025/sqlite-amalgama
 
 FetchContent_Declare(
   fetch_sqlite
-  URL https://www.sqlite.org/2025/sqlite-amalgamation-${SQLITE_TAG}.zip
+  URL https://www.sqlite.org/2026/sqlite-amalgamation-${SQLITE_TAG}.zip
   TLS_VERIFY OFF
   SYSTEM) #@todo fix this
 FetchContent_MakeAvailable(fetch_sqlite)

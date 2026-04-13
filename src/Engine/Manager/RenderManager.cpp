@@ -30,6 +30,7 @@ import Engine.GUI.Window;
 import Engine.Managers.ComponentManager;
 import Engine.Managers.ConfigManagerLocator;
 import Engine.Managers.InputManagerLocator;
+import Engine.Managers.ParallelManagerLocator;
 
 import Engine.Renderer;
 import Engine.Renderer.RendererComponent;
@@ -44,25 +45,7 @@ import Engine.Renderer.Vulkan.Water;
 import Engine.Utils.ScopedTimer;
 
 namespace Vyroda
-{
-  struct BarrierData
-  {
-    std::ptrdiff_t thread_count{ static_cast<std::ptrdiff_t>(std::thread::hardware_concurrency()) };
-    std::barrier<BarrierCompletion> start{ thread_count + 1 };
-    std::barrier<BarrierCompletion> done{ thread_count + 1 };
-  };
-  
-  RenderManager::RenderManager()
-  : _barrier_data{ std::make_unique<BarrierData>() }
-  {
-  }
-  
-  RenderManager::~RenderManager()
-  {
-    _shutdown.store(true);
-    _barrier_data->start.arrive_and_wait();
-  }
-  
+{   
   void RenderManager::init(std::unique_ptr<Window> window)
   {
     _window = std::move(window);
@@ -117,24 +100,6 @@ namespace Vyroda
     
     auto * const configManager = ConfigManagerLocator::get();
     auto const& appConfig { configManager->appConfig() };
-    
-    _worker_contexts.resize(static_cast<std::size_t>(_thread_count));
-    _workers.reserve(static_cast<std::size_t>(_thread_count));
-    
-    for (std::size_t t { 0 }; t < static_cast<std::size_t>(_thread_count); ++t) {
-      _workers.emplace_back([this, t]() {
-        while (!_shutdown.load(std::memory_order_relaxed)) {
-          _barrier_data->start.arrive_and_wait();
-          if (_shutdown.load(std::memory_order_relaxed)) return;
-          for (auto id : _worker_contexts[t].chunk) {
-              renderEntity(id,
-                _worker_contexts[t].delta_time,
-                _worker_contexts[t].camera_view);
-           }
-           _barrier_data->done.arrive_and_wait();
-         }
-      });
-    }
 
     _audio_manager->init();
     _audio_manager->load(configManager->soundConfig());
@@ -307,23 +272,24 @@ namespace Vyroda
       return;
     }
 
-    auto const count { _workers.size() };
+    auto const count { ParallelManagerLocator::get()->size() };
     auto const chunk_size { _all_ids.size() / count };
     auto const remainder  { _all_ids.size() % count };
 
     std::size_t offset { 0 };
     for (std::size_t t { 0 }; t < count; ++t) {
       auto const n { chunk_size + (t < remainder ? 1 : 0) };
-      _worker_contexts[t] = {
-        .chunk = std::span{ _all_ids.data() + offset, n },
-        .delta_time = delta_time,
-        .camera_view = camera_view_matrix
-      };
+      auto const ids { std::span{ _all_ids.data() + offset, n } };
+
+      std::function<void()> task = [&ids, delta_time, camera_view_matrix, this](){
+        for (auto const id: ids) {
+          renderEntity(id, delta_time, camera_view_matrix);
+      }};
+      std::array<std::function<void()>, 1> tasks { std::move(task) };
+      ParallelManagerLocator::get()->execute(tasks);
+
       offset += n;
     }
-
-    _barrier_data->start.arrive_and_wait();
-    _barrier_data->done.arrive_and_wait();
   }
 
   void RenderManager::renderShadowmap(FrameContext const& frame_context)
