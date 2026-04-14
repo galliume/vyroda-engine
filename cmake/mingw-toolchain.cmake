@@ -1,15 +1,13 @@
-set(CMAKE_SYSTEM_NAME Windows)
-
 if(NOT DEFINED CMAKE_SYSROOT)
-  set(CMAKE_SYSROOT "C:/msys64/clang64/")
+  set(CMAKE_SYSROOT "C:/msys64/ucrt64")
   message(STATUS "CMAKE_SYSROOT not defined, defaulting to ${CMAKE_SYSROOT}")
 endif()
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_PREFIX_PATH ${CMAKE_SYSROOT})
 
 set(CMAKE_C_COMPILER   "${CMAKE_SYSROOT}/bin/clang.exe")
 set(CMAKE_CXX_COMPILER "${CMAKE_SYSROOT}/bin/clang++.exe")
-set(CMAKE_RC_COMPILER  "${CMAKE_SYSROOT}/bin/windres.exe")
+set(CMAKE_RC_COMPILER  "${CMAKE_SYSROOT}/bin/llvm-windres.exe")
 
 set(CMAKE_FIND_ROOT_PATH "${CMAKE_SYSROOT}")
 

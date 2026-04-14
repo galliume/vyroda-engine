@@ -2,7 +2,7 @@
  * @file   ParallelManager.cpp
  * @author  <Guillaume PERCEPIED>
  * @date   Mon Apr  13 19:23:49 2026
- * 
+ *
  */
 module Engine.Managers.ParallelManager;
 
@@ -13,21 +13,21 @@ namespace Vyroda
   struct BarrierData
   {
     std::ptrdiff_t thread_count{ static_cast<std::ptrdiff_t>(std::thread::hardware_concurrency()) };
-    std::barrier<BarrierCompletion> start{ thread_count + 1 };
-    std::barrier<BarrierCompletion> done{ thread_count + 1 };
+    std::barrier<> start{ thread_count + 1 };
+    std::barrier<> done{ thread_count + 1 };
   };
-  
+
   ParallelManager::ParallelManager()
   : _barrier_data{ std::make_unique<BarrierData>() }
   {
     _worker_contexts.resize(static_cast<std::size_t>(_thread_count));
     _workers.reserve(static_cast<std::size_t>(_thread_count));
-    
+
     for (std::size_t t { 0 }; t < static_cast<std::size_t>(_thread_count); ++t) {
-      _workers.emplace_back([this, t]() {
-        while (!_shutdown.load(std::memory_order_relaxed)) {
+      _workers.emplace_back([this, t](std::stop_token stoken) {
+        while (!stoken.stop_requested()) {
           _barrier_data->start.arrive_and_wait();
-          if (_shutdown.load(std::memory_order_relaxed)) return;
+          if (stoken.stop_requested()) break;
           if (_worker_contexts[t].task) {
             _worker_contexts[t].task();
           }
@@ -36,10 +36,12 @@ namespace Vyroda
       });
     }
   }
-  
+
   ParallelManager::~ParallelManager()
   {
-    _shutdown.store(true);
+    for(auto& worker : _workers) {
+        worker.request_stop();
+    }
     _barrier_data->start.arrive_and_wait();
   }
 
@@ -51,5 +53,9 @@ namespace Vyroda
 
     _barrier_data->start.arrive_and_wait();
     _barrier_data->done.arrive_and_wait();
+
+    for (std::size_t i {0}; i < tasks.size(); i++) {
+      _worker_contexts[i].task = nullptr;
+    }
   }
 }

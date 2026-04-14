@@ -276,20 +276,21 @@ namespace Vyroda
     auto const chunk_size { _all_ids.size() / count };
     auto const remainder  { _all_ids.size() % count };
 
+    std::vector<std::function<void()>> tasks;
+    tasks.reserve(count);
+
     std::size_t offset { 0 };
     for (std::size_t t { 0 }; t < count; ++t) {
       auto const n { chunk_size + (t < remainder ? 1 : 0) };
       auto const ids { std::span{ _all_ids.data() + offset, n } };
-
-      std::function<void()> task = [&ids, delta_time, camera_view_matrix, this](){
-        for (auto const id: ids) {
+      tasks.emplace_back([ids, delta_time, camera_view_matrix, this]() {
+        for (auto const id : ids) {
           renderEntity(id, delta_time, camera_view_matrix);
-      }};
-      std::array<std::function<void()>, 1> tasks { std::move(task) };
-      ParallelManagerLocator::get()->execute(tasks);
-
+        }
+      });
       offset += n;
     }
+    ParallelManagerLocator::get()->execute(tasks);
   }
 
   void RenderManager::renderShadowmap(FrameContext const& frame_context)

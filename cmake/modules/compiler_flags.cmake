@@ -14,7 +14,6 @@ function(set_vyroda_compiler_flags target)
   set(RELEASE_OPTIONS
     -O3
     -Werror
-    #-ffast-math
     -march=native
     -fvisibility=hidden
     -DNDEBUG)
@@ -24,7 +23,6 @@ function(set_vyroda_compiler_flags target)
     -O3
     -Werror
     -fno-limit-debug-info
-    #-ffast-math
     -march=native
     -fvisibility=hidden)
 

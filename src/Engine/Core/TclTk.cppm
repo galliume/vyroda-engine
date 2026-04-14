@@ -54,7 +54,7 @@ export
   using ::Tcl_Init;
   using ::Tk_Init;
   using ::Tcl_CreateObjCommand;
-  using ::Tcl_GetString;
+  //using ::Tcl_GetString;
   using ::Tcl_NewStringObj;
   using ::Tcl_SetObjResult;
   using ::Tcl_EvalEx;

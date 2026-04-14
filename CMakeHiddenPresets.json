@@ -13,12 +13,7 @@
       "inherits": [
         "common",
         "GENERATOR_NINJA",
-        "CCACHE_ON",
-        "TCL_TCLSH",
-        "TCL_LIBRARY",
-        "TCL_INCLUDE_PATH",
-        "TK_LIBRARY",
-        "TK_INCLUDE_PATH"
+        "CCACHE_ON"
       ],
       "condition": {
         "type": "equals",
@@ -82,56 +77,6 @@
         "CMAKE_MSVC_RUNTIME_LIBRARY": {
           "type": "STRING",
           "value": ""
-        }
-      }
-    },
-    {
-      "name": "TCL_TCLSH",
-      "hidden": true,
-      "cacheVariables": {
-        "TCL_TCLSH": {
-          "type": "PATH",
-          "value": "G:\\tcltk\\Tcl\\bin\\tclsh90.exe"
-        }
-      }
-    },
-    {
-      "name": "TCL_LIBRARY",
-      "hidden": true,
-      "cacheVariables": {
-        "TCL_LIBRARY": {
-          "type": "PATH",
-          "value": "G:\\tcltk\\Tcl\\lib\\tcl90.lib"
-        }
-      }
-    },
-    {
-      "name": "TCL_INCLUDE_PATH",
-      "hidden": true,
-      "cacheVariables": {
-        "TCL_INCLUDE_PATH": {
-          "type": "PATH",
-          "value": "G:\\tcltk\\Tcl\\include"
-        }
-      }
-    },
-    {
-      "name": "TK_LIBRARY",
-      "hidden": true,
-      "cacheVariables": {
-        "TK_LIBRARY": {
-          "type": "PATH",
-          "value": "G:\\tcltk\\Tcl\\lib\\tcl9tk90.lib"
-        }
-      }
-    },
-    {
-      "name": "TK_INCLUDE_PATH",
-      "hidden": true,
-      "cacheVariables": {
-        "TK_INCLUDE_PATH": {
-          "type": "PATH",
-          "value": "G:\\tcltk\\Tcl\\include"
         }
       }
     },
