@@ -61,9 +61,7 @@ layout(location = 4) in vec2 texture_coord;
 // layout(location = 3) in vec4 tangent;
 // layout(location = 4) in vec4 color;
 
-layout(location = 0) out vec4 out_tangent;
-layout(location = 1) out vec4 out_color;
-layout(location = 2) out vec4 out_position;
+layout(location = 0) out float out_length;
 
 layout(push_constant) uniform constants
 {
@@ -79,9 +77,8 @@ void main()
 
   gl_Layer = face;
 
-  out_tangent = tangent;
-  out_color = color;
-  out_position = ubo.model * position;
+  vec4 position = ubo.model * position;
+  out_length = length(position - lightData.lights[1].position) / 500.f;
   
   mat4 light_matrices[6] = mat4[6](
     lightData.lights[1].light_space_matrix_right,  // face 0
@@ -95,6 +92,6 @@ void main()
   //vec4 p = ubo.projection * pc.view * position;
   //gl_Position = p.xyww;
   //gl_Position = pc.view * ubo.model * position;
-  gl_Position =  light_matrices[face] * out_position;
+  gl_Position =  light_matrices[face] * position;
   gl_Position.z / gl_Position.w;
 } 

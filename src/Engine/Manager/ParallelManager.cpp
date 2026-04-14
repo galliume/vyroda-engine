@@ -8,6 +8,8 @@ module Engine.Managers.ParallelManager;
 
 import std;
 
+import Engine.Core.Logger;
+
 namespace Vyroda
 {
   struct BarrierData

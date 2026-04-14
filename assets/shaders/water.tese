@@ -165,24 +165,33 @@ void main()
     float W = A * sin(X);
     float S = sin(base);
     float C = cos(base);
+
+    float WAS = WA * S;
+    float WAC = WA * C;
+    float DxWAC = D.x * WAC;
+    float DyWAC = D.y * WAC;
+    float steepnessWAS = steepness * WAS;
     
     //bitangent
-    bi.x += steepness * (D.x * D.x) * WA * S;
-    bi.z += steepness * (D.x * D.y) * WA * S;
-    bi.y += D.x * WA * C;
+    bi.x += steepnessWAS * (D.x * D.x);
+    bi.z += steepnessWAS * (D.x * D.y);
+    bi.y += DxWAC;
 
     //tangent
-    ta.x += steepness * (D.x * D.y) * WA * S;
-    ta.z += steepness * (D.y * D.y) * WA * S;
-    ta.y += D.y * WA * C;
+    ta.x += steepnessWAS * (D.x * D.y);
+    ta.z += steepnessWAS * (D.y * D.y);
+    ta.y += DyWAC;
 
     //normal
-    n.x += D.x * WA * C;
-    n.z += D.y * WA * C;
-    n.y += steepness * WA * S;
+    n.x += DxWAC;
+    n.z += DyWAC;
+    n.y += steepnessWAS;
 
-    displacement.x += (steepness * A * D.x * cos(X));
-    displacement.z += (steepness * A * D.y * cos(X));
+    float steepnessA = steepness * A;
+    float cosX = cos(X);
+    
+    displacement.x += (steepnessA * D.x * cosX);
+    displacement.z += (steepnessA * D.y * cosX);
     displacement.y += W;
 
     previous_dx = displacement.x;

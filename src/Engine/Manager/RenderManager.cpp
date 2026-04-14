@@ -295,21 +295,53 @@ namespace Vyroda
 
   void RenderManager::renderShadowmap(FrameContext const& frame_context)
   {
+    // auto const count { ParallelManagerLocator::get()->size() };
+    // auto const chunk_size { frame_context.visible_ids.size() / count };
+    // auto const remainder  { frame_context.visible_ids.size() % count };
+
+    std::vector<std::function<void()>> tasks;
+    //tasks_csm.reserve(count); 
+
+    //std::vector<std::function<void()>> tasks_spot_light;
+    //tasks_spot_light.reserve(count);
+
+    //@todo to make it work, each chunk needs its own pool and cmd buffer
+    // std::size_t offset { 0 };
+    // for (std::size_t t { 0 }; t < count; ++t) {
+    //   auto const n { chunk_size + (t < remainder ? 1 : 0) };
+    //   auto const ids { std::span{frame_context.visible_ids.data() + offset, n } };
+    //   tasks_csm.emplace_back([ids, frame_context, this]() {
+    //     for (auto const id : ids) {
+    //       drawShadowMap(id, SHADOW_TYPE::CSM, frame_context.camera_view_matrix);
+    //     }
+    //   });
+    //   tasks_spot_light.emplace_back([ids, frame_context, this]() {
+    //     for (auto const id : ids) {
+    //       drawShadowMap(id, SHADOW_TYPE::SPOT_LIGHT, frame_context.camera_view_matrix);
+    //     }
+    //   });
+    //   offset += n;
+    // }
+
     _renderer->start();
-    _renderer->startShadowMap(SHADOW_TYPE::CSM);
-
-    std::ranges::for_each(frame_context.visible_ids, [&](const auto& entity) {
-      drawShadowMap(entity, SHADOW_TYPE::CSM, frame_context.camera_view_matrix);
+    
+    tasks.emplace_back([frame_context, this]() {
+      _renderer->startShadowMap(SHADOW_TYPE::CSM);
+      for (auto const id : frame_context.visible_ids) {
+        drawShadowMap(id, SHADOW_TYPE::CSM, frame_context.camera_view_matrix);
+      }
+      _renderer->endShadowMap(SHADOW_TYPE::CSM);
+    });
+    
+    tasks.emplace_back([frame_context, this]() {
+      _renderer->startShadowMap(SHADOW_TYPE::SPOT_LIGHT);
+      for (auto const id : frame_context.visible_ids) {
+        drawShadowMap(id, SHADOW_TYPE::SPOT_LIGHT, frame_context.camera_view_matrix);
+      }
+      _renderer->endShadowMap(SHADOW_TYPE::SPOT_LIGHT);
     });
 
-    _renderer->endShadowMap(SHADOW_TYPE::CSM);
-    _renderer->startShadowMap(SHADOW_TYPE::SPOT_LIGHT);
-
-    std::ranges::for_each(frame_context.visible_ids, [&](const auto& entity) {
-      drawShadowMap(entity, SHADOW_TYPE::SPOT_LIGHT, frame_context.camera_view_matrix);
-    });
-
-    _renderer->endShadowMap(SHADOW_TYPE::SPOT_LIGHT);
+    ParallelManagerLocator::get()->execute(tasks);
   }
 
   void RenderManager::renderEntities(FrameContext const& frame_context)
