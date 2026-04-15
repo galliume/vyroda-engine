@@ -2,23 +2,23 @@ message(NOTICE "Fetching Tcl/TK ...")
 
 if (WIN32)
 set(TCL_TCLSH
-    "${CMAKE_SYSROOT}/bin/tclsh91.exe"
+    "${CMAKE_SYSROOT}/bin/tclsh90.exe"
     CACHE FILEPATH "Tcl shell executable" FORCE)
 
 set(TCL_INCLUDE_PATH
-    "${CMAKE_SYSROOT}/include/tcl9.0"
+    "${CMAKE_SYSROOT}/include/"
     CACHE PATH "Tcl include directory" FORCE)
 
 set(TCL_LIBRARY
-    "${CMAKE_SYSROOT}/lib/libtcl91.dll.a"
+    "${CMAKE_SYSROOT}/lib/libtcl90.dll.a"
     CACHE FILEPATH "Tcl library" FORCE)
 
 set(TK_INCLUDE_PATH
-    "${CMAKE_SYSROOT}/include/tcl9.0"
+    "${CMAKE_SYSROOT}/include"
     CACHE PATH "Tk include directory" FORCE)
 
 set(TK_LIBRARY
-    "${CMAKE_SYSROOT}/lib/libtcl9tk91.dll.a"
+    "${CMAKE_SYSROOT}/lib/libtcl9tk90.dll.a"
     CACHE FILEPATH "Tk library" FORCE)
 
 set(TK_WISH
