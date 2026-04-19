@@ -87,8 +87,6 @@ float attenuation(float min, float max, float x)
 
 void main()
 {
-  Light sun_light = lightData.lights[0];
-
   float u = gl_TessCoord.x;
   float v = gl_TessCoord.y;
 
@@ -134,22 +132,23 @@ void main()
   out_view_position = vec3(pc.view_position - out_position);
   out_inverse_model = inverse(mat3(ubo.model));
   out_depth = -view_pos.z;
-
-  out_cascade_coord = sun_light.cascade0 * world_pos;
+  
+  out_cascade_coord = lightData.lights[0].cascade0 * world_pos;
+  vec3 cascade0 = out_cascade_coord.xyz / out_cascade_coord.w;
 
   mat4 camera_inverse = inverse(pc.view);
-  vec3 n = -camera_inverse[2].xyz;
+  vec3 n = camera_inverse[2].xyz;
   vec3 c = camera_inverse[3].xyz;
 
-  float inv_z_dist0 = 1.0 / (sun_light.cascade_max_splits.x - sun_light.cascade_min_splits.y);
-  float inv_z_dist1 = 1.0 / (sun_light.cascade_max_splits.y - sun_light.cascade_min_splits.z);
-  float inv_z_dist2 = 1.0 / (sun_light.cascade_max_splits.z - sun_light.cascade_min_splits.w);
+  float inv_z_dist0 = 1.0 / (lightData.lights[0].cascade_max_splits.x - lightData.lights[0].cascade_min_splits.y);
+  float inv_z_dist1 = 1.0 / (lightData.lights[0].cascade_max_splits.y - lightData.lights[0].cascade_min_splits.z);
+  float inv_z_dist2 = 1.0 / (lightData.lights[0].cascade_max_splits.z - lightData.lights[0].cascade_min_splits.w);
 
-  vec4 d1 = (inv_z_dist0 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.y))));
-  vec4 d2 = (inv_z_dist1 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.z))));
-  vec4 d3 = (inv_z_dist2 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.w))));
+  vec4 d1 = (inv_z_dist0 * (vec4(n, (-dot(n, c) - lightData.lights[0].cascade_min_splits.y)))) * ubo.model;
+  vec4 d2 = (inv_z_dist1 * (vec4(n, (-dot(n, c) - lightData.lights[0].cascade_min_splits.z)))) * ubo.model;
+  vec4 d3 = (inv_z_dist2 * (vec4(n, (-dot(n, c) - lightData.lights[0].cascade_min_splits.w)))) * ubo.model;
 
-  out_blend = vec3(dot(d1, world_pos),  dot(d2, world_pos), dot(d3, world_pos));
+  out_blend = vec3(dot(d1, out_position), dot(d2, out_position), dot(d3, out_position));
 
   gl_Position = ubo.projection * view_pos;
 }

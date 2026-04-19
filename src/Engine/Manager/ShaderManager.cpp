@@ -514,7 +514,7 @@ namespace Vyroda
       poolSizes.emplace_back(dpsSB);
     } else if (shader_name == "shadow_map" || shader_name == "csm") {
 
-      pipeline_create_infos.cull_mode = VK_CULL_MODE_FRONT_BIT;
+      pipeline_create_infos.cull_mode = VK_CULL_MODE_BACK_BIT;
       pipeline_create_infos.has_color_attachment = false;
       pipeline_create_infos.has_dynamic_depth_bias = true;
       pipeline_create_infos.has_depth_test = true;

@@ -148,16 +148,16 @@ void main()
   mat4 camera_inverse = inverse(pc.view);
   vec3 n = -camera_inverse[2].xyz;
   vec3 c = camera_inverse[3].xyz;
-
+ 
   float inv_z_dist0 = 1.0 / (sun_light.cascade_max_splits.x - sun_light.cascade_min_splits.y);
   float inv_z_dist1 = 1.0 / (sun_light.cascade_max_splits.y - sun_light.cascade_min_splits.z);
   float inv_z_dist2 = 1.0 / (sun_light.cascade_max_splits.z - sun_light.cascade_min_splits.w);
 
-  vec4 d1 = (inv_z_dist0 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.x))));
-  vec4 d2 = (inv_z_dist1 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.y))));
-  vec4 d3 = (inv_z_dist2 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.z))));
+  vec4 d1 = (inv_z_dist0 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.x)))) * ubo.model;
+  vec4 d2 = (inv_z_dist1 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.y)))) * ubo.model;
+  vec4 d3 = (inv_z_dist2 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.z)))) * ubo.model;
 
-  frag_var.blend = vec3(dot(d1, world_pos), dot(d2, world_pos), dot(d3, world_pos));
+  frag_var.blend = vec3(dot(d1, position), dot(d2, position), dot(d3, position));
 
   gl_Position = ubo.projection * pc.view * world_pos;
 } 

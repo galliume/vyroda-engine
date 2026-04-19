@@ -147,7 +147,7 @@ namespace Vyroda
       static_cast<float>(glm::sin(glm::radians(_pitch))),
       static_cast<float>(glm::sin(glm::radians(_yaw)) * glm::cos(glm::radians(_pitch))) };
 
-    _next_front = glm::normalize(front);
+    _next_front = front;
   }
 
   void Camera::move()

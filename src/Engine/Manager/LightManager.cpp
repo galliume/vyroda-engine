@@ -1,3 +1,4 @@
+
 module Engine.Managers.LightManager;
 
 import std;
@@ -14,14 +15,14 @@ namespace Vyroda
   {
     _sun.color = glm::vec4(0.5f, 0.7f, 1.0f, 1.0f);//moonish color ?
     _sun.position = glm::vec4(0.f, 500.f, 0.f, 1.0f);
-    _sun.direction =  glm::vec4(1.0f, -1.0f, 1.0f, 1.0f);
+    _sun.direction =  glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     //ambient diffuse specular
     _sun.ads = glm::vec4(10.f, 0.5f, 1.f, 1.0f);
     _sun.clq = glm::vec4(0.0f);
 
     auto const& appConfig { ConfigManagerLocator::get()->appConfig()["resolution"] };
-    float const app_width { static_cast<float>(appConfig["width"].get<std::uint16_t>()) };
-    float const app_height { static_cast<float>(appConfig["height"].get<std::uint16_t>()) };
+    float const app_width { appConfig["width"].get<float>() };
+    float const app_height { appConfig["height"].get<float>() };
 
     float const fov { glm::radians(90.0f) };
     glm::mat4 const shadow_cubemap_projection { glm::perspective(fov, 1.0f, 0.1f, 500.f) };
@@ -87,13 +88,12 @@ namespace Vyroda
     glm::mat4 const & projection)
   {
     auto const& appConfig { ConfigManagerLocator::get()->appConfig()["shadow_resolution"] };
-    auto const shadow_resolution { static_cast<float>(appConfig["width"].get<std::uint32_t>()) };
+    auto const shadow_resolution { appConfig["width"].get<float>() };
 
+    auto const M_view { glm::inverse(M_camera) };
     auto const g { projection[1][1] };
-    auto const s { g / projection[0][0] };
-
-    auto const M_camera_inv { glm::inverse(M_camera) };
-
+    auto const s { projection[1][1] / projection[0][0] };
+    
     auto const near_h { near_plane / g };
     auto const near_w { near_h * s };
     auto const near_v0 { glm::vec3(near_w, near_h, -near_plane) };
@@ -107,16 +107,16 @@ namespace Vyroda
     auto const far_v1 { glm::vec3(far_w, -far_h, -far_plane) };
     auto const far_v2 { glm::vec3(-far_w, -far_h, -far_plane) };
     auto const far_v3 { glm::vec3(-far_w, far_h, -far_plane) };
-
+    
     std::vector<glm::vec4> cascade_frustum {
-      M_camera_inv * glm::vec4(near_v0, 1.0f),
-      M_camera_inv * glm::vec4(near_v1, 1.0f),
-      M_camera_inv * glm::vec4(near_v2, 1.0f),
-      M_camera_inv * glm::vec4(near_v3, 1.0f),
-      M_camera_inv * glm::vec4(far_v0, 1.0f),
-      M_camera_inv * glm::vec4(far_v1, 1.0f),
-      M_camera_inv * glm::vec4(far_v2, 1.0f),
-      M_camera_inv * glm::vec4(far_v3, 1.0f)
+      M_view * glm::vec4(near_v0, 1.0f),
+      M_view * glm::vec4(near_v1, 1.0f),
+      M_view * glm::vec4(near_v2, 1.0f),
+      M_view * glm::vec4(near_v3, 1.0f),
+      M_view * glm::vec4(far_v0, 1.0f),
+      M_view * glm::vec4(far_v1, 1.0f),
+      M_view * glm::vec4(far_v2, 1.0f),
+      M_view * glm::vec4(far_v3, 1.0f)
     };
 
     for (auto& v : cascade_frustum) {
@@ -127,7 +127,7 @@ namespace Vyroda
     center /= cascade_frustum.size();
 
     auto const M_light { glm::lookAt(
-        glm::vec3(center) - glm::normalize(glm::vec3(_sun.direction)) * 500.0f,
+        glm::vec3(center) + glm::normalize(glm::vec3(_sun.direction)),
         glm::vec3(center),
         glm::vec3(0.0f, 1.0f, 0.0f)) };
 
@@ -138,8 +138,9 @@ namespace Vyroda
     auto min_z { std::numeric_limits<float>::max() };
     auto max_z { std::numeric_limits<float>::lowest() };
 
+    auto const L { projection * M_light };
     for (auto const& v : cascade_frustum) {
-      auto const Lv { M_light * v };
+      auto const Lv { L * v };
       min_x = std::min(min_x, Lv.x);
       max_x = std::max(max_x, Lv.x);
       min_y = std::min(min_y, Lv.y);
@@ -147,91 +148,60 @@ namespace Vyroda
       min_z = std::min(min_z, Lv.z);
       max_z = std::max(max_z, Lv.z);
     }
+ 
+    auto const d { std::ceil(std::max(glm::length(near_v0 - far_v2), glm::length(far_v0 - far_v2))) };
+    auto const T { static_cast<std::uint32_t>(d) / shadow_resolution };
 
-    // min_z = std::numeric_limits<float>::max();
-    // max_z = std::numeric_limits<float>::lowest();
-
-    // for (auto const& v : cascade_frustum) {
-    //     float z = (m_cascade * v).z;
-    //     min_z = std::min(min_z, z);
-    //     max_z = std::max(max_z, z);
-    // }
-
-    min_z -= 1000.0f;
-    max_z += 1000.0f;
-
-
-    glm::vec3 const corner_near(-near_w, -near_h, -near_plane);
-    glm::vec3 const corner_far(far_w, far_h, -far_plane);
-
-    float const d { std::ceil(glm::length(corner_far - corner_near)) };
-
-    // auto const d {
-    //   static_cast<std::std::uint32_t>(
-    //   std::max(
-    //     std::ceil(glm::length(cascade_frustum[0] - cascade_frustum[6])),
-    //     std::ceil(glm::length(cascade_frustum[4] - cascade_frustum[6])))) };
-
-    auto const T { d / shadow_resolution };
-    auto const df {static_cast<float>(d) * 0.5f };
-
-    min_x = -df;
-    max_x = df;
-    min_y = -df;
-    max_y = df;
-
-    auto const snapped_center_light = glm::vec3(
+    auto const snapped_camera { glm::vec4(
         std::floor((max_x + min_x) / (2.0f * T)) * T,
         std::floor((max_y + min_y) / (2.0f * T)) * T,
-        0.0f
-    );
+        min_z,
+        1.0f
+    ) };
 
-    auto const M_light_inv { glm::inverse(M_light) };
-
-    auto const snapped_world_center { 
-      glm::vec3(M_light_inv * glm::vec4(snapped_center_light, 1.0f))
+    glm::vec3 const world_center {
+      glm::inverse(M_light) *
+      glm::vec4(
+        snapped_camera.x,
+        snapped_camera.y,
+        (min_z + max_z) * 0.5f,
+        1.0f)
     };
 
-    // glm::mat4 const m_cascade { glm::lookAt(
-    //     snapped_world_center - glm::normalize(_sun.direction) * 500.0f,
-    //     snapped_world_center,
-    //     glm::vec3(0.0f, 1.0f, 0.0f)) };
-    // glm::mat4 m_cascade { M_light_inv };
-    // m_cascade[3] = glm::vec4(snapped_world_center, 1.0f);
-
-    glm::mat4 const m_cascade = glm::lookAt(
-      snapped_world_center - glm::normalize(glm::vec3(_sun.direction)) * 500.0f,
-      snapped_world_center,
+    glm::mat4 const m_cascade { glm::lookAt(
+      world_center + glm::normalize(glm::vec3(_sun.direction)) * (max_z - min_z),
+      world_center,
       glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
+    ) };
+    
     auto const z_range { max_z - min_z };
 
     glm::mat4 p_cascade { glm::mat4(0.0f) };
-    p_cascade[0][0] = 1.0f / df;
-    p_cascade[1][1] = 1.0f / df;
+    p_cascade[0][0] = 2.0f / d;
+    p_cascade[1][1] = 2.0f / d;
     p_cascade[2][2] = -1.0f / z_range;
-    p_cascade[3][2] = max_z / z_range;
+    p_cascade[3][2] = 0.0f;
     p_cascade[3][3] = 1.0f;
 
     glm::mat4 p_shadow { glm::mat4(0.0f) };
-    p_shadow[0][0] = 0.5f / df;
-    p_shadow[1][1] = -0.5f / df;
+    p_shadow[0][0] = 1.0f / d;
+    p_shadow[1][1] = -1.0f / d;
     p_shadow[2][2] = -1.0f / z_range;
+    p_shadow[2][3] = 2e-19f;
     p_shadow[3][0] = 0.5f;
     p_shadow[3][1] = 0.5f;
-    p_shadow[3][2] = max_z / z_range;
+    p_shadow[3][2] = 0.0f;
     p_shadow[3][3] = 1.0f;
 
     auto const render_mvp { p_cascade * m_cascade };
     auto const sampling_mvp { p_shadow * m_cascade };
 
     CSM csm {
-      .d = static_cast<float>(d),
-      .texel_size = static_cast<float>(T),
+      .d = d,
+      .texel_size = T,
       .z_max = max_z,
       .z_min = min_z,
-      .s = glm::vec4(snapped_world_center, 0.0f),
+      .s = snapped_camera,
       .scale = glm::vec4(1.0f),
       .offset = glm::vec4(0.0f),
       .render = render_mvp,
@@ -244,13 +214,13 @@ namespace Vyroda
   void LightManager::computeCSM(glm::mat4 const & camera_view, glm::mat4 const & projection)
   {
     float const near { 0.0f };
-    float const far { 1000.f };
+    float const far { 500.f };
 
   std::array<glm::vec2, 4> const cascade_splits {
-      glm::vec2(near, 150.f),
-      glm::vec2(140.f, 280.f),
-      glm::vec2(270.f, 420.f),
-      glm::vec2(410.f, far)
+      glm::vec2(near, 50.f),
+      glm::vec2(40.f, 100.f),
+      glm::vec2(85.f, 180.f),
+      glm::vec2(160.f, far)
   };
 
     std::vector<CSM> csms{};
@@ -260,22 +230,13 @@ namespace Vyroda
         getLightSpaceMatrix(cascade_splits[i].x, cascade_splits[i].y, camera_view, projection));
     }
 
-    auto const d0 { csms.at(0).d };
-    auto const s0 { csms.at(0).s };
-    //auto const rot { glm::mat3(camera_view) };
-
+    auto const sampling0_i { glm::inverse(csms.at(0).sampling) };
+    
     for (std::uint8_t i { 1 }; i < 4; ++i) {
       auto & csm { csms.at(i) };
-
-      auto const scale { d0 / csm.d };
-
-      glm::vec3 world_delta { (s0 - csm.s) };
-
-      auto const offsetX { world_delta.x / csm.d + (1.0f - scale) * 0.5f };
-      auto const offsetY { world_delta.y / csm.d + (1.0f - scale) * 0.5f };
-
-      csm.scale = glm::vec4(scale, scale, 1.0f, 1.0f);
-      csm.offset = glm::vec4(offsetX, offsetY, 0.0f, 1.0f);
+      auto const sampling { csm.sampling * sampling0_i };
+      csm.scale  = glm::vec4(sampling[0][0], sampling[1][1], sampling[2][2], 1.0f);
+      csm.offset = glm::vec4(sampling[3][0], sampling[3][1], sampling[3][2], 1.0f);
     }
 
     _sun.cascade_texel_sizes = glm::vec4(

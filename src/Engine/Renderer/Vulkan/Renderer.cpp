@@ -535,11 +535,11 @@ namespace Vyroda
 
     vkCmdSetScissor(cmd_buffer, 0, 1, &scissor);
 
-    float const depth_bias_constant{ 1.25f };
-    float const depth_bias_slope{ 1.75f };
-    float const depth_bias_clamp{ 0.0f };
+    auto constexpr depth_bias_constant{ 1.25f };
+    auto constexpr depth_bias_slope{ 1.75f };
+    auto constexpr depth_bias_clamp{ 0.005f };
 
-    //vkCmdSetDepthClampEnableEXT(cmd_buffer, VK_TRUE);
+    vkCmdSetDepthClampEnableEXT(cmd_buffer, VK_TRUE);
     vkCmdSetDepthBias(cmd_buffer, depth_bias_constant, depth_bias_clamp, depth_bias_slope);
 
     std::vector<VkBool32> blend_enable{ VK_FALSE };

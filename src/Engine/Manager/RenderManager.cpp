@@ -1,3 +1,4 @@
+
 /**
  * @file   RenderManager.cpp
  * @author  <Guillaume PERCEPIED>
@@ -183,8 +184,8 @@ namespace Vyroda
 
       //@todo improve this draft for simple shader hot reload
       if (config_manager->reloadShaders()) {
-        std::filesystem::path p = std::filesystem::current_path();
         auto cmd{ frame_context.root_path + "/bin/shaders_compil.sh" };
+        Logger::debug("cmd: {}", cmd);
         std::system(cmd.c_str());
 
         std::latch count_down{ 1 };

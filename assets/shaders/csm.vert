@@ -79,6 +79,6 @@ void main()
     light.light_space_matrix_right     // slice 3
   );
 
-  gl_Position = light_matrices[face] * ubo.model * position;
+  gl_Position = light_matrices[face] * (ubo.model * position);
   gl_Position.z / gl_Position.w;
 }

@@ -133,7 +133,7 @@ namespace Vyroda
 
     while (!glfwWindowShouldClose(_render_manager->getWindow().getGlfwWindow())) {
 
-      while (Tcl_DoOneEvent(TCL_DONT_WAIT)) {}
+      //while (Tcl_DoOneEvent(TCL_DONT_WAIT)) {}
 
       glfwPollEvents();
 

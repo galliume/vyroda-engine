@@ -223,24 +223,22 @@ void main()
   out_depth = -view_pos.z;
 
   out_cascade_coord = lightData.lights[0].cascade0 * world_pos;
+  vec3 cascade0 = out_cascade_coord.xyz / out_cascade_coord.w;
 
-  //mat4 camera_inverse = inverse(pc.view);
-  vec3 nI = -in_inverse_camera[0][2].xyz;
-  vec3 c = in_inverse_camera[0][3].xyz;
+  mat4 camera_inverse = inverse(pc.view);
+  vec3 nI = camera_inverse[2].xyz;
+  vec3 c = camera_inverse[3].xyz;
 
+  float inv_z_dist0 = 1.0 / (lightData.lights[0].cascade_max_splits.x - lightData.lights[0].cascade_min_splits.y);
+  float inv_z_dist1 = 1.0 / (lightData.lights[0].cascade_max_splits.y - lightData.lights[0].cascade_min_splits.z);
+  float inv_z_dist2 = 1.0 / (lightData.lights[0].cascade_max_splits.z - lightData.lights[0].cascade_min_splits.w);
 
-  vec4 max_splits = lightData.lights[0].cascade_max_splits;
-  vec4 min_splits = lightData.lights[0].cascade_min_splits;
+  vec4 d1 = (inv_z_dist0 * (vec4(n, (-dot(nI, c) - lightData.lights[0].cascade_min_splits.y)))) * ubo.model;
+  vec4 d2 = (inv_z_dist1 * (vec4(n, (-dot(nI, c) - lightData.lights[0].cascade_min_splits.z)))) * ubo.model;
+  vec4 d3 = (inv_z_dist2 * (vec4(n, (-dot(nI, c) - lightData.lights[0].cascade_min_splits.w)))) * ubo.model;
+
+  out_blend = vec3(dot(d1, vec4(out_position, 1.0f)), dot(d2, vec4(out_position, 1.0f)), dot(d3, vec4(out_position, 1.0f)));
+
   
-  float inv_z_dist0 = 1.0 / (max_splits.x - min_splits.y);
-  float inv_z_dist1 = 1.0 / (max_splits.y - min_splits.z);
-  float inv_z_dist2 = 1.0 / (max_splits.z - min_splits.w);
-
-  vec4 d1 = (inv_z_dist0 * (vec4(nI, (-dot(nI, c) - min_splits.y))));
-  vec4 d2 = (inv_z_dist1 * (vec4(nI, (-dot(nI, c) - min_splits.z))));
-  vec4 d3 = (inv_z_dist2 * (vec4(nI, (-dot(nI, c) - min_splits.w))));
-
-  out_blend = vec3(dot(d1, world_pos),  dot(d2, world_pos), dot(d3, world_pos));
-
   gl_Position = ubo.projection * view_pos;
 }
