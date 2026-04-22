@@ -383,21 +383,25 @@ namespace Vyroda
     auto* mesh_component { _component_manager->get<MeshComponent>(entity_id) };
     auto mesh { mesh_component->template has<Mesh>() };
 
-    if (mesh->hasBbox()) {
-      glm::vec3 bmin { glm::vec3(glm::vec4(mesh->getData()->_bbox_min, 1.0f)) };
-      glm::vec3 bmax { glm::vec3(glm::vec4(mesh->getData()->_bbox_max, 1.0f)) };
-      auto inv = mesh->getData()->_inverse_transform_matrix;
+    if (mesh->hasBbox() && mesh->isRoot() && mesh->isVisible()) {
+
+      auto* parent_component { _component_manager->get<MeshComponent>(mesh->getParent()) };
+      auto parent_mesh { parent_component->template has<Mesh>() };
+    
+      auto bmin { glm::vec3(glm::vec4(parent_mesh->getData()->_bbox_min, 1.0f)) };
+      auto bmax { glm::vec3(glm::vec4(parent_mesh->getData()->_bbox_max, 1.0f)) };
+      auto const inv { mesh->getData()->_inverse_transform_matrix };
 
       for (auto const& K : frustum_planes) {
-        auto K_local { inv * K };
+        auto const K_local { inv * K };
         glm::vec3 pos_side { bmin };
+        
         if (K_local.x >= 0) pos_side.x = bmax.x;
         if (K_local.y >= 0) pos_side.y = bmax.y;
         if (K_local.z >= 0) pos_side.z = bmax.z;
 
         if (glm::dot(K_local, glm::vec4(pos_side, 1.0f)) < 0) {
-          //Logger::debug("clipped : {}", mesh->getName());
-          return false;//@todo to improve
+          return true;
         }
       }
     }
@@ -413,7 +417,8 @@ namespace Vyroda
     auto mesh { mesh_component->template has<Mesh>() };
     //    auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
 
-    if (mesh->isRoot()) {
+    if (mesh->isRoot() && mesh->isVisible()) {
+
       AnimationInfo animation_info {
         .delta_time = delta_time,
         .data = mesh->getData()
@@ -443,7 +448,7 @@ namespace Vyroda
       for (auto const& id : mesh->getChildren()) {
         auto* child_mesh_component { _component_manager->get<MeshComponent>(id) };
         auto child_mesh { child_mesh_component->template has<Mesh>() };
-        if (child_mesh && boneAnimationComponent) {
+        if (child_mesh && child_mesh->isVisible() && boneAnimationComponent) {
           AnimationInfo child_animation_info {
             .delta_time = delta_time,
             .data = child_mesh->getData(),

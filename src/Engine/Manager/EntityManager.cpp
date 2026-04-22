@@ -87,12 +87,21 @@ namespace Vyroda
     root_mesh_entity->setVisible(false);
 
     auto root_mesh_entity_node { std::make_shared<EntityNode>(root_mesh_entity) };
+    std::unique_ptr<Mesh> root_mesh { std::make_unique<Mesh>() };
+    root_mesh->setName(name);
+    root_mesh->setRoot();
+    root_mesh->setVisible(false);
+    Data root_data{};
+    root_data._name = name;
+    root_mesh->setData(root_data);
 
+    _component_manager.add<MeshComponent>(root_mesh_entity->getID(), std::move(root_mesh));
+          
     auto const root_path { ConfigManagerLocator::get()->rootPath() };
 
     auto const& path { root_path + "/" + raw_data.value("mesh", "") };
     auto const flip_Y { raw_data.value("flipY", false) };
-
+    
     auto callback = [this, &root_path, &root_mesh_entity_node, &raw_data, &renderer](
       PlpMeshData _data,
       std::vector<material_t> const materials,
@@ -290,6 +299,18 @@ namespace Vyroda
       data._default_anim = entity_opts.default_anim;
       data._bbox_min = _data.bbox_min;
       data._bbox_max = _data.bbox_max;
+
+      auto* mesh_component_root { _component_manager.get<MeshComponent>(root_mesh_entity_node->getEntity()->getID()) };
+      auto mesh_root { mesh_component_root->template has<Mesh>() };
+      
+      mesh_root->getData()->_bbox_min.x = std::min(_data.bbox_min.x, mesh_root->getData()->_bbox_min.x);
+      mesh_root->getData()->_bbox_min.y = std::min(_data.bbox_min.y, mesh_root->getData()->_bbox_min.y);
+      mesh_root->getData()->_bbox_min.z = std::min(_data.bbox_min.z, mesh_root->getData()->_bbox_min.z);      
+
+      mesh_root->getData()->_bbox_max.x = std::max(_data.bbox_max.x, mesh_root->getData()->_bbox_max.x);
+      mesh_root->getData()->_bbox_max.y = std::max(_data.bbox_max.y, mesh_root->getData()->_bbox_max.y);
+      mesh_root->getData()->_bbox_max.z = std::max(_data.bbox_max.z, mesh_root->getData()->_bbox_max.z);
+      
       data._material_id = _data.material_ID;
 
       auto const S { glm::scale(glm::mat4(1.0f), entity_opts.scale) };
@@ -329,9 +350,13 @@ namespace Vyroda
       entity->setName(_data.name);
       
       if (is_last) {
+        mesh_root->addChild(entity->getID());
         mesh->setRoot();
+        mesh->setParent(root_mesh_entity_node->getEntity()->getID());
+        //@todo doesn't look right
         for (auto child : _entity_children) {
-          mesh->addChild(child);
+          mesh_root->addChild(child);
+          mesh->addChild(child);          
         }
       } else {
         _entity_children.emplace_back(entity->getID());

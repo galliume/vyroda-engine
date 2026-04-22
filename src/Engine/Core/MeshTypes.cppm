@@ -55,8 +55,8 @@ namespace Vyroda
     std::unordered_map<std::string, Bone> _bones;
     std::string _root_bone_name{};
     std::uint32_t _default_anim{};
-    glm::vec3 _bbox_min{};
-    glm::vec3 _bbox_max{};
+    glm::vec3 _bbox_min{0.0f};
+    glm::vec3 _bbox_max{0.0f};
     bool _is_dirty {false};
     std::uint32_t _material_id {0};
   };

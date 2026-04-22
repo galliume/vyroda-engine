@@ -83,8 +83,14 @@ namespace Vyroda
     std::vector<IDType> getChildren() { return _children; }
 
     void setRoot() { _is_root = true; }
-    bool isRoot() { return _is_root ;}
+    bool isRoot() const { return _is_root ;}
 
+    void setVisible(bool const visible = true) { _is_visible = visible; }
+    bool isVisible() const { return _is_visible; }
+
+    void setParent(IDType const id) { _parent = id; }
+    IDType getParent() const { return _parent; }
+  
     private:
     std::string _name{};
     std::string _shader_name{};
@@ -116,6 +122,8 @@ namespace Vyroda
     std::uint32_t _default_anim{};
 
     std::vector<IDType> _children{};
+    IDType _parent;
     bool _is_root { false };
+    bool _is_visible { true };
   };
 }

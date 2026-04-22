@@ -289,7 +289,7 @@ namespace Vyroda
     std::vector<glm::vec4> const& frustum_planes) const
     {
       return entities
-          | std::views::filter([&](auto const& e) { return !isClipped(e->getID(), frustum_planes); })
+        | std::views::filter([&](auto const& e) { return e->isVisible() && !isClipped(e->getID(), frustum_planes); })
           | std::views::transform([](auto const& e) { return e->getID(); })
           | std::ranges::to<std::vector>();
     }
