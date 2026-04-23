@@ -57,7 +57,9 @@ namespace Vyroda
 
     std::vector<glm::vec4> frustum_planes{};
     std::vector<IDType> visible_ids{};
+    std::vector<IDType> not_clipped_visible_ids{};
     std::vector<IDType> transparent_ids{};
+    std::vector<IDType> not_clipped_transparent_ids{};    
 
     std::shared_ptr<Entity> skybox_entity{};
     std::shared_ptr<Entity> terrain_entity{};
@@ -284,12 +286,21 @@ namespace Vyroda
     glm::mat4 const& camera_view_matrix,
     bool const has_alpha_blend = false);
 
-  auto get_visible_ids(
+  auto get_not_clipped_ids(
     std::ranges::range auto const& entities,
     std::vector<glm::vec4> const& frustum_planes) const
     {
       return entities
-        | std::views::filter([&](auto const& e) { return e->isVisible() && !isClipped(e->getID(), frustum_planes); })
+        | std::views::filter([&](auto const& e) { return !isClipped(e, frustum_planes); })
+          | std::views::transform([](auto const& e) { return e; })
+          | std::ranges::to<std::vector>();
+    }
+
+  auto get_visible_ids(
+    std::ranges::range auto const& entities) const
+    {
+      return entities
+        | std::views::filter([&](auto const& e) { return e->isRoot() && e->isVisible(); })
           | std::views::transform([](auto const& e) { return e->getID(); })
           | std::ranges::to<std::vector>();
     }
@@ -305,8 +316,8 @@ namespace Vyroda
       double const delta_time) const;
 
     void updateEntities(FrameContext const& frame_context);
-    void renderShadowmap(FrameContext const& frame_context);
-    void renderEntities(FrameContext const& frame_context);
+    void drawShadowmap(FrameContext const& frame_context);
+    void drawEntities(FrameContext const& frame_context);
     void updateBuffers();
     void updatePlayer();
 

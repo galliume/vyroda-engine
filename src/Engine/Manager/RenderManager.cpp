@@ -195,17 +195,16 @@ namespace Vyroda
       }
 
       updateEntities(frame_context);
-      //_renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
+      //_renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex())
+      drawShadowmap(frame_context);
+      drawEntities(frame_context);
 
-      renderShadowmap(frame_context);
-      renderEntities(frame_context);
-      
       _renderer->submit();
 
       updateBuffers();
       updatePlayer();
-      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
 
+      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
       _renderer->getAPI().collectGarbage();
     }
   }
@@ -294,7 +293,7 @@ namespace Vyroda
     ParallelManagerLocator::get()->execute(tasks);
   }
 
-  void RenderManager::renderShadowmap(FrameContext const& frame_context)
+  void RenderManager::drawShadowmap(FrameContext const& frame_context)
   {
     // auto const count { ParallelManagerLocator::get()->size() };
     // auto const chunk_size { frame_context.visible_ids.size() / count };
@@ -328,7 +327,7 @@ namespace Vyroda
     
     tasks.emplace_back([frame_context, this]() {
       _renderer->startShadowMap(SHADOW_TYPE::CSM);
-      for (auto const id : frame_context.visible_ids) {
+      for (auto const id : frame_context.not_clipped_visible_ids) {
         drawShadowMap(id, SHADOW_TYPE::CSM, frame_context.camera_view_matrix);
       }
       _renderer->endShadowMap(SHADOW_TYPE::CSM);
@@ -336,7 +335,7 @@ namespace Vyroda
     
     tasks.emplace_back([frame_context, this]() {
       _renderer->startShadowMap(SHADOW_TYPE::SPOT_LIGHT);
-      for (auto const id : frame_context.visible_ids) {
+      for (auto const id : frame_context.not_clipped_visible_ids) {
         drawShadowMap(id, SHADOW_TYPE::SPOT_LIGHT, frame_context.camera_view_matrix);
       }
       _renderer->endShadowMap(SHADOW_TYPE::SPOT_LIGHT);
@@ -345,7 +344,7 @@ namespace Vyroda
     ParallelManagerLocator::get()->execute(tasks);
   }
 
-  void RenderManager::renderEntities(FrameContext const& frame_context)
+  void RenderManager::drawEntities(FrameContext const& frame_context)
   {
     _renderer->startRender();
 
@@ -357,11 +356,11 @@ namespace Vyroda
       drawEntity(frame_context.terrain_entity->getID(), frame_context.camera_view_matrix);
     }
 
-    std::ranges::for_each(frame_context.visible_ids, [&](const auto& entity) {
+    std::ranges::for_each(frame_context.not_clipped_visible_ids, [&](const auto& entity) {
       drawEntity(entity, frame_context.camera_view_matrix, false);
     });
 
-    std::ranges::for_each(frame_context.transparent_ids, [&](const auto& entity) {
+    std::ranges::for_each(frame_context.not_clipped_transparent_ids, [&](const auto& entity) {
       drawEntity(entity, frame_context.camera_view_matrix, true);
     });
 
@@ -383,7 +382,7 @@ namespace Vyroda
     auto* mesh_component { _component_manager->get<MeshComponent>(entity_id) };
     auto mesh { mesh_component->template has<Mesh>() };
 
-    if (mesh->hasBbox() && mesh->isRoot() && mesh->isVisible()) {
+    if (mesh->hasBbox()) {
 
       auto* parent_component { _component_manager->get<MeshComponent>(mesh->getParent()) };
       auto parent_mesh { parent_component->template has<Mesh>() };
@@ -401,6 +400,7 @@ namespace Vyroda
         if (K_local.z >= 0) pos_side.z = bmax.z;
 
         if (glm::dot(K_local, glm::vec4(pos_side, 1.0f)) < 0) {
+          Logger::debug("clipped: {}", mesh->getName());
           return true;
         }
       }
@@ -417,48 +417,45 @@ namespace Vyroda
     auto mesh { mesh_component->template has<Mesh>() };
     //    auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
 
-    if (mesh->isRoot() && mesh->isVisible()) {
-
-      AnimationInfo animation_info {
-        .delta_time = delta_time,
-        .data = mesh->getData()
-      };
-      if (mesh->getName() == _player_manager->getPlayerName()) {
-        _player_manager->setPlayerId(entity_id);
-        animation_info.looping = false;
-        if (_current_camera == std::to_underlying(CameraType::THIRD_PERSON) && !getCamera().isInit()) {
-          getCamera().init(_player_manager->getPosition());
-          getCamera().forward();
-          getCamera().move();
-        }
+    AnimationInfo animation_info {
+      .delta_time = delta_time,
+      .data = mesh->getData()
+    };
+    if (mesh->getName() == _player_manager->getPlayerName()) {
+      _player_manager->setPlayerId(entity_id);
+      animation_info.looping = false;
+      if (_current_camera == std::to_underlying(CameraType::THIRD_PERSON) && !getCamera().isInit()) {
+        getCamera().init(_player_manager->getPosition());
+        getCamera().forward();
+        getCamera().move();
       }
+    }
 
-      auto* animation_component { _component_manager->get<AnimationComponent>(entity_id) };
-      if (animation_component) {
-        (*animation_component)(animation_info);
-        mesh->setIsDirty(true);
-      }
+    auto* animation_component { _component_manager->get<AnimationComponent>(entity_id) };
+    if (animation_component) {
+      (*animation_component)(animation_info);
+      mesh->setIsDirty(true);
+    }
 
-      auto* boneAnimationComponent { _component_manager->get<BoneAnimationComponent>(entity_id) };
-      if (boneAnimationComponent) {
-        (*boneAnimationComponent)(animation_info);
-        mesh->setIsDirty(true);
-      }
+    auto* boneAnimationComponent { _component_manager->get<BoneAnimationComponent>(entity_id) };
+    if (boneAnimationComponent) {
+      (*boneAnimationComponent)(animation_info);
+      mesh->setIsDirty(true);
+    }
 
-      for (auto const& id : mesh->getChildren()) {
-        auto* child_mesh_component { _component_manager->get<MeshComponent>(id) };
-        auto child_mesh { child_mesh_component->template has<Mesh>() };
-        if (child_mesh && child_mesh->isVisible() && boneAnimationComponent) {
-          AnimationInfo child_animation_info {
-            .delta_time = delta_time,
-            .data = child_mesh->getData(),
-            .looping = animation_info.looping
-          };
-          (*boneAnimationComponent)(child_animation_info);
-          child_mesh->setIsDirty(true);
-          // auto child_rdr_impl { _component_manager->get<RendererComponent>(id) };
-          // (*child_rdr_impl)(_renderer.get(), getComponentRenderingInfo(child_mesh));
-        }
+    for (auto const& id : mesh->getChildren()) {
+      auto* child_mesh_component { _component_manager->get<MeshComponent>(id) };
+      auto child_mesh { child_mesh_component->template has<Mesh>() };
+      if (child_mesh && boneAnimationComponent) {
+        AnimationInfo child_animation_info {
+          .delta_time = delta_time,
+          .data = child_mesh->getData(),
+          .looping = animation_info.looping
+        };
+        (*boneAnimationComponent)(child_animation_info);
+        child_mesh->setIsDirty(true);
+        // auto child_rdr_impl { _component_manager->get<RendererComponent>(id) };
+        // (*child_rdr_impl)(_renderer.get(), getComponentRenderingInfo(child_mesh));
       }
     }
   }
@@ -482,6 +479,10 @@ namespace Vyroda
       renderer_info.has_alpha_blend = has_alpha_blend;
       _renderer->draw(*mesh, renderer_info);
     }
+
+    for (auto child : mesh->getChildren()) {
+      drawEntity(child, camera_view_matrix, has_alpha_blend);
+    }
   }
 
     void RenderManager::drawShadowMap(
@@ -496,15 +497,19 @@ namespace Vyroda
     if (!mesh->hasShadow()) {
       return;
     }
-
+    
     auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
-
+    
     if (mesh && rdr_impl) {
       RendererContext renderer_context { getRendererContext(camera_view_matrix) };
       renderer_context.stage_flag_bits = rdr_impl->getShaderStageFlags();
       renderer_context.has_alpha_blend = has_alpha_blend;
-
-      _renderer->drawShadowMap(*mesh,renderer_context, shadow_type);
+    
+      _renderer->drawShadowMap(*mesh, renderer_context, shadow_type);
+    }
+    
+    for (auto child : mesh->getChildren()) {
+      drawShadowMap(child, shadow_type, camera_view_matrix, has_alpha_blend);
     }
   }
 
@@ -733,9 +738,11 @@ namespace Vyroda
 
     auto const vp { perspective * camera_view_matrix };
     auto const frustum_planes { getCamera().getFrustumPlanes(vp) };
-    auto const visible_ids { get_visible_ids(_entity_manager->getEntities(), frustum_planes) };
-    auto const transparent_ids { get_visible_ids(_entity_manager->getTransparentEntities(), frustum_planes) };
-
+    auto const visible_ids { get_visible_ids(_entity_manager->getEntities()) };
+    auto const not_clipped_visible_ids { get_not_clipped_ids(visible_ids, frustum_planes) };
+    auto const transparent_ids { get_visible_ids(_entity_manager->getTransparentEntities()) };
+    auto const not_clipped_transparent_ids { get_not_clipped_ids(transparent_ids, frustum_planes) };
+      
     return {
       .delta_time = delta_time,
       .root_path = root_path,
@@ -744,7 +751,9 @@ namespace Vyroda
       .perspective = perspective,
       .frustum_planes = std::move(frustum_planes),
       .visible_ids = std::move(visible_ids),
+      .not_clipped_visible_ids = std::move(not_clipped_visible_ids),
       .transparent_ids = std::move(transparent_ids),
+      .not_clipped_transparent_ids = std::move(not_clipped_transparent_ids),      
       .skybox_entity = _entity_manager->getSkybox(),
       .terrain_entity = _entity_manager->getTerrain(),
       .water_entity = _entity_manager->getWater(),

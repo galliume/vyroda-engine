@@ -24,10 +24,14 @@ namespace Vyroda
     bool isHit(glm::vec3 point);
     bool isVisible() const { return _is_visible; }
 
+    void setRoot(bool const is_root = true) { _is_root = is_root; }
+    bool isRoot() const { return _is_root; }
+    
   private:
     IDType _id{ 0 };
     std::string _name{};
 
+    bool _is_root {false};
     bool _is_visible{ true };
   };
 }

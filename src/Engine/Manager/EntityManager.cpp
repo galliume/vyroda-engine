@@ -350,12 +350,12 @@ namespace Vyroda
       entity->setName(_data.name);
       
       if (is_last) {
+        entity->setRoot();
         mesh_root->addChild(entity->getID());
         mesh->setRoot();
         mesh->setParent(root_mesh_entity_node->getEntity()->getID());
         //@todo doesn't look right
         for (auto child : _entity_children) {
-          mesh_root->addChild(child);
           mesh->addChild(child);          
         }
       } else {
