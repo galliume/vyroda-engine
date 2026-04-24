@@ -1,4 +1,3 @@
-
 module Engine.Managers.LightManager;
 
 import std;
@@ -137,7 +136,7 @@ namespace Vyroda
     auto max_y { std::numeric_limits<float>::lowest() };
     auto min_z { std::numeric_limits<float>::max() };
     auto max_z { std::numeric_limits<float>::lowest() };
-
+ 
     auto const L { projection * M_light };
     for (auto const& v : cascade_frustum) {
       auto const Lv { L * v };
@@ -187,7 +186,7 @@ namespace Vyroda
     p_shadow[0][0] = 1.0f / d;
     p_shadow[1][1] = -1.0f / d;
     p_shadow[2][2] = -1.0f / z_range;
-    p_shadow[2][3] = 2e-19f;
+    //    p_shadow[2][3] = 2e-19f;
     p_shadow[3][0] = 0.5f;
     p_shadow[3][1] = 0.5f;
     p_shadow[3][2] = 0.0f;

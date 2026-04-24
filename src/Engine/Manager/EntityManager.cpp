@@ -84,13 +84,13 @@ namespace Vyroda
     //@todo not reload an already loaded obj
     auto root_mesh_entity { std::make_shared<Entity>() };
     root_mesh_entity->setName(name);
-    root_mesh_entity->setVisible(false);
+    root_mesh_entity->setVisible();
 
     auto root_mesh_entity_node { std::make_shared<EntityNode>(root_mesh_entity) };
     std::unique_ptr<Mesh> root_mesh { std::make_unique<Mesh>() };
     root_mesh->setName(name);
     root_mesh->setRoot();
-    root_mesh->setVisible(false);
+    root_mesh->setVisible();
     Data root_data{};
     root_data._name = name;
     root_mesh->setData(root_data);
@@ -302,7 +302,11 @@ namespace Vyroda
 
       auto* mesh_component_root { _component_manager.get<MeshComponent>(root_mesh_entity_node->getEntity()->getID()) };
       auto mesh_root { mesh_component_root->template has<Mesh>() };
-      
+
+      //@todo should be done once
+      mesh_root->getData()->_inverse_transform_matrix = _data.inverse_transform_matrix;
+      mesh_root->setHasShadow(entity_opts.has_shadow);
+      mesh_root->bbox();
       mesh_root->getData()->_bbox_min.x = std::min(_data.bbox_min.x, mesh_root->getData()->_bbox_min.x);
       mesh_root->getData()->_bbox_min.y = std::min(_data.bbox_min.y, mesh_root->getData()->_bbox_min.y);
       mesh_root->getData()->_bbox_min.z = std::min(_data.bbox_min.z, mesh_root->getData()->_bbox_min.z);      
@@ -348,19 +352,9 @@ namespace Vyroda
       
       auto entity { std::make_shared<Entity>() };
       entity->setName(_data.name);
-      
-      if (is_last) {
-        entity->setRoot();
-        mesh_root->addChild(entity->getID());
-        mesh->setRoot();
-        mesh->setParent(root_mesh_entity_node->getEntity()->getID());
-        //@todo doesn't look right
-        for (auto child : _entity_children) {
-          mesh->addChild(child);          
-        }
-      } else {
-        _entity_children.emplace_back(entity->getID());
-      }
+      mesh_root->addChild(entity->getID());
+      mesh->setParent(root_mesh_entity_node->getEntity()->getID());        
+
       data._id = entity->getID();
       mesh->setData(data);
 
@@ -375,20 +369,20 @@ namespace Vyroda
       _component_manager.add<MeshComponent>(entity->getID(), std::move(mesh));
       auto entityNode { root_mesh_entity_node->addChild(std::make_shared<EntityNode>(entity)) };
 
-      if (alpha_mode == 2.0f) {
-        addTransparentEntity(entityNode->getEntity());
-      } else {
-        addEntity(entityNode->getEntity());
-      }
-
       if (is_last) {
         {
+          if (alpha_mode == 2.0f) {
+            addTransparentEntity(root_mesh_entity_node->getEntity());
+          } else {
+            addEntity(root_mesh_entity_node->getEntity());
+          }
+
           //lua scripted animation  
           if (entity_opts.has_animation) {
             //@todo temp until lua scripting
             for (auto& anim : entity_opts.animation_scripts) {
               auto animationScript = std::make_unique<AnimationScript>(root_path + "/" + anim);
-              _component_manager.add<AnimationComponent>(entity->getID(), std::move(animationScript));
+              _component_manager.add<AnimationComponent>(root_mesh_entity_node->getEntity()->getID(), std::move(animationScript));
             }
           }
 
@@ -402,15 +396,14 @@ namespace Vyroda
               entity_opts.default_anim);
 
             _component_manager.add<BoneAnimationComponent>(
-            entity->getID(), std::move(boneAnimationScript));
-            _entity_children.clear();
+            root_mesh_entity_node->getEntity()->getID(), std::move(boneAnimationScript));
             _animations.clear();
             _rotations.clear();
             _positions.clear();
             _scales.clear();
           }
 
-          std::lock_guard<std::shared_mutex> guard(lockWorldNode());
+          //std::lock_guard<std::shared_mutex> guard(lockWorldNode());
           //std::shared_lock guard(_mutex_shared);
           root_mesh_entity_node->setIsLoaded(true);
           _world_node->addChild(root_mesh_entity_node);

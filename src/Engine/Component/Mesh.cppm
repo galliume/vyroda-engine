@@ -75,7 +75,7 @@ namespace Vyroda
     void clipped(bool clipped) { _is_clipped = clipped; }
 
     bool hasBbox() const { return _has_bbox; }
-    void bbox(bool bbox) { _has_bbox = bbox; }
+    void bbox(bool bbox = true) { _has_bbox = bbox; }
 
     bool isSkybox() const { return _is_skybox; }
     void isSkybox(bool is_skybox) { _is_skybox = is_skybox; }

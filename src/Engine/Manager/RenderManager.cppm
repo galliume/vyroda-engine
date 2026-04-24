@@ -272,8 +272,7 @@ namespace Vyroda
 
   void renderEntity(
     IDType const entity_id,
-    double const delta_time,
-    glm::mat4 const& camera_view_matrix);
+    double const delta_time);
 
   void drawEntity(
     IDType const entity_id,
@@ -300,7 +299,7 @@ namespace Vyroda
     std::ranges::range auto const& entities) const
     {
       return entities
-        | std::views::filter([&](auto const& e) { return e->isRoot() && e->isVisible(); })
+        | std::views::filter([&](auto const& e) { return e->isVisible(); })
           | std::views::transform([](auto const& e) { return e->getID(); })
           | std::ranges::to<std::vector>();
     }

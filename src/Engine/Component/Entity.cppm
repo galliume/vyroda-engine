@@ -18,7 +18,7 @@ namespace Vyroda
     std::string getName() const { return _name; }
 
     void setName(std::string const & name) { _name = name; }
-    void setVisible(bool const visible) { _is_visible = visible; }
+    void setVisible(bool const visible = true) { _is_visible = visible; }
 
     bool isDirty() const { return true; }
     bool isHit(glm::vec3 point);
@@ -28,10 +28,10 @@ namespace Vyroda
     bool isRoot() const { return _is_root; }
     
   private:
-    IDType _id{ 0 };
-    std::string _name{};
+    IDType _id { 0 };
+    std::string _name {};
 
-    bool _is_root {false};
-    bool _is_visible{ true };
+    bool _is_root { false };
+    bool _is_visible { true };
   };
 }

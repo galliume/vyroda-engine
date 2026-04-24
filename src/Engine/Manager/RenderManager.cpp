@@ -1,4 +1,3 @@
-
 /**
  * @file   RenderManager.cpp
  * @author  <Guillaume PERCEPIED>
@@ -223,7 +222,6 @@ namespace Vyroda
   void RenderManager::updateEntities(FrameContext const& frame_context)
   {
     auto const delta_time { frame_context.delta_time };
-    auto const camera_view_matrix { frame_context.camera_view_matrix };
 
     if (frame_context.water_entity != nullptr) {
       auto const entity_id { frame_context.water_entity->getID() };
@@ -283,9 +281,9 @@ namespace Vyroda
     for (std::size_t t { 0 }; t < count; ++t) {
       auto const n { chunk_size + (t < remainder ? 1 : 0) };
       auto const ids { std::span{ _all_ids.data() + offset, n } };
-      tasks.emplace_back([ids, delta_time, camera_view_matrix, this]() {
+      tasks.emplace_back([ids, delta_time, this]() {
         for (auto const id : ids) {
-          renderEntity(id, delta_time, camera_view_matrix);
+          renderEntity(id, delta_time);
         }
       });
       offset += n;
@@ -382,13 +380,10 @@ namespace Vyroda
     auto* mesh_component { _component_manager->get<MeshComponent>(entity_id) };
     auto mesh { mesh_component->template has<Mesh>() };
 
-    if (mesh->hasBbox()) {
-
-      auto* parent_component { _component_manager->get<MeshComponent>(mesh->getParent()) };
-      auto parent_mesh { parent_component->template has<Mesh>() };
+    if (mesh && mesh->hasBbox()) {
     
-      auto bmin { glm::vec3(glm::vec4(parent_mesh->getData()->_bbox_min, 1.0f)) };
-      auto bmax { glm::vec3(glm::vec4(parent_mesh->getData()->_bbox_max, 1.0f)) };
+      auto bmin { glm::vec3(glm::vec4(mesh->getData()->_bbox_min, 1.0f)) };
+      auto bmax { glm::vec3(glm::vec4(mesh->getData()->_bbox_max, 1.0f)) };
       auto const inv { mesh->getData()->_inverse_transform_matrix };
 
       for (auto const& K : frustum_planes) {
@@ -400,7 +395,7 @@ namespace Vyroda
         if (K_local.z >= 0) pos_side.z = bmax.z;
 
         if (glm::dot(K_local, glm::vec4(pos_side, 1.0f)) < 0) {
-          Logger::debug("clipped: {}", mesh->getName());
+          //          Logger::debug("clipped: {}", mesh->getName());
           return true;
         }
       }
@@ -410,53 +405,41 @@ namespace Vyroda
 
   void RenderManager::renderEntity(
     IDType const entity_id,
-    double const delta_time,
-    glm::mat4 const&)
+    double const delta_time)
   {
     auto* mesh_component { _component_manager->get<MeshComponent>(entity_id) };
     auto mesh { mesh_component->template has<Mesh>() };
-    //    auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
+    auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
 
-    AnimationInfo animation_info {
-      .delta_time = delta_time,
-      .data = mesh->getData()
-    };
-    if (mesh->getName() == _player_manager->getPlayerName()) {
-      _player_manager->setPlayerId(entity_id);
-      animation_info.looping = false;
-      if (_current_camera == std::to_underlying(CameraType::THIRD_PERSON) && !getCamera().isInit()) {
-        getCamera().init(_player_manager->getPosition());
-        getCamera().forward();
-        getCamera().move();
+    if (mesh && rdr_impl) {   
+      AnimationInfo animation_info {
+        .delta_time = delta_time,
+        .data = mesh->getData()
+      };
+      if (mesh->getName() == _player_manager->getPlayerName()) {
+        _player_manager->setPlayerId(entity_id);
+        animation_info.looping = false;
+        if (_current_camera == std::to_underlying(CameraType::THIRD_PERSON) && !getCamera().isInit()) {
+          getCamera().init(_player_manager->getPosition());
+          getCamera().forward();
+          getCamera().move();
+        }
+      }
+   
+      auto* animation_component { _component_manager->get<AnimationComponent>(mesh->getParent()) };
+      if (animation_component) {
+        (*animation_component)(animation_info);
+        mesh->setIsDirty(true);        
+      }
+   
+      auto* boneAnimationComponent { _component_manager->get<BoneAnimationComponent>(mesh->getParent()) };
+      if (boneAnimationComponent) {
+        (*boneAnimationComponent)(animation_info);
+        mesh->setIsDirty(true);        
       }
     }
-
-    auto* animation_component { _component_manager->get<AnimationComponent>(entity_id) };
-    if (animation_component) {
-      (*animation_component)(animation_info);
-      mesh->setIsDirty(true);
-    }
-
-    auto* boneAnimationComponent { _component_manager->get<BoneAnimationComponent>(entity_id) };
-    if (boneAnimationComponent) {
-      (*boneAnimationComponent)(animation_info);
-      mesh->setIsDirty(true);
-    }
-
-    for (auto const& id : mesh->getChildren()) {
-      auto* child_mesh_component { _component_manager->get<MeshComponent>(id) };
-      auto child_mesh { child_mesh_component->template has<Mesh>() };
-      if (child_mesh && boneAnimationComponent) {
-        AnimationInfo child_animation_info {
-          .delta_time = delta_time,
-          .data = child_mesh->getData(),
-          .looping = animation_info.looping
-        };
-        (*boneAnimationComponent)(child_animation_info);
-        child_mesh->setIsDirty(true);
-        // auto child_rdr_impl { _component_manager->get<RendererComponent>(id) };
-        // (*child_rdr_impl)(_renderer.get(), getComponentRenderingInfo(child_mesh));
-      }
+    for (auto const id : mesh->getChildren()) {
+      renderEntity(id, delta_time);
     }
   }
 
@@ -468,7 +451,7 @@ namespace Vyroda
     auto* mesh_component { _component_manager->get<MeshComponent>(entity_id) };
     auto mesh { mesh_component->template has<Mesh>() };
     auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
-
+    //    Logger::debug("mesh {}", mesh->getName());
     if (mesh && rdr_impl) {
       if (mesh->isDirty()) {
         (*rdr_impl)(*_renderer.get(), *mesh, getRendererContext(camera_view_matrix));
@@ -742,7 +725,7 @@ namespace Vyroda
     auto const not_clipped_visible_ids { get_not_clipped_ids(visible_ids, frustum_planes) };
     auto const transparent_ids { get_visible_ids(_entity_manager->getTransparentEntities()) };
     auto const not_clipped_transparent_ids { get_not_clipped_ids(transparent_ids, frustum_planes) };
-      
+
     return {
       .delta_time = delta_time,
       .root_path = root_path,
