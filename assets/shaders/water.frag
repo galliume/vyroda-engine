@@ -73,13 +73,13 @@ layout(location = 8) in vec4 in_cascade_coord;
 layout(location = 12) in vec3 in_blend;
 
 layout(binding = 1) uniform sampler2D tex_sampler[5];
-layout(binding = 2) uniform samplerCube env_sampler[1];
-layout(std430, binding = 3) readonly buffer LightBuffer {
+layout(binding = 4) uniform samplerCube env_sampler[1];
+layout(std430, binding = 5) readonly buffer LightBuffer {
     Light lights[];
 } lightData;
 
-layout(binding = 4) uniform sampler2DArrayShadow csm;
-layout(binding = 5) uniform samplerCubeShadow tex_shadow_sampler;
+layout(binding = 6) uniform sampler2DArrayShadow csm;
+layout(binding = 3) uniform samplerCubeShadow tex_shadow_sampler;
 
 layout(push_constant) uniform constants
 {

@@ -2,10 +2,10 @@
  * @file   VulkanAPI.cppm
  * @author  <Guillaume PERCEPIED>
  * @date   Sun Mar  8 19:38:04 2026
- * 
- * @brief  Vulkan API 
- * 
- * 
+ *
+ * @brief  Vulkan API
+ *
+ *
  */
 export module Engine.Renderer.VulkanAPI;
 
@@ -85,8 +85,8 @@ namespace Vyroda
   };
 
   struct GarbageBatch {
-    VkFence fence; 
-    
+    VkFence fence;
+
     VkCommandBuffer cmd_buffer;
     VkCommandPool cmd_pool;
     VkBuffer staging_buffer;
@@ -96,6 +96,12 @@ namespace Vyroda
   struct GarbageCollector {
       std::vector<GarbageBatch> garbage;
       std::mutex mutex;
+  };
+
+  struct DescSetsBuffers
+  {
+    Buffer ubo;
+    Buffer storage;
   };
 
   export class VulkanAPI
@@ -118,37 +124,32 @@ namespace Vyroda
 
     VkDescriptorSetLayout createDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> const& pBindings);
 
-    VkDescriptorSet createDescriptorSets(
+    void createDescriptorSets(
+      std::string const& name,
       VulkanPipeline & pipeline,
       std::uint32_t const count = 100) __attribute__((no_thread_safety_analysis));
 
-    void updateDescriptorSets(
-      std::vector<Buffer>& uniform_buffers,
-      VkDescriptorSet descset,
-      std::vector<VkDescriptorImageInfo>& image_info,
-      VkDescriptorType const type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    bool hasDescSet(std::string const& name) const;
 
+    VkDescriptorSet& getDescSet(std::string const& name,
+      std::uint32_t const frame_index);
+
+    DescSetsBuffers& getDescSetBuffers(std::string const& name,
+      std::uint32_t const frame_index);    
+    
     void updateDescriptorSets(
-      std::vector<Buffer>& uniformBuffers,
-      std::vector<Buffer>& storageBuffers,
-      VkDescriptorSet descriptorSet,
+      std::string const& name,
       std::vector<VkDescriptorImageInfo>& imageInfo,
       std::vector<VkDescriptorImageInfo>& depth_map_image_info,
       std::vector<VkDescriptorImageInfo>& cube_map_image_info,
       Buffer& light_storage_buffer,
       std::vector<VkDescriptorImageInfo>& csm_image_info);
 
-    void updateDescriptorSet(
-      Buffer& uniform_buffer,
-      VkDescriptorSet descset,
+    void updateDescriptorSets(
+      std::string const& name,
+      std::vector<Buffer>& uniform_buffer,
       std::vector<VkDescriptorImageInfo>& image_info,
       VkDescriptorType const type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-
-    void updateDescriptorSet(
-      Buffer& uniform_buffer,
-      Buffer& storage_buffer,
-      VkDescriptorSet descset,
-      std::vector<VkDescriptorImageInfo>& image_info);
 
     void updateStorageDescriptorSets(
       std::vector<Buffer>& uniform_buffers,
@@ -571,7 +572,7 @@ namespace Vyroda
       VkDeviceMemory mem);
 
       void collectGarbage();
-      
+
       void commitCopyBuffer(std::size_t const image_index) __attribute__((no_thread_safety_analysis));
       void startCopyBuffer(std::size_t const image_index);
       void endCopyBuffer(std::size_t const image_index) __attribute__((no_thread_safety_analysis));
@@ -583,7 +584,7 @@ namespace Vyroda
         VkDeviceSize src_offset,
         VkDeviceSize dst_offset,
         std::size_t const image_index);
-  
+
     //bool _FramebufferResized = false;
 
     //VK_COLOR_SPACE_HDR10_ST2084_EXT
@@ -606,6 +607,7 @@ namespace Vyroda
     void updateCurrentStagingMemoryOffset(std::size_t offset, std::size_t const image_index) { _update_vertex_offsets[image_index] += offset; }
 
     void updateQueueIndex() { _queue_index = (_queue_index + 1) % _queue_count; }
+    void resetDescPool(VkDescriptorPool& pool);
 
   private:
     bool isDeviceSuitable(VkPhysicalDevice& device);
@@ -692,7 +694,7 @@ namespace Vyroda
     //VkMemoryRequirements _MemRequirements;
     std::vector<VkCommandPool> _transfer_cmd_pool{};
     std::vector<VkCommandBuffer> _transfer_cmd_buffer{};
-    
+
     std::vector<VkCommandPool> _copy_cmd_pool{};
     std::vector<VkCommandBuffer> _copy_cmd_buffer{};
 
@@ -704,19 +706,26 @@ namespace Vyroda
     //3 is the max of images in flight
     std::vector<std::atomic<VkDeviceSize>> _update_vertex_offsets = std::vector<std::atomic<VkDeviceSize>>(3);
     std::size_t _queue_index {0};
-  
+
     GarbageCollector _garbage_collector{};
     std::vector<std::vector<BufferCopyRequest>> _buffer_copy_request;
     std::mutex _mutex_buffer_copy_request;
     std::mutex _mutex_pipeline;
     std::recursive_mutex _mutex_staging_buffer;
 
+    VkSampler _depth_map_sampler { VK_NULL_HANDLE };
+    VkSampler _texture_sampler { VK_NULL_HANDLE };
+    std::unordered_map<std::uint8_t, VkSampler> _ktx_samplers{};
+    std::uint64_t _nb_desc_sets {0};
+    std::unordered_map<std::string, std::vector<VkDescriptorSet>> _desc_sets{};
+    std::unordered_map<std::string, std::vector<DescSetsBuffers>> _desc_sets_buffers{};
+
     std::map<LayoutPair, TransitionSyncData> const _transition_map {
         {
           {VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL},
           {
             .srcAccessMask = 0,
-            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | 
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
                             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT |
                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
             .source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -726,7 +735,7 @@ namespace Vyroda
         {
           {VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR},
           {
-            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT | 
+            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT |
                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT,
             .dstAccessMask = 0,
             .source_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
@@ -737,7 +746,7 @@ namespace Vyroda
           {VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL},
         {
             .srcAccessMask = 0,
-            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT | 
+            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT |
                             VK_ACCESS_TRANSFER_WRITE_BIT,
             .source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             .destination_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT

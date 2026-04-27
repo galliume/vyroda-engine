@@ -101,7 +101,7 @@ namespace Vyroda
       RendererContext const& renderer_context);
 
     void drawShadowMap(
-Mesh const& mesh,
+      Mesh const& mesh,
       RendererContext const& renderer_context,
       SHADOW_TYPE const shadow_type);
 
@@ -133,6 +133,8 @@ Mesh const& mesh,
     inline VkDevice getDevice()  { return _vulkan->getDevice(); }
     inline glm::mat4 getPerspective() { return _perspective; }
     VulkanPipeline& getPipeline(std::string const & shaderName) { return _pipelines[shaderName]; }
+    std::unordered_map<std::string, VulkanPipeline>& getPipelines() { return _pipelines; }
+    
     void immediateSubmit(std::function<void(VkCommandBuffer cmd)> && function, int queueIndex = 0) ;
     void init(GLFWwindow* const window);
     //void renderScene();
@@ -165,6 +167,7 @@ Mesh const& mesh,
 
     void onFinishRender();
     void setPerspective();
+    void setupShadowDescSets(VkBuffer buffer);
 
   private:
 

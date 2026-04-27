@@ -139,7 +139,8 @@ namespace Vyroda
 
     //@todo rename to
     mesh.setOptions(options);
-
+    mesh.setName("__text__");
+    
     auto const& data = mesh.getData();
 
     data->_vertices = vertices;
@@ -238,45 +239,7 @@ namespace Vyroda
     std::vector<VkDescriptorImageInfo> image_infos{};
     image_infos.emplace_back(sampler, atlas.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
 
-    VkDescriptorSet descset {
-      renderer.getAPI().createDescriptorSets(renderer.getPipeline(mesh.getShaderName()), 1) };
-
-    std::array<VkWriteDescriptorSet, 2> desc_writes{};
-    std::vector<VkDescriptorBufferInfo> buffer_infos;
-
-    std::for_each(std::begin(mesh.getUniformBuffers()), std::end(mesh.getUniformBuffers()),
-    [& buffer_infos](const Buffer & uniformBuffer)
-    {
-      VkDescriptorBufferInfo buffer_info{};
-      buffer_info.buffer = uniformBuffer.buffer;
-      buffer_info.offset = 0;
-      buffer_info.range = VK_WHOLE_SIZE;
-      buffer_infos.emplace_back(buffer_info);
-    });
-
-    desc_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    desc_writes[0].dstSet = descset;
-    desc_writes[0].dstBinding = 0;
-    desc_writes[0].dstArrayElement = 0;
-    desc_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    desc_writes[0].descriptorCount = 1;
-    desc_writes[0].pBufferInfo = buffer_infos.data();
-
-    desc_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    desc_writes[1].dstSet = descset;
-    desc_writes[1].dstBinding = 1;
-    desc_writes[1].dstArrayElement = 0;
-    desc_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    desc_writes[1].descriptorCount = static_cast<std::uint32_t>(image_infos.size());
-    desc_writes[1].pImageInfo = image_infos.data();
-
-    vkUpdateDescriptorSets(
-      renderer.getAPI().getDevice(),
-      static_cast<std::uint32_t>(desc_writes.size()),
-      desc_writes.data(),
-      0,
-      nullptr);
-
-    mesh.setDescSet(descset);
+    renderer.getAPI().createDescriptorSets(mesh.getName(), renderer.getPipeline(mesh.getShaderName()), 1);
+    renderer.getAPI().updateDescriptorSets(mesh.getName(), mesh.getUniformBuffers(), image_infos);
   }
 }

@@ -51,9 +51,11 @@ namespace Vyroda
     _window = std::move(window);
  
     InputManagerLocator::init(_window.get());
- 
+
     _cameras.emplace_back(std::make_unique<Camera>());
+
     _renderer = std::make_unique<Renderer>();
+
     _renderer->init(_window->getGlfwWindow());
 
     _component_manager = std::make_unique<ComponentManager>();
@@ -71,7 +73,7 @@ namespace Vyroda
     
     _destroy_manager->setRenderer(_renderer.get());
     _destroy_manager->addMemoryPool(_renderer->getAPI().getDeviceMemoryPool());
-    
+
     _light_buffers.resize(_renderer->getMaxFramesInFlight());
     
     for (std::size_t i { 0 }; i < _light_buffers.size(); ++i) {
@@ -84,7 +86,7 @@ namespace Vyroda
     auto atlas { _font_manager->load() };
 
     _texture_manager->addTexture(atlas);
-    
+
     //@todo, those managers should not have the usage of the renderer...
     _shader_manager = std::make_unique<ShaderManager>(*_renderer);
 
@@ -194,7 +196,7 @@ namespace Vyroda
       }
 
       updateEntities(frame_context);
-      //_renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex())
+      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
       drawShadowmap(frame_context);
       drawEntities(frame_context);
 
@@ -396,7 +398,7 @@ namespace Vyroda
 
         if (glm::dot(K_local, glm::vec4(pos_side, 1.0f)) < 0) {
           //          Logger::debug("clipped: {}", mesh->getName());
-          return true;
+          return false;
         }
       }
     }

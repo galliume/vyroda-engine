@@ -309,7 +309,7 @@ namespace Vyroda
       mesh_root->bbox();
       mesh_root->getData()->_bbox_min.x = std::min(_data.bbox_min.x, mesh_root->getData()->_bbox_min.x);
       mesh_root->getData()->_bbox_min.y = std::min(_data.bbox_min.y, mesh_root->getData()->_bbox_min.y);
-      mesh_root->getData()->_bbox_min.z = std::min(_data.bbox_min.z, mesh_root->getData()->_bbox_min.z);      
+      mesh_root->getData()->_bbox_min.z = std::min(_data.bbox_min.z, mesh_root->getData()->_bbox_min.z);
 
       mesh_root->getData()->_bbox_max.x = std::max(_data.bbox_max.x, mesh_root->getData()->_bbox_max.x);
       mesh_root->getData()->_bbox_max.y = std::max(_data.bbox_max.y, mesh_root->getData()->_bbox_max.y);

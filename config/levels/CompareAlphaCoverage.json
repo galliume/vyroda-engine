@@ -23,6 +23,7 @@
     }
   },
   "hasFog" : false,
+  "player": "",
   "entities": {
     "CompareAlphaCoverage": {
       "mesh": "assets/mesh/CompareAlphaCoverage/glTF/CompareAlphaCoverage.gltf",

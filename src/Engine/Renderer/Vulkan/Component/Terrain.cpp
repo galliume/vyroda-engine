@@ -95,6 +95,7 @@ namespace Vyroda
         vertices.push_back(v4);
       }
     }
+    mesh.setName("__terrain__");
     auto data = mesh.getData();
     auto commandPool = renderer.getAPI().createCommandPool();
 
@@ -232,87 +233,19 @@ namespace Vyroda
     std::vector<VkDescriptorImageInfo> depth_map_image_info{};
     depth_map_image_info.emplace_back(renderer.getDepthMapSamplers(), renderer.getDepthMapImageViews(), VK_IMAGE_LAYOUT_GENERAL);
 
-    VkDescriptorSet descset {
-      renderer.getAPI().createDescriptorSets(renderer.getPipeline(mesh.getShaderName()) , 1) };
+    std::vector<VkDescriptorImageInfo> env_infos{};
+    env_infos.emplace_back(render_context.skybox->getSampler(), render_context.skybox->getImageView(), VK_IMAGE_LAYOUT_GENERAL );
 
-    auto& light_buffer { render_context.light_buffer };
+    renderer.getAPI().createDescriptorSets(mesh.getName(), renderer.getPipeline(mesh.getShaderName()) , 1);
 
-    //renderer.getAPI().updateDescriptorSets(*mesh.getUniformBuffers(), descset, image_infos);
-    std::array<VkWriteDescriptorSet, 6> desc_writes{};
-    std::vector<VkDescriptorBufferInfo> buffer_infos;
+    auto light_buffer { render_context.light_buffer };
 
-    std::for_each(std::begin(mesh.getUniformBuffers()), std::end(mesh.getUniformBuffers()),
-    [& buffer_infos](const Buffer & uniformBuffer)
-    {
-      VkDescriptorBufferInfo buffer_info{};
-      buffer_info.buffer = uniformBuffer.buffer;
-      buffer_info.offset = 0;
-      buffer_info.range = VK_WHOLE_SIZE;
-      buffer_infos.emplace_back(buffer_info);
-    });
-
-    std::array<VkDescriptorBufferInfo, 1> light_buffer_infos;
-    VkDescriptorBufferInfo light_buffer_info{};
-    light_buffer_info.buffer = light_buffer.buffer;
-    light_buffer_info.offset = 0;
-    light_buffer_info.range = VK_WHOLE_SIZE;
-    light_buffer_infos[0] = light_buffer_info;
-
-    desc_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    desc_writes[0].dstSet = descset;
-    desc_writes[0].dstBinding = 0;
-    desc_writes[0].dstArrayElement = 0;
-    desc_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    desc_writes[0].descriptorCount = 1;
-    desc_writes[0].pBufferInfo = buffer_infos.data();
-
-    desc_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    desc_writes[1].dstSet = descset;
-    desc_writes[1].dstBinding = 1;
-    desc_writes[1].dstArrayElement = 0;
-    desc_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    desc_writes[1].descriptorCount = static_cast<std::uint32_t>(image_infos.size());
-    desc_writes[1].pImageInfo = image_infos.data();
-
-    desc_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    desc_writes[2].dstSet = descset;
-    desc_writes[2].dstBinding = 2;
-    desc_writes[2].dstArrayElement = 0;
-    desc_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    desc_writes[2].descriptorCount = static_cast<std::uint32_t>(env_image_infos.size());
-    desc_writes[2].pImageInfo = env_image_infos.data();
-
-    desc_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    desc_writes[3].dstSet = descset;
-    desc_writes[3].dstBinding = 3;
-    desc_writes[3].dstArrayElement = 0;
-    desc_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    desc_writes[3].descriptorCount = static_cast<std::uint32_t>(light_buffer_infos.size());
-    desc_writes[3].pBufferInfo = light_buffer_infos.data();
-
-    desc_writes[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    desc_writes[4].dstSet = descset;
-    desc_writes[4].dstBinding = 4;
-    desc_writes[4].dstArrayElement = 0;
-    desc_writes[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    desc_writes[4].descriptorCount = static_cast<std::uint32_t>(csm_image_info.size());
-    desc_writes[4].pImageInfo = csm_image_info.data();
-
-    desc_writes[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    desc_writes[5].dstSet = descset;
-    desc_writes[5].dstBinding = 5;
-    desc_writes[5].dstArrayElement = 0;
-    desc_writes[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    desc_writes[5].descriptorCount = static_cast<std::uint32_t>(depth_map_image_info.size());
-    desc_writes[5].pImageInfo = depth_map_image_info.data();
-
-    vkUpdateDescriptorSets(
-      renderer.getAPI().getDevice(),
-      static_cast<std::uint32_t>(desc_writes.size()),
-      desc_writes.data(),
-      0,
-      nullptr);
-
-    mesh.setDescSet(descset);
+    renderer.getAPI().updateDescriptorSets(
+      mesh.getName(),                  
+      image_infos,
+      depth_map_image_info,
+      env_infos,
+      light_buffer,
+      csm_image_info);
   }
 }

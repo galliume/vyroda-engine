@@ -1,3 +1,4 @@
+
 /**
  * @file   VulkanAPI.cpp
  * @author  <Guillaume PERCEPIED>
@@ -1515,279 +1516,222 @@ VkDescriptorPool VulkanAPI::createDescriptorPool(
   return descriptor_pool;
 }
 
-VkDescriptorSet VulkanAPI::createDescriptorSets(
+void VulkanAPI::createDescriptorSets(
+  std::string const& name,
   VulkanPipeline& pipeline,
   std::uint32_t const count)
 {
   {
-    std::lock_guard<std::mutex> lock(_mutex_pipeline);
+    auto& descsets{ _desc_sets[name] };
 
-    VkDescriptorSet descset{};
-    VkDescriptorSetAllocateInfo alloc_info{};
-    alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    alloc_info.descriptorPool = pipeline.desc_pool;
-    alloc_info.descriptorSetCount = count;
-    alloc_info.pSetLayouts = &pipeline.descset_layout;
+    if (descsets.empty()) {
+      std::uint32_t const size { 3 };
 
-    VkResult result = vkAllocateDescriptorSets(_device, & alloc_info, & descset);
+      auto& buffers { _desc_sets_buffers[name] };
 
-    if (result != VK_SUCCESS) {
-      Logger::error("failed to allocate descriptor sets.");
+      for (std::uint32_t i { 0 }; i < size; i++) {
+        VkDescriptorSet descset{};
+
+        VkDescriptorSetAllocateInfo alloc_info{};
+        alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        alloc_info.descriptorPool = pipeline.desc_pool;
+        alloc_info.descriptorSetCount = count;
+        alloc_info.pSetLayouts = &pipeline.descset_layout;
+
+        VkResult result { vkAllocateDescriptorSets(_device, & alloc_info, & descset) };
+
+        if (result != VK_SUCCESS) {
+          Logger::error("failed to allocate descriptor sets: {}", string_VkResult(result));
+        }
+        _nb_desc_sets += 1;
+        
+        descsets.push_back(std::move(descset));
+
+        auto ubo { createUniformBuffers(1, i) };
+
+        ObjectBuffer object_buffer{};
+        auto storage { createStorageBuffers(object_buffer, i) };
+
+        buffers.emplace_back(ubo, storage);
+      }
     }
-    return descset;
+    //Logger::debug("_nb_desc_sets {}", _nb_desc_sets);
+  }
+}
+
+bool VulkanAPI::hasDescSet(std::string const& name) const
+{
+  return _desc_sets.contains(name);
+}
+
+VkDescriptorSet& VulkanAPI::getDescSet(std::string const& name, std::uint32_t const frame_index)
+{
+  return _desc_sets[name].at(frame_index);
+}
+
+DescSetsBuffers& VulkanAPI::getDescSetBuffers(std::string const& name, std::uint32_t const frame_index)
+{
+  return _desc_sets_buffers[name].at(frame_index);
+}
+
+void VulkanAPI::updateDescriptorSets(
+  std::string const& name,
+  std::vector<Buffer>& uniform_buffers,
+  std::vector<VkDescriptorImageInfo>& image_info,
+  VkDescriptorType const type)
+{
+  auto& descsets { _desc_sets[name] };
+
+  for (std::size_t i {0}; i < descsets.size(); i++) {
+    auto& descset { descsets.at(i) };
+
+    if (descset == VK_NULL_HANDLE) {
+      Logger::error("desc set null for {} n {}", name, i);
+    }
+        
+    std::array<VkWriteDescriptorSet, 2> desc_writes{};
+    std::vector<VkDescriptorBufferInfo> buffer_infos;
+
+    std::for_each(std::begin(uniform_buffers), std::end(uniform_buffers),
+    [& buffer_infos](const Buffer & uniformBuffer)
+    {
+      VkDescriptorBufferInfo buffer_info{};
+      buffer_info.buffer = uniformBuffer.buffer;
+      buffer_info.offset = 0;
+      buffer_info.range = VK_WHOLE_SIZE;
+      buffer_infos.emplace_back(buffer_info);
+    });
+
+    desc_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    desc_writes[0].dstSet = descset;
+    desc_writes[0].dstBinding = 0;
+    desc_writes[0].dstArrayElement = 0;
+    desc_writes[0].descriptorType = type;
+    desc_writes[0].descriptorCount = 1;
+    desc_writes[0].pBufferInfo = buffer_infos.data();
+
+    desc_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    desc_writes[1].dstSet = descset;
+    desc_writes[1].dstBinding = 1;
+    desc_writes[1].dstArrayElement = 0;
+    desc_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    desc_writes[1].descriptorCount = static_cast<std::uint32_t>(image_info.size());
+    desc_writes[1].pImageInfo = image_info.data();
+
+    vkUpdateDescriptorSets(_device, static_cast<std::uint32_t>(desc_writes.size()), desc_writes.data(), 0, nullptr);
   }
 }
 
 void VulkanAPI::updateDescriptorSets(
-  std::vector<Buffer>& uniform_buffers,
-  VkDescriptorSet descset,
-  std::vector<VkDescriptorImageInfo>& image_info,
-  VkDescriptorType const type)
-{
-  std::array<VkWriteDescriptorSet, 2> desc_writes{};
-  std::vector<VkDescriptorBufferInfo> buffer_infos;
-
-  std::for_each(std::begin(uniform_buffers), std::end(uniform_buffers),
-  [& buffer_infos](const Buffer & uniformBuffer)
-  {
-    VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = uniformBuffer.buffer;
-    buffer_info.offset = 0;
-    buffer_info.range = VK_WHOLE_SIZE;
-    buffer_infos.emplace_back(buffer_info);
-  });
-
-  desc_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[0].dstSet = descset;
-  desc_writes[0].dstBinding = 0;
-  desc_writes[0].dstArrayElement = 0;
-  desc_writes[0].descriptorType = type;
-  desc_writes[0].descriptorCount = 1;
-  desc_writes[0].pBufferInfo = buffer_infos.data();
-
-  desc_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[1].dstSet = descset;
-  desc_writes[1].dstBinding = 1;
-  desc_writes[1].dstArrayElement = 0;
-  desc_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  desc_writes[1].descriptorCount = static_cast<std::uint32_t>(image_info.size());
-  desc_writes[1].pImageInfo = image_info.data();
-
-  vkUpdateDescriptorSets(_device, static_cast<std::uint32_t>(desc_writes.size()), desc_writes.data(), 0, nullptr);
-}
-
-void VulkanAPI::updateDescriptorSet(
-  Buffer& uniform_buffer,
-  VkDescriptorSet descset,
-  std::vector<VkDescriptorImageInfo>& image_info,
-  VkDescriptorType const type)
-{
-  std::array<VkWriteDescriptorSet, 2> desc_writes{};
-  std::vector<VkDescriptorBufferInfo> buffer_infos;
-
-  VkDescriptorBufferInfo bufferInfo{};
-  bufferInfo.buffer = uniform_buffer.buffer;
-  bufferInfo.offset = 0;
-  bufferInfo.range = VK_WHOLE_SIZE;
-  buffer_infos.emplace_back(bufferInfo);
-
-  desc_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[0].dstSet = descset;
-  desc_writes[0].dstBinding = 0;
-  desc_writes[0].dstArrayElement = 0;
-  desc_writes[0].descriptorType = type;
-  desc_writes[0].descriptorCount = 1;
-  desc_writes[0].pBufferInfo = buffer_infos.data();
-
-  desc_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[1].dstSet = descset;
-  desc_writes[1].dstBinding = 1;
-  desc_writes[1].dstArrayElement = 0;
-  desc_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  desc_writes[1].descriptorCount = static_cast<std::uint32_t>(image_info.size());
-  desc_writes[1].pImageInfo = image_info.data();
-
-  vkUpdateDescriptorSets(_device, static_cast<std::uint32_t>(desc_writes.size()), desc_writes.data(), 0, nullptr);
-}
-
-void VulkanAPI::updateDescriptorSet(
-  Buffer& uniform_buffer,
-  Buffer& storage_buffer,
-  VkDescriptorSet descset,
-  std::vector<VkDescriptorImageInfo>& image_info)
-{
-  std::array<VkWriteDescriptorSet, 3> desc_writes{};
-  std::vector<VkDescriptorBufferInfo> buffer_infos;
-  std::vector<VkDescriptorBufferInfo> storage_buffer_infos;
-
-  VkDescriptorBufferInfo buffer_info{};
-  buffer_info.buffer = uniform_buffer.buffer;
-  buffer_info.offset = 0;
-  buffer_info.range = VK_WHOLE_SIZE;
-  buffer_infos.emplace_back(buffer_info);
-
-  VkDescriptorBufferInfo storage_buffer_info{};
-  storage_buffer_info.buffer = storage_buffer.buffer;
-  storage_buffer_info.offset = 0;
-  storage_buffer_info.range = VK_WHOLE_SIZE;
-  storage_buffer_infos.emplace_back(storage_buffer_info);
-
-  desc_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[0].dstSet = descset;
-  desc_writes[0].dstBinding = 0;
-  desc_writes[0].dstArrayElement = 0;
-  desc_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  desc_writes[0].descriptorCount = 1;
-  desc_writes[0].pBufferInfo = buffer_infos.data();
-
-  desc_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[1].dstSet = descset;
-  desc_writes[1].dstBinding = 1;
-  desc_writes[1].dstArrayElement = 0;
-  desc_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  desc_writes[1].descriptorCount = static_cast<std::uint32_t>(image_info.size());
-  desc_writes[1].pImageInfo = image_info.data();
-
-  desc_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[2].dstSet = descset;
-  desc_writes[2].dstBinding = 2;
-  desc_writes[2].dstArrayElement = 0;
-  desc_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  desc_writes[2].descriptorCount = static_cast<std::uint32_t>(storage_buffer_infos.size());
-  desc_writes[2].pBufferInfo = storage_buffer_infos.data();
-
-  vkUpdateDescriptorSets(_device, static_cast<std::uint32_t>(desc_writes.size()), desc_writes.data(), 0, nullptr);
-}
-
-//@todo needs refactoring
-void VulkanAPI::updateDescriptorSets(
-  std::vector<Buffer>& uniform_buffers,
-  std::vector<Buffer>& storage_buffers,
-  VkDescriptorSet descset,
+  std::string const& name,
   std::vector<VkDescriptorImageInfo>& image_info,
   std::vector<VkDescriptorImageInfo>& depth_map_image_info,
   std::vector<VkDescriptorImageInfo>& cube_map_image_info,
   Buffer& light_storage_buffer,
   std::vector<VkDescriptorImageInfo>& csm_image_info)
 {
-  std::array<VkWriteDescriptorSet, 7> desc_writes{};
-  std::vector<VkDescriptorBufferInfo> buffer_infos;
-  std::vector<VkDescriptorBufferInfo> storage_buffer_infos;
 
-  std::for_each(std::begin(uniform_buffers), std::end(uniform_buffers),
-  [&buffer_infos](const Buffer& buffer)
-  {
-    VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = buffer.buffer;
-    buffer_info.offset = 0;
-    buffer_info.range = VK_WHOLE_SIZE;
-    buffer_infos.emplace_back(buffer_info);
-  });
+  auto& descsets { _desc_sets[name] };
+  auto& buffers { _desc_sets_buffers[name] };
 
-  std::for_each(std::begin(storage_buffers), std::end(storage_buffers),
-  [&storage_buffer_infos](const Buffer& buffer)
-  {
-    VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = buffer.buffer;
-    buffer_info.offset = 0;
-    buffer_info.range = VK_WHOLE_SIZE;
-    storage_buffer_infos.emplace_back(buffer_info);
-  });
+  for (std::size_t i {0}; i < descsets.size(); i++) {
+    auto& ubo { buffers.at(i).ubo };
+    auto& storage { buffers.at(i).storage };
+    auto& descset { descsets.at(i) };
 
-  std::array<VkDescriptorBufferInfo, 1> light_buffer_infos;
-  VkDescriptorBufferInfo light_buffer_info{};
-  light_buffer_info.buffer = light_storage_buffer.buffer;
-  light_buffer_info.offset = 0;
-  light_buffer_info.range = VK_WHOLE_SIZE;
-  light_buffer_infos[0] = light_buffer_info;
+    if (descset == VK_NULL_HANDLE) {
+      Logger::error("desc set null for {} n {}", name, i);
+    }
+    
+    std::array<VkWriteDescriptorSet, 7> desc_writes{};
+    std::vector<VkDescriptorBufferInfo> ubo_buffer_infos;
+    std::vector<VkDescriptorBufferInfo> storage_buffer_infos;
 
-  desc_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[0].dstSet = descset;
-  desc_writes[0].dstBinding = 0;
-  desc_writes[0].dstArrayElement = 0;
-  desc_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  desc_writes[0].descriptorCount = 1;
-  desc_writes[0].pBufferInfo = buffer_infos.data();
+    // std::for_each(std::begin(uniform_buffers), std::end(uniform_buffers),
+    // [&buffer_infos](const Buffer& buffer)
+    // {
+      VkDescriptorBufferInfo ubo_buffer_info{};
+      ubo_buffer_info.buffer = ubo.buffer;
+      ubo_buffer_info.offset = 0;
+      ubo_buffer_info.range = VK_WHOLE_SIZE;
+      ubo_buffer_infos.emplace_back(ubo_buffer_info);
+    // });
 
-  desc_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[1].dstSet = descset;
-  desc_writes[1].dstBinding = 1;
-  desc_writes[1].dstArrayElement = 0;
-  desc_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  desc_writes[1].descriptorCount = static_cast<std::uint32_t>(image_info.size());
-  desc_writes[1].pImageInfo = image_info.data();
+    // std::for_each(std::begin(storage_buffers), std::end(storage_buffers),
+    // [&storage_buffer_infos](const Buffer& buffer)
+    // {
+      VkDescriptorBufferInfo storage_buffer_info{};
+      storage_buffer_info.buffer = storage.buffer;
+      storage_buffer_info.offset = 0;
+      storage_buffer_info.range = VK_WHOLE_SIZE;
+      storage_buffer_infos.emplace_back(storage_buffer_info);
+    // });
 
-  desc_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[2].dstSet = descset;
-  desc_writes[2].dstBinding = 2;
-  desc_writes[2].dstArrayElement = 0;
-  desc_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  desc_writes[2].descriptorCount = static_cast<std::uint32_t>(storage_buffer_infos.size());
-  desc_writes[2].pBufferInfo = storage_buffer_infos.data();
+    std::array<VkDescriptorBufferInfo, 1> light_buffer_infos;
+    VkDescriptorBufferInfo light_buffer_info{};
+    light_buffer_info.buffer = light_storage_buffer.buffer;
+    light_buffer_info.offset = 0;
+    light_buffer_info.range = VK_WHOLE_SIZE;
+    light_buffer_infos[0] = light_buffer_info;
 
-  desc_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[3].dstSet = descset;
-  desc_writes[3].dstBinding = 3;
-  desc_writes[3].dstArrayElement = 0;
-  desc_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  desc_writes[3].descriptorCount = static_cast<std::uint32_t>(depth_map_image_info.size());
-  desc_writes[3].pImageInfo = depth_map_image_info.data();
+    desc_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    desc_writes[0].dstSet = descset;
+    desc_writes[0].dstBinding = 0;
+    desc_writes[0].dstArrayElement = 0;
+    desc_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    desc_writes[0].descriptorCount = 1;
+    desc_writes[0].pBufferInfo = ubo_buffer_infos.data();
 
-  desc_writes[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[4].dstSet = descset;
-  desc_writes[4].dstBinding = 4;
-  desc_writes[4].dstArrayElement = 0;
-  desc_writes[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  desc_writes[4].descriptorCount = static_cast<std::uint32_t>(cube_map_image_info.size());
-  desc_writes[4].pImageInfo = cube_map_image_info.data();
+    desc_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    desc_writes[1].dstSet = descset;
+    desc_writes[1].dstBinding = 1;
+    desc_writes[1].dstArrayElement = 0;
+    desc_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    desc_writes[1].descriptorCount = static_cast<std::uint32_t>(image_info.size());
+    desc_writes[1].pImageInfo = image_info.data();
 
-  desc_writes[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[5].dstSet = descset;
-  desc_writes[5].dstBinding = 5;
-  desc_writes[5].dstArrayElement = 0;
-  desc_writes[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  desc_writes[5].descriptorCount = static_cast<std::uint32_t>(light_buffer_infos.size());
-  desc_writes[5].pBufferInfo = light_buffer_infos.data();
+    desc_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    desc_writes[2].dstSet = descset;
+    desc_writes[2].dstBinding = 2;
+    desc_writes[2].dstArrayElement = 0;
+    desc_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    desc_writes[2].descriptorCount = static_cast<std::uint32_t>(storage_buffer_infos.size());
+    desc_writes[2].pBufferInfo = storage_buffer_infos.data();
 
-  desc_writes[6].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[6].dstSet = descset;
-  desc_writes[6].dstBinding = 6;
-  desc_writes[6].dstArrayElement = 0;
-  desc_writes[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  desc_writes[6].descriptorCount = static_cast<std::uint32_t>(csm_image_info.size());
-  desc_writes[6].pImageInfo = csm_image_info.data();
+    desc_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    desc_writes[3].dstSet = descset;
+    desc_writes[3].dstBinding = 3;
+    desc_writes[3].dstArrayElement = 0;
+    desc_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    desc_writes[3].descriptorCount = static_cast<std::uint32_t>(depth_map_image_info.size());
+    desc_writes[3].pImageInfo = depth_map_image_info.data();
 
+    desc_writes[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    desc_writes[4].dstSet = descset;
+    desc_writes[4].dstBinding = 4;
+    desc_writes[4].dstArrayElement = 0;
+    desc_writes[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    desc_writes[4].descriptorCount = static_cast<std::uint32_t>(cube_map_image_info.size());
+    desc_writes[4].pImageInfo = cube_map_image_info.data();
 
-  vkUpdateDescriptorSets(_device, static_cast<std::uint32_t>(desc_writes.size()), desc_writes.data(), 0, nullptr);
-}
+    desc_writes[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    desc_writes[5].dstSet = descset;
+    desc_writes[5].dstBinding = 5;
+    desc_writes[5].dstArrayElement = 0;
+    desc_writes[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    desc_writes[5].descriptorCount = static_cast<std::uint32_t>(light_buffer_infos.size());
+    desc_writes[5].pBufferInfo = light_buffer_infos.data();
 
-void VulkanAPI::updateStorageDescriptorSets(
-  std::vector<Buffer> &uniform_buffers,
-  VkDescriptorSet desc_set,
-  VkDescriptorType const type)
-{
-  std::array<VkWriteDescriptorSet, 1> desc_writes{};
-  std::vector<VkDescriptorBufferInfo> buffer_infos;
-
-  std::for_each(std::begin(uniform_buffers), std::end(uniform_buffers),
-  [& buffer_infos](const Buffer & uniformBuffer)
-  {
-    VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = uniformBuffer.buffer;
-    buffer_info.offset = 0;
-    buffer_info.range = VK_WHOLE_SIZE;
-    buffer_infos.emplace_back(buffer_info);
-  });
-
-  desc_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  desc_writes[0].dstSet = desc_set;
-  desc_writes[0].dstBinding = 2;
-  desc_writes[0].dstArrayElement = 0;
-  desc_writes[0].descriptorType = type;
-  desc_writes[0].descriptorCount = static_cast<std::uint32_t>(buffer_infos.size());
-  desc_writes[0].pBufferInfo = buffer_infos.data();
-
-  vkUpdateDescriptorSets(_device, static_cast<std::uint32_t>(desc_writes.size()), desc_writes.data(), 0, nullptr);
+    desc_writes[6].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    desc_writes[6].dstSet = descset;
+    desc_writes[6].dstBinding = 6;
+    desc_writes[6].dstArrayElement = 0;
+    desc_writes[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    desc_writes[6].descriptorCount = static_cast<std::uint32_t>(csm_image_info.size());
+    desc_writes[6].pImageInfo = csm_image_info.data();
+    
+    vkUpdateDescriptorSets(_device, static_cast<std::uint32_t>(desc_writes.size()), desc_writes.data(), 0, nullptr);
+  }
 }
 
 void VulkanAPI::beginRenderPass(
@@ -1915,11 +1859,13 @@ void VulkanAPI::draw(
   VkBuffer vertex_buffers[] = { data->_vertex_buffer.buffer };
   VkDeviceSize offsets[] = { 0 };
 
-  if (data->_vertex_buffer.size > 0) {
-    vkCmdBindVertexBuffers(cmd_buffer, 0, 1, vertex_buffers, offsets);
+  if (data->_vertex_buffer.size <= 0) {
+    return;
   }
 
-  if (is_indexed) {
+  vkCmdBindVertexBuffers(cmd_buffer, 0, 1, vertex_buffers, offsets);
+
+  if (is_indexed && data->_indices_buffer.buffer != VK_NULL_HANDLE) {
     vkCmdBindIndexBuffer(cmd_buffer, data->_indices_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdDrawIndexed(cmd_buffer, static_cast<std::uint32_t>(data->_indices.size()), instance_count, 0, 0, 0);
   } else {
@@ -2379,46 +2325,47 @@ void VulkanAPI::addCopyBufferRequest(
 
 void VulkanAPI::commitCopyBuffer(std::size_t const image_index)
 {
-  auto & fence_buffer { _fence_buffer[image_index] };
-  vkWaitForFences(_device, 1, &fence_buffer, VK_TRUE, UINT64_MAX);
-
-  vkResetFences(_device, 1, &fence_buffer);
-  vkResetCommandBuffer(_copy_cmd_buffer[image_index], 0);
-
-  VkCommandBufferBeginInfo begin_info{};
-  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-  VkResult result { vkBeginCommandBuffer(_copy_cmd_buffer[image_index], &begin_info) };
-
-  if (result != VK_SUCCESS) {
-    Logger::error("vkBeginCommandBuffer failed in startCopyBuffer");
-  }
-
-  for (auto const& buffer : _buffer_copy_request[image_index]) {
-    VkBufferCopy copy_region{};
-    copy_region.srcOffset = buffer.src_offset;
-    copy_region.dstOffset = buffer.dst_offset;
-    copy_region.size = buffer.size;
-    vkCmdCopyBuffer(_copy_cmd_buffer[image_index], buffer.src_buffer, buffer.dst_buffer, 1, & copy_region);
-  }
-
-  _buffer_copy_request[image_index].clear();
-
-  vkEndCommandBuffer(_copy_cmd_buffer[image_index]);
-
-  VkSubmitInfo submit_info{};
-  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &_copy_cmd_buffer[image_index];
 
   {
-    std::lock_guard<std::mutex> guard(_mutex_queue_submit);
+    std::lock_guard<std::mutex> guard(_mutex_queue_submit);  
+    auto & fence_buffer { _fence_buffer[image_index] };
+    vkWaitForFences(_device, 1, &fence_buffer, VK_TRUE, UINT64_MAX);
+         
+    vkResetFences(_device, 1, &fence_buffer);
+    vkResetCommandBuffer(_copy_cmd_buffer[image_index], 0);
+           
+    VkCommandBufferBeginInfo begin_info{};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+          
+    VkResult result { vkBeginCommandBuffer(_copy_cmd_buffer[image_index], &begin_info) };
+           
+    if (result != VK_SUCCESS) {
+      Logger::error("vkBeginCommandBuffer failed in startCopyBuffer");
+    }
+           
+    for (auto const& buffer : _buffer_copy_request[image_index]) {
+      VkBufferCopy copy_region{};
+      copy_region.srcOffset = buffer.src_offset;
+      copy_region.dstOffset = buffer.dst_offset;
+      copy_region.size = buffer.size;
+      vkCmdCopyBuffer(_copy_cmd_buffer[image_index], buffer.src_buffer, buffer.dst_buffer, 1, & copy_region);
+    }
+           
+    _buffer_copy_request[image_index].clear();
+    
+    vkEndCommandBuffer(_copy_cmd_buffer[image_index]);
+           
+    VkSubmitInfo submit_info{};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &_copy_cmd_buffer[image_index];
+      
     result = vkQueueSubmit(_transfer_queues[_queue_index], 1, & submit_info, fence_buffer);
-  }
-
-  if (result != VK_SUCCESS) {
-    Logger::error("failed to copy buffer in copyBuffer : {}", string_VkResult(result));
+ 
+    if (result != VK_SUCCESS) {
+      Logger::error("failed to copy buffer in commitCopyBuffer : {}", string_VkResult(result));
+    }
   }
 }
 
@@ -2627,7 +2574,9 @@ VkImageView VulkanAPI::createDepthMapImageView(
 
 VkSampler VulkanAPI::createDepthMapSampler()
 {
-  VkSampler sampler{};
+  if (_depth_map_sampler != VK_NULL_HANDLE) {
+    return _depth_map_sampler;
+  }
 
   VkSamplerCreateInfo sampler_info{};
   sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -2646,10 +2595,10 @@ VkSampler VulkanAPI::createDepthMapSampler()
   sampler_info.anisotropyEnable = VK_FALSE;
   sampler_info.maxAnisotropy = 0.0f;
 
-  if (vkCreateSampler(_device, &sampler_info, nullptr, &sampler) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create depth map sampler!");
+  if (vkCreateSampler(_device, &sampler_info, nullptr, &_depth_map_sampler) != VK_SUCCESS) {
+    Logger::error("failed to create depth map sampler!");
   }
-  return sampler;
+  return _depth_map_sampler;
 }
 
 void VulkanAPI::createDepthMapFrameBuffer(
@@ -2805,14 +2754,16 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
   return depth_imageview;
 }
 
-VkSampler VulkanAPI::createTextureSampler(std::uint32_t const mip_lvl)
-{
-  VkSampler texture_sampler{};
+  VkSampler VulkanAPI::createTextureSampler(std::uint32_t const mip_lvl)
+  {
+    if (_texture_sampler != VK_NULL_HANDLE) {
+      return _texture_sampler;
+    }
 
-  VkSamplerCreateInfo sample_info{};
-  sample_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-  sample_info.magFilter = VK_FILTER_LINEAR;
-  sample_info.minFilter = VK_FILTER_LINEAR;
+    VkSamplerCreateInfo sample_info{};
+    sample_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sample_info.magFilter = VK_FILTER_LINEAR;
+    sample_info.minFilter = VK_FILTER_LINEAR;
     sample_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
     sample_info.addressModeV = sample_info.addressModeU;
     sample_info.addressModeW = sample_info.addressModeU;
@@ -2826,10 +2777,10 @@ VkSampler VulkanAPI::createTextureSampler(std::uint32_t const mip_lvl)
     sample_info.mipLodBias = 0.0f;
     sample_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-    if (vkCreateSampler(_device, & sample_info, nullptr, & texture_sampler) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create texture sampler!");
+    if (vkCreateSampler(_device, & sample_info, nullptr, & _texture_sampler) != VK_SUCCESS) {
+      Logger::error("failed to create texture sampler!");
     }
-    return texture_sampler;
+    return _texture_sampler;
   }
 
   VkFormat VulkanAPI::findDepthFormat()
@@ -3234,33 +3185,38 @@ VkSampler VulkanAPI::createTextureSampler(std::uint32_t const mip_lvl)
     std::uint32_t const,
     bool const compare_enable)
   {
-    VkSampler texture_sampler;
+    VkSamplerAddressMode const mode_u { getSamplerAddressMode(wrap_mode_u) };
+    VkSamplerAddressMode const mode_v { getSamplerAddressMode(wrap_mode_v) };
 
-    VkSamplerAddressMode mode_u { getSamplerAddressMode(wrap_mode_u) };
-    VkSamplerAddressMode mode_v { getSamplerAddressMode(wrap_mode_v) };
+    auto const key { static_cast<std::uint8_t>((mode_u & 0x7) | ((mode_v & 0x7) << 3)) };
 
-    VkSamplerCreateInfo sampler_info{};
-    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    sampler_info.magFilter = VK_FILTER_LINEAR;
-    sampler_info.minFilter = VK_FILTER_LINEAR;
-    sampler_info.addressModeU = mode_u;
-    sampler_info.addressModeV = mode_v;
-    sampler_info.addressModeW = mode_v;
-    sampler_info.unnormalizedCoordinates = VK_FALSE;
-    sampler_info.compareEnable = compare_enable;
-    sampler_info.compareOp = VK_COMPARE_OP_LESS;
-    sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    sampler_info.minLod = 0.0f;
-    sampler_info.maxLod = VK_LOD_CLAMP_NONE;
-    sampler_info.mipLodBias = 0.0f;
-    sampler_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-    sampler_info.anisotropyEnable = VK_TRUE;
-    sampler_info.maxAnisotropy = 16.0f;
+    auto& sampler { _ktx_samplers[key] };
 
-    if (vkCreateSampler(_device, & sampler_info, nullptr, & texture_sampler) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create texture sampler!");
-    }
-    return texture_sampler;
+    if (sampler == VK_NULL_HANDLE) {
+     VkSamplerCreateInfo sampler_info{};
+     sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+     sampler_info.magFilter = VK_FILTER_LINEAR;
+     sampler_info.minFilter = VK_FILTER_LINEAR;
+     sampler_info.addressModeU = mode_u;
+     sampler_info.addressModeV = mode_v;
+     sampler_info.addressModeW = mode_v;
+     sampler_info.unnormalizedCoordinates = VK_FALSE;
+     sampler_info.compareEnable = compare_enable;
+     sampler_info.compareOp = VK_COMPARE_OP_LESS;
+     sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+     sampler_info.minLod = 0.0f;
+     sampler_info.maxLod = VK_LOD_CLAMP_NONE;
+     sampler_info.mipLodBias = 0.0f;
+     sampler_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+     sampler_info.anisotropyEnable = VK_TRUE;
+     sampler_info.maxAnisotropy = 16.0f;
+
+     if (vkCreateSampler(_device, & sampler_info, nullptr, &sampler) != VK_SUCCESS) {
+       Logger::error("failed to create texture sampler!");
+     }
+   }
+
+    return sampler;
   }
 
   VkDeviceSize VulkanAPI::align_to(VkDeviceSize const size, VkDeviceSize const alignment)
@@ -3516,7 +3472,7 @@ VkSampler VulkanAPI::createTextureSampler(std::uint32_t const mip_lvl)
 
     if (result != VK_SUCCESS) {
       Logger::error("failed to copy buffer in copyBuffer : {}", string_VkResult(result));
-      throw std::runtime_error("failed to copy buffer in endCopyBuffer");
+      //throw std::runtime_error("failed to copy buffer in endCopyBuffer");
     }
     //vkQueueWaitIdle(_transfer_queues[_queue_index]);
   }
@@ -3545,5 +3501,12 @@ VkSampler VulkanAPI::createTextureSampler(std::uint32_t const mip_lvl)
     copy_region.size = size;
 
     vkCmdCopyBuffer(_copy_cmd_buffer[image_index], src_buffer, dst_buffer, 1, & copy_region);
+  }
+
+  void VulkanAPI::resetDescPool(VkDescriptorPool& pool)
+  {
+    if (pool == VK_NULL_HANDLE) return;
+    VkDescriptorPoolResetFlags flags{};
+    vkResetDescriptorPool(getDevice(), pool, flags);
   }
 }

@@ -60,7 +60,7 @@ layout(location = 4) in vec2 texture_coord;
 //layout(location = 7) in vec4 bone_weights;
 //layout(location = 8) in float total_weight;
 
-layout(std430, binding = 3) readonly buffer LightBuffer {
+layout(std430, binding = 5) readonly buffer LightBuffer {
     Light lights[];
 } lightData;
 

@@ -56,7 +56,7 @@ layout(push_constant) uniform constants
 
 layout(binding = 1) uniform sampler2D tex_sampler[5];
 
-layout(std430, binding = 3) readonly buffer LightBuffer {
+layout(std430, binding = 5) readonly buffer LightBuffer {
     Light lights[];
 } lightData;
 

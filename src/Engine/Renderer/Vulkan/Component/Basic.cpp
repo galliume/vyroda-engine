@@ -32,23 +32,19 @@ namespace Vyroda
   {
     stage_flag_bits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-
     if (!mesh.isDirty()) return;
 
-    auto cmd_pool = renderer.getAPI().createCommandPool();
+    auto cmd_pool { renderer.getAPI().createCommandPool() };
 
-    // if (mesh.getUniformBuffers().empty()) {
-    //   std::ranges::for_each(mesh.getData()->_bones, [&](auto const&) {
-
-    //     //auto const& b{ bone.second };
-
-    //     Buffer uniformBuffer = renderer.getAPI().createUniformBuffers(1, renderer.getCurrentFrameIndex());
-    //     mesh.getUniformBuffers().emplace_back(std::move(uniformBuffer));
-    //   });
-    // }
-    if (mesh.getUniformBuffers().empty()) { //no bones
-      Buffer uniformBuffer = renderer.getAPI().createUniformBuffers(1, renderer.getCurrentFrameIndex());
+    if (mesh.getUniformBuffers().empty()) {
+      Buffer uniformBuffer { renderer.getAPI().createUniformBuffers(1, renderer.getCurrentFrameIndex()) };
       mesh.getUniformBuffers().emplace_back(std::move(uniformBuffer));
+
+      for (std::size_t i{ 0 }; i < mesh.getData()->_ubos.size(); i++) {
+        std::ranges::for_each(mesh.getData()->_ubos.at(i), [&](auto& ubo) {
+          ubo.projection = renderer.getPerspective();
+        });
+      }
     }
 
     auto const& data { mesh.getData() };
@@ -56,27 +52,19 @@ namespace Vyroda
 
     if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {
       data->_vertex_buffer = renderer.getAPI().createVertexBuffer(data->_vertices, renderer.getCurrentFrameIndex());
-      
-      if (!data->_indices.empty()) {
-        data->_indices_buffer = renderer.getAPI().createIndexBuffer(data->_indices, renderer.getCurrentFrameIndex());
-      }
     } else {
       //suppose we have to update data
       {
         data->_is_dirty = true;
-        //data->_vertex_buffer.memory->lock();
-        //auto *buffer { data->_vertex_buffer.memory->getBuffer(data->_vertex_buffer.index) };
         renderer.updateVertexBuffer(data, renderer.getCurrentFrameIndex());
-        //data->_vertex_buffer.memory->unLock();
       }
     }
 
-    for (std::size_t i{ 0 }; i < mesh.getData()->_ubos.size(); i++) {
-      std::ranges::for_each(mesh.getData()->_ubos.at(i), [&](auto& ubo) {
-        ubo.projection = renderer.getPerspective();
-      });
+    if (!data->_indices.empty()) {
+     data->_indices_buffer = renderer.getAPI().createIndexBuffer(data->_indices, renderer.getCurrentFrameIndex());
     }
 
+    //@todo store and share data per similar meshes
     auto const& mat { mesh.getMaterials().at(data->_material_id) };
 
     if (mesh.getStorageBuffers()->empty()) {
@@ -132,8 +120,6 @@ namespace Vyroda
       mesh.setObjectBuffer(objectBuffer);
       mesh.addStorageBuffer(storageBuffer);
       mesh.setHasBufferStorage();
-
-      //renderer.updateStorageBuffer(mesh.getStorageBuffers()->at(0), objectBuffer);
     }
 
     for (std::size_t i{ 0 }; i < mesh.getUniformBuffers().size(); ++i) {
@@ -144,11 +130,9 @@ namespace Vyroda
       renderer.getAPI().updateUniformBuffer(ubos, &ubos_data, renderer.getCurrentFrameIndex());
     }
 
-    if (mesh.getDescSet() == VK_NULL_HANDLE) {
-      createDescriptorSet(renderer, mesh, render_context);
-    }
+    createDescriptorSet(renderer, mesh, render_context);
+    
     mesh.setIsDirty(false);
-
     vkDestroyCommandPool(renderer.getDevice(), cmd_pool, nullptr);
   }
 
@@ -228,20 +212,6 @@ namespace Vyroda
       texture_ao = render_context.textures->at(PLP_EMPTY);
     }
 
-    // Texture texture_base_color { getTexture(render_context, mesh.getData()->_base_color) };
-    // texture_base_color.setSampler(renderer.getAPI().createKTXSampler(
-    // mat.texture_base_color_wrap_mode_u,
-    // mat.texture_base_color_wrap_mode_v,
-    // texture_base_color.getMipLevels()));
-
-    // if (texture_base_color.getWidth() == 0) {
-    //   texture_base_color = render_context.textures->at(PLP_EMPTY);
-    // }
-
-    //VkDescriptorImageInfo shadowMapSpot{};
-    //shadowMapSpot.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    //shadowMapSpot.imageview = renderer.getDepthMapImageViews()->at(1);
-    //shadowMapSpot.sampler = renderer.getDepthMapSamplers()->at(1);
     std::vector<VkDescriptorImageInfo> image_info{};
     image_info.reserve(7);
     image_info.emplace_back(tex.getSampler(), tex.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
@@ -264,107 +234,23 @@ namespace Vyroda
 
     std::vector<VkDescriptorImageInfo> depth_map_image_info{};
     depth_map_image_info.emplace_back(renderer.getDepthMapSamplers(), renderer.getDepthMapImageViews(), VK_IMAGE_LAYOUT_GENERAL);
-    //image_info.emplace_back(shadowMapSpot);
 
     std::vector<VkDescriptorImageInfo> csm_image_info{};
     csm_image_info.emplace_back(renderer.getCSMSamplers(), renderer.getCSMImageViews(), VK_IMAGE_LAYOUT_GENERAL);
 
-    VkDescriptorSet descset{
-      renderer.getAPI().createDescriptorSets(renderer.getPipeline(mesh.getShaderName()), 1) };
-
-    auto light_buffer {render_context.light_buffer};
-
-    for (std::size_t i{ 0 }; i < mesh.getUniformBuffers().size(); ++i) {
-
+    if (!renderer.getAPI().hasDescSet(mesh.getName())) {
+       renderer.getAPI().createDescriptorSets(mesh.getName(), renderer.getPipeline(mesh.getShaderName()), 1);
+          
+      auto light_buffer {render_context.light_buffer};
+    
       renderer.getAPI().updateDescriptorSets(
-        mesh.getUniformBuffers(),
-        *mesh.getStorageBuffers(),
-        descset,
+        mesh.getName(),                  
         image_info,
         depth_map_image_info,
         env_info,
         light_buffer,
         csm_image_info);
     }
-
-    mesh.setDescSet(descset);
-
-    std::array<VkWriteDescriptorSet, 2> descset_writes{};
-    std::vector<VkDescriptorBufferInfo> buffer_infos;
-    std::vector<VkDescriptorBufferInfo> buffer_storage_infos;
-
-    std::for_each(std::begin(mesh.getUniformBuffers()), std::end(mesh.getUniformBuffers()),
-      [&buffer_infos](const Buffer& uniformBuffer)
-      {
-        VkDescriptorBufferInfo buffer_info{};
-        buffer_info.buffer = uniformBuffer.buffer;
-        buffer_info.offset = 0;
-        buffer_info.range = VK_WHOLE_SIZE;
-        buffer_infos.emplace_back(buffer_info);
-      });
-
-    VkDescriptorSet shadow_map_descset { 
-      renderer.getAPI().createDescriptorSets(renderer.getPipeline("shadow_map"), 1) };
-
-    VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = light_buffer.buffer;
-    buffer_info.offset = 0;
-    buffer_info.range = VK_WHOLE_SIZE;
-    buffer_storage_infos.emplace_back(buffer_info);
-
-    descset_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descset_writes[0].dstSet = shadow_map_descset;
-    descset_writes[0].dstBinding = 0;
-    descset_writes[0].dstArrayElement = 0;
-    descset_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descset_writes[0].descriptorCount = 1;
-    descset_writes[0].pBufferInfo = buffer_infos.data();
-
-    descset_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descset_writes[1].dstSet = shadow_map_descset;
-    descset_writes[1].dstBinding = 1;
-    descset_writes[1].dstArrayElement = 0;
-    descset_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    descset_writes[1].descriptorCount = static_cast<std::uint32_t>(buffer_storage_infos.size());
-    descset_writes[1].pBufferInfo = buffer_storage_infos.data();
-
-    vkUpdateDescriptorSets(renderer.getDevice(), static_cast<std::uint32_t>(descset_writes.size()), descset_writes.data(), 0, nullptr);
-
-    
-    mesh.setShadowMapDescSet(shadow_map_descset);
-
-    VkDescriptorSet csm_descset {
-      renderer.getAPI().createDescriptorSets(renderer.getPipeline("csm"), 1) };
-
-    std::array<VkWriteDescriptorSet, 2> csm_descset_writes{};
-    std::vector<VkDescriptorBufferInfo> csm_buffer_infos;
-    std::vector<VkDescriptorBufferInfo> csm_buffer_storage_infos;
-
-    VkDescriptorBufferInfo csm_buffer_info{};
-    csm_buffer_info.buffer = light_buffer.buffer;
-    csm_buffer_info.offset = 0;
-    csm_buffer_info.range = VK_WHOLE_SIZE;
-    csm_buffer_storage_infos.emplace_back(csm_buffer_info);
-
-    csm_descset_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    csm_descset_writes[0].dstSet = csm_descset;
-    csm_descset_writes[0].dstBinding = 0;
-    csm_descset_writes[0].dstArrayElement = 0;
-    csm_descset_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    csm_descset_writes[0].descriptorCount = 1;
-    csm_descset_writes[0].pBufferInfo = buffer_infos.data();
-
-    csm_descset_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    csm_descset_writes[1].dstSet = csm_descset;
-    csm_descset_writes[1].dstBinding = 1;
-    csm_descset_writes[1].dstArrayElement = 0;
-    csm_descset_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    csm_descset_writes[1].descriptorCount = static_cast<std::uint32_t>(csm_buffer_storage_infos.size());
-    csm_descset_writes[1].pBufferInfo = csm_buffer_storage_infos.data();
-
-    vkUpdateDescriptorSets(renderer.getDevice(), static_cast<std::uint32_t>(csm_descset_writes.size()), csm_descset_writes.data(), 0, nullptr);
-
-    mesh.setCSMDescSet(csm_descset);
   }
 
   Texture const& Basic::getTexture(

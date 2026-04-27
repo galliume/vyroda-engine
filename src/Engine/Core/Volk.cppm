@@ -608,4 +608,5 @@ export
   using ::vkUnmapMemory;
   using ::vkUpdateDescriptorSets;
   using ::vkWaitForFences;
+  using ::vkResetDescriptorPool;
 }

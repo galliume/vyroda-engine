@@ -299,15 +299,8 @@ namespace Vyroda
                                   | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT
                                   | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 
-      VkDescriptorSetLayoutBinding env_sampler_binding{};
-      env_sampler_binding.binding = 2;
-      env_sampler_binding.descriptorCount = 1;
-      env_sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      env_sampler_binding.pImmutableSamplers = nullptr;
-      env_sampler_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
     VkDescriptorSetLayoutBinding storage_binding{};
-      storage_binding.binding = 3;
+      storage_binding.binding = 2;
       storage_binding.descriptorCount = 1;
       storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       storage_binding.pImmutableSamplers = nullptr;
@@ -316,22 +309,44 @@ namespace Vyroda
         | VK_SHADER_STAGE_FRAGMENT_BIT
         | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
+      VkDescriptorSetLayoutBinding depth_map_binding{};
+      depth_map_binding.binding = 3;
+      depth_map_binding.descriptorCount = 1;
+      depth_map_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      depth_map_binding.pImmutableSamplers = nullptr;
+      depth_map_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+      
+      VkDescriptorSetLayoutBinding env_sampler_binding{};
+      env_sampler_binding.binding = 4;
+      env_sampler_binding.descriptorCount = 1;
+      env_sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      env_sampler_binding.pImmutableSamplers = nullptr;
+      env_sampler_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+      VkDescriptorSetLayoutBinding light_storage_binding{};
+      light_storage_binding.binding = 5;
+      light_storage_binding.descriptorCount = 1;
+      light_storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      light_storage_binding.pImmutableSamplers = nullptr;
+      light_storage_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+        | VK_SHADER_STAGE_FRAGMENT_BIT
+        | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;        
+
       VkDescriptorSetLayoutBinding csm_binding{};
-      csm_binding.binding = 4;
+      csm_binding.binding = 6;
       csm_binding.descriptorCount = 1;
       csm_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       csm_binding.pImmutableSamplers = nullptr;
       csm_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-      VkDescriptorSetLayoutBinding depth_map_binding{};
-      depth_map_binding.binding = 5;
-      depth_map_binding.descriptorCount = 1;
-      depth_map_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      depth_map_binding.pImmutableSamplers = nullptr;
-      depth_map_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-      bindings = { ubo_binding, sampler_binding, env_sampler_binding, storage_binding, csm_binding, depth_map_binding };
-
+      bindings = {
+        ubo_binding,
+        sampler_binding,
+        storage_binding,
+        depth_map_binding,
+        env_sampler_binding,
+        light_storage_binding,
+        csm_binding };
     }
     else if constexpr (T == DescSetLayoutType::Water) {
       VkDescriptorSetLayoutBinding ubo_binding{};
@@ -353,15 +368,8 @@ namespace Vyroda
         | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT
         | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 
-      VkDescriptorSetLayoutBinding env_sampler_binding{};
-      env_sampler_binding.binding = 2;
-      env_sampler_binding.descriptorCount = 1;
-      env_sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      env_sampler_binding.pImmutableSamplers = nullptr;
-      env_sampler_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
       VkDescriptorSetLayoutBinding storage_binding{};
-      storage_binding.binding = 3;
+      storage_binding.binding = 2;
       storage_binding.descriptorCount = 1;
       storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       storage_binding.pImmutableSamplers = nullptr;
@@ -370,23 +378,45 @@ namespace Vyroda
         | VK_SHADER_STAGE_FRAGMENT_BIT
         | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
-      VkDescriptorSetLayoutBinding csm_binding{};
-      csm_binding.binding = 4;
-      csm_binding.descriptorCount = 1;
-      csm_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      csm_binding.pImmutableSamplers = nullptr;
-      csm_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
       
       VkDescriptorSetLayoutBinding depth_map_binding{};
-      depth_map_binding.binding = 5;
+      depth_map_binding.binding = 3;
       depth_map_binding.descriptorCount = 1;
       depth_map_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       depth_map_binding.pImmutableSamplers = nullptr;
       depth_map_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-      bindings = { ubo_binding, sampler_binding, env_sampler_binding, storage_binding, csm_binding, depth_map_binding };
+      VkDescriptorSetLayoutBinding env_sampler_binding{};
+      env_sampler_binding.binding = 4;
+      env_sampler_binding.descriptorCount = 1;
+      env_sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      env_sampler_binding.pImmutableSamplers = nullptr;
+      env_sampler_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+      
+      VkDescriptorSetLayoutBinding light_storage_binding{};
+      light_storage_binding.binding = 5;
+      light_storage_binding.descriptorCount = 1;
+      light_storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      light_storage_binding.pImmutableSamplers = nullptr;
+      light_storage_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+        | VK_SHADER_STAGE_FRAGMENT_BIT
+        | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;        
 
+      VkDescriptorSetLayoutBinding csm_binding{};
+      csm_binding.binding = 6;
+      csm_binding.descriptorCount = 1;
+      csm_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      csm_binding.pImmutableSamplers = nullptr;
+      csm_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+      
+      bindings = {
+        ubo_binding,
+        sampler_binding,
+        storage_binding,
+        depth_map_binding,
+        env_sampler_binding,
+        light_storage_binding,
+        csm_binding };
     } else if constexpr (T == DescSetLayoutType::Text) {
       VkDescriptorSetLayoutBinding ubo_binding{};
       ubo_binding.binding = 0;
@@ -584,7 +614,7 @@ namespace Vyroda
     pipeline.shaders = shaders;
 
     if (shader_name == "shadow_map" || shader_name == "csm") {
-      pipeline.descset = _renderer.getAPI().createDescriptorSets(pipeline, 1);
+      _renderer.getAPI().createDescriptorSets(shader_name, pipeline, 1);
     }
     _renderer.addPipeline(shader_name, pipeline);
   }

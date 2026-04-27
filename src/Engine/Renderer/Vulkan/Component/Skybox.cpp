@@ -107,7 +107,7 @@ namespace Vyroda
 
     vkDestroyCommandPool(renderer.getDevice(), cmd_pool, nullptr);
 
-    mesh.setName("skybox");
+    mesh.setName("__skybox__");
     mesh.setShaderName("skybox");
     mesh.setIsIndexed(false);
     mesh.setData(data);
@@ -132,11 +132,7 @@ namespace Vyroda
     std::vector<VkDescriptorImageInfo> image_infos{};
     image_infos.emplace_back(render_context.skybox->getSampler(), render_context.skybox->getImageView(), VK_IMAGE_LAYOUT_GENERAL);
 
-    VkDescriptorSet descset {
-      renderer.getAPI().createDescriptorSets(renderer.getPipeline(mesh.getShaderName()), 1) };
-
-    renderer.getAPI().updateDescriptorSets(mesh.getUniformBuffers(), descset, image_infos);
-
-    mesh.setDescSet(descset);
+    renderer.getAPI().createDescriptorSets(mesh.getName(), renderer.getPipeline(mesh.getShaderName()), 1);
+    renderer.getAPI().updateDescriptorSets(mesh.getName(), mesh.getUniformBuffers(), image_infos);
   }
 }

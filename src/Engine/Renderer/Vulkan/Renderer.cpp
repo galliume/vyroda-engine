@@ -20,9 +20,9 @@ namespace Vyroda
   void Renderer::init(GLFWwindow* const window)
   {
     assert(window != nullptr && "Window creation failed before Renderer::init!");
-
     _vulkan = std::make_unique<VulkanAPI>(window);
     setPerspective();
+
     _swapchain = _vulkan->createSwapChain(_images);
 
     _max_frames_in_flight = _vulkan->getImageCount();
@@ -371,10 +371,8 @@ namespace Vyroda
     auto const& camera { renderer_context.camera };
     auto & pipeline { getPipeline(mesh.getShaderName()) };
 
-    if (mesh.getDescSet() == VK_NULL_HANDLE || mesh.getShaderName().empty()) {
-      Logger::warn("bad desc set or shader name for mesh: {}", mesh.getName());
-      return;
-    }
+    auto desc_set { _vulkan->getDescSet(mesh.getName(), _current_frame) };
+
     constants push_constants {
       .view = renderer_context.camera_view,
       .view_position = glm::vec4(camera->getPos(), 1.0f),
@@ -406,7 +404,7 @@ namespace Vyroda
       cmd_buffer,
       VK_PIPELINE_BIND_POINT_GRAPHICS,
       pipeline.pipeline_layout,
-      0, 1, mesh.getDescSet(), 0, nullptr);
+      0, 1, &desc_set, 0, nullptr);
 
     if (material.double_sided == true && pipeline.pipeline_bis != VK_NULL_HANDLE) {
       _vulkan->bindPipeline(cmd_buffer, pipeline.pipeline_bis);
@@ -422,6 +420,7 @@ namespace Vyroda
         vkCmdSetDepthBias(cmd_buffer, depth_bias_constant, depth_bias_clamp, depth_bias_slope);
     }
 
+    //Logger::warn("draw: {}", mesh.getName());
     _vulkan->draw(
       cmd_buffer,
       data,
@@ -434,7 +433,7 @@ namespace Vyroda
         cmd_buffer,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         normal_pipeline.pipeline_layout,
-        0, 1, mesh.getDescSet(), 0, nullptr);
+        0, 1, &_vulkan->getDescSet("debug_normal", _current_frame), 0, nullptr);
 
       _vulkan->bindPipeline(cmd_buffer, normal_pipeline.pipeline);
 
@@ -562,7 +561,7 @@ namespace Vyroda
     RendererContext const& renderer_context,
     SHADOW_TYPE const shadow_type)
   {
-    if (!mesh.getDescSet()) {
+    if (!_vulkan->hasDescSet("shadow_map") && !_vulkan->hasDescSet("csm")) {
       Logger::warn("bad desc set or shader name for mesh: {}", mesh.getName());
       return;
     }
@@ -596,10 +595,12 @@ namespace Vyroda
       sizeof(constants),
       &push_constants);
 
-    auto desc_set { mesh.getShadowMapDescSet() };
-    
+    auto desc_set { _vulkan->getDescSet("shadow_map", _current_frame) };
+    auto desc_set_buffers { _vulkan->getDescSetBuffers("shadow_map", _current_frame) };
+ 
     if (shadow_type == SHADOW_TYPE::CSM) {
-      desc_set = mesh.getCSMDescSet();
+      desc_set = _vulkan->getDescSet("csm", _current_frame);
+      desc_set_buffers = _vulkan->getDescSetBuffers("csm", _current_frame);
     }
 
     if (desc_set == VK_NULL_HANDLE) {
@@ -607,6 +608,14 @@ namespace Vyroda
       return;
     }
     
+    [[maybe_unused]] auto * ubo_buffer { static_cast<DeviceMemory*>(desc_set_buffers.ubo.memory)->getBuffer(desc_set_buffers.ubo.index) };
+    [[maybe_unused]] auto * storage_buffer { static_cast<DeviceMemory*>(desc_set_buffers.storage.memory)->getBuffer(desc_set_buffers.storage.index) };
+    
+    // std::memcpy(ubo_buffer, &mesh.getData()->_ubos.front(), sizeof(UniformBufferObject));
+    // std::memcpy(storage_buffer, &mesh.getStorageBuffers().front(), sizeof(ObjectBuffer));
+    
+    //    Logger::debug("shadow mesh: {}", mesh.getName());
+
     vkCmdBindDescriptorSets(
      cmd_buffer,
      VK_PIPELINE_BIND_POINT_GRAPHICS,

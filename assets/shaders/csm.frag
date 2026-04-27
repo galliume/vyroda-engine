@@ -46,7 +46,7 @@ layout(push_constant) uniform constants
   layout(offset = 96) uint options;
 } pc;
 
-layout(location = 0) in vec4 position;
+//layout(location = 0) in vec4 position;
 
 void main()
 {
