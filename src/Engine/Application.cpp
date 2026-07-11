@@ -84,7 +84,7 @@ namespace Vyroda
 
     FontManager::Text frame_counter {
       .id = 0,
-      .name = "_plp_frame_counter",
+      .name = "_VYR_frame_counter",
       .text = "Frame 000000",
       .position = glm::vec3(10.0f, 20.0f, 0.0f),
       .color = glm::vec3(1.0f, 1.0f, 0.0f),
@@ -92,7 +92,7 @@ namespace Vyroda
     _render_manager->addText(frame_counter);
     FontManager::Text elapsed_time {
       .id = 0,
-      .name = "_plp_elapsed_time",
+      .name = "_VYR_elapsed_time",
       .text = "Elapsed time 000000",
       .position = glm::vec3(200.0f, 20.0f, 0.0f),
       .color = glm::vec3(1.0f, 1.0f, 0.0f),
@@ -100,7 +100,7 @@ namespace Vyroda
     _render_manager->addText(elapsed_time);
     FontManager::Text ms_counter{
       .id = 0,
-      .name = "_plp_ms_counter",
+      .name = "_VYR_ms_counter",
       .text = "000.000 ms 000.000 fps",
       .position = glm::vec3(10.0f, 40.0f, 0.0f),
       .color = glm::vec3(0.5f, 1.0f, 0.0f),
@@ -108,7 +108,7 @@ namespace Vyroda
     _render_manager->addText(ms_counter);
     FontManager::Text camera_pos {
       .id = 0,
-      .name = "_plp_camera_pos",
+      .name = "_VYR_camera_pos",
       .text = "Position x: 000.000 y: 000.000 z: 000.000",
       .position = glm::vec3(10.0f, 60.0f, 0.0f),
       .color = glm::vec3(1.0f, 1.0f, 1.0f),
@@ -117,7 +117,7 @@ namespace Vyroda
 
     bool release_build { true };
 
-  #ifdef PLP_DEBUG_BUILD
+  #ifdef VYR_DEBUG_BUILD
     release_build = false;
   #endif
 

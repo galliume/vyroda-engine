@@ -192,15 +192,15 @@ namespace Vyroda
       //std::vector<Mesh::BBox> bboxs{};
       mesh->setDebugNormal(entity_opts.debug_normal);
 
-      std::string name_texture { PLP_EMPTY };
-      std::string name_specular_map { PLP_EMPTY };
-      std::string name_bump_map { PLP_EMPTY };
-      std::string name_alpha_map { PLP_EMPTY };
-      std::string name_texture_metal_roughness { PLP_EMPTY };
-      std::string name_texture_emissive { PLP_EMPTY };
-      std::string name_texture_ao { PLP_EMPTY };
-      std::string name_texture_base_color { PLP_EMPTY };
-      std::string name_texture_transmission { PLP_EMPTY };
+      std::string name_texture { VYR_EMPTY };
+      std::string name_specular_map { VYR_EMPTY };
+      std::string name_bump_map { VYR_EMPTY };
+      std::string name_alpha_map { VYR_EMPTY };
+      std::string name_texture_metal_roughness { VYR_EMPTY };
+      std::string name_texture_emissive { VYR_EMPTY };
+      std::string name_texture_ao { VYR_EMPTY };
+      std::string name_texture_base_color { VYR_EMPTY };
+      std::string name_texture_transmission { VYR_EMPTY };
       float alpha_mode{ 0.0 };
 
       std::uint32_t options {0};
@@ -213,58 +213,58 @@ namespace Vyroda
         if (!mat.name_texture_diffuse.empty()) {
           name_texture = mat.name_texture_diffuse;
           _texture_manager.add(name_texture, mat.name_texture_diffuse_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::DIFFUSE, renderer);
-          options |= PLP_MESH_OPTIONS::HAS_BASE_COLOR;
+          options |= VYR_MESH_OPTIONS::HAS_BASE_COLOR;
         } else if (!mat.name_texture_ambient.empty()) {
           name_texture = mat.name_texture_ambient;
-          options |= PLP_MESH_OPTIONS::HAS_BASE_COLOR;
+          options |= VYR_MESH_OPTIONS::HAS_BASE_COLOR;
           _texture_manager.add(name_texture, mat.name_texture_ambient_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::DIFFUSE, renderer);
         }
 
         if (!mat.name_texture_specular.empty()) {
           name_specular_map = mat.name_texture_specular;
-          options |= PLP_MESH_OPTIONS::HAS_SPECULAR;
+          options |= VYR_MESH_OPTIONS::HAS_SPECULAR;
           _texture_manager.add(name_specular_map, mat.name_texture_specular_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::AO, renderer);
         }
 
         if (!mat.name_texture_bump.empty()) {
           name_bump_map = mat.name_texture_bump;
-          options |= PLP_MESH_OPTIONS::HAS_NORMAL;
+          options |= VYR_MESH_OPTIONS::HAS_NORMAL;
           _texture_manager.add(name_bump_map, mat.name_texture_bump_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::NORMAL, renderer);
         }
 
         if (!mat.name_texture_alpha.empty()) {
           name_alpha_map = mat.name_texture_alpha;
-          options |= PLP_MESH_OPTIONS::HAS_ALPHA;
+          options |= VYR_MESH_OPTIONS::HAS_ALPHA;
           _texture_manager.add(name_alpha_map, mat.name_texture_alpha_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::AO, renderer);
         }
 
         if (!mat.name_texture_metal_roughness.empty()) {
           name_texture_metal_roughness = mat.name_texture_metal_roughness;
-          options |= PLP_MESH_OPTIONS::HAS_MR;
+          options |= VYR_MESH_OPTIONS::HAS_MR;
           _texture_manager.add(name_texture_metal_roughness, mat.name_texture_metal_roughness_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::MR, renderer);
         }
 
         if (!mat.name_texture_emissive.empty()) {
           name_texture_emissive = mat.name_texture_emissive;
-          options |= PLP_MESH_OPTIONS::HAS_EMISSIVE;
+          options |= VYR_MESH_OPTIONS::HAS_EMISSIVE;
           _texture_manager.add(name_texture_emissive, mat.name_texture_emissive_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::EMISSIVE, renderer);
         }
 
         if (!mat.name_texture_ao.empty()) {
           name_texture_ao = mat.name_texture_ao;
-          options |= PLP_MESH_OPTIONS::HAS_AO;
+          options |= VYR_MESH_OPTIONS::HAS_AO;
           _texture_manager.add(name_texture_ao, mat.name_texture_ao_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::AO, renderer);
         }
 
         if (!mat.name_texture_base_color.empty()) {
           name_texture_base_color = mat.name_texture_base_color;
-          options |= PLP_MESH_OPTIONS::HAS_BASE_COLOR;
+          options |= VYR_MESH_OPTIONS::HAS_BASE_COLOR;
           _texture_manager.add(name_texture_base_color, mat.name_texture_base_color_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::DIFFUSE, renderer);
         }
 
         if (!mat.name_texture_transmission.empty()) {
           name_texture_transmission = mat.name_texture_transmission;
-          options |= PLP_MESH_OPTIONS::HAS_TRANSMISSION;
+          options |= VYR_MESH_OPTIONS::HAS_TRANSMISSION;
           _texture_manager.add(name_texture_transmission, mat.name_texture_transmission_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::EMISSIVE, renderer);
         }
         for (auto& material : materials) {

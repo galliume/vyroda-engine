@@ -5,19 +5,19 @@ extern "C" {
   #include <tclDecls.h>
   #include <tk.h>
 
-  inline void PLP_Tcl_SetResult(Tcl_Interp *interp, char *result, Tcl_FreeProc *freeProc) {
+  inline void VYR_Tcl_SetResult(Tcl_Interp *interp, char *result, Tcl_FreeProc *freeProc) {
     Tcl_SetResult(interp, result, freeProc);
   }
 
-  inline int PLP_Tcl_Eval(Tcl_Interp *interp, const char *script) {
+  inline int VYR_Tcl_Eval(Tcl_Interp *interp, const char *script) {
     return Tcl_Eval(interp, script);
   }
 
-  inline char* PLP_Tcl_GetStringResult(Tcl_Interp *interp) {
+  inline char* VYR_Tcl_GetStringResult(Tcl_Interp *interp) {
     return Tcl_GetStringResult(interp);
   }
 
-  inline const char* PLP_Tcl_SetVar(
+  inline const char* VYR_Tcl_SetVar(
     Tcl_Interp *interp,
     const char *part1,
     const char *part2,
@@ -81,15 +81,15 @@ export
 #undef Tcl_GetStringResult
 
 export inline void Tcl_SetResult(Tcl_Interp *interp, char *result, Tcl_FreeProc *freeProc) {
-  PLP_Tcl_SetResult(interp, result, freeProc);
+  VYR_Tcl_SetResult(interp, result, freeProc);
 }
 
 export inline int Tcl_Eval(Tcl_Interp *interp, const char *script) {
-  return PLP_Tcl_Eval(interp, script);
+  return VYR_Tcl_Eval(interp, script);
 }
 
 export inline char* Tcl_GetStringResult(Tcl_Interp *interp) {
-  return PLP_Tcl_GetStringResult(interp);
+  return VYR_Tcl_GetStringResult(interp);
 }
 
 

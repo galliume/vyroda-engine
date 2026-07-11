@@ -9,7 +9,7 @@ import Engine.Managers.RenderManager;
 
 namespace Vyroda
 {
-  static int plp_quit_game (
+  static int VYR_quit_game (
     ClientData client_data,
     Tcl_Interp*,
     int,
@@ -44,8 +44,8 @@ namespace Vyroda
 
       Tcl_CreateObjCommand(
         _tcl_interp,
-        "plp_quit_game",
-        plp_quit_game,
+        "VYR_quit_game",
+        VYR_quit_game,
         const_cast<Window*>(&_window),
         nullptr);
 

@@ -70,8 +70,8 @@ namespace Vyroda
     const std::uint32_t MAX_MIPLEVELS = 5;
 
     std::string _skybox_name;
-    std::string _terrain_name {"_plp_terrain"};
-    std::string _water_name {"_plp_water"};
+    std::string _terrain_name {"_VYR_terrain"};
+    std::string _water_name {"_VYR_water"};
     json _texture_config;
 
     std::unordered_map<std::string, std::string> _paths;

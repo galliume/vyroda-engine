@@ -148,7 +148,7 @@ namespace Vyroda
 
     FontManager::Text text {
       .id = 0,
-      .name = "_plp_title",
+      .name = "_VYR_title",
       .text = "₼ Vampyropoda-Studio ₼",
       .position = glm::vec3(0.0f, 100.0f, 0.0f),
       .color = glm::vec3(0.0f, 0.95, 1.f),
@@ -196,19 +196,20 @@ namespace Vyroda
       }
 
       updateEntities(frame_context);
-      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
+      //      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
       drawShadowmap(frame_context);
       drawEntities(frame_context);
 
       _renderer->submit();
 
-      updateBuffers();
-      updatePlayer();
+     updateBuffers();
+     updatePlayer();
 
       _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
       _renderer->getAPI().collectGarbage();
     }
   }
+ 
   void RenderManager::updatePlayer()
   {
     if (_player_manager->hasMoved() && _current_camera == std::to_underlying(CameraType::THIRD_PERSON)) {
@@ -518,7 +519,7 @@ namespace Vyroda
     auto const& lvl_data { config_manager->loadLevelData(level) };
 
     if (lvl_data.contains("hasFog") && lvl_data["hasFog"]) {
-      _env_options |= PLP_ENV_OPTIONS::HAS_FOG;
+      _env_options |= VYR_ENV_OPTIONS::HAS_FOG;
     }
     if (lvl_data.contains("player")) {
       _player_manager = std::make_unique<PlayerManager>(
@@ -554,7 +555,7 @@ namespace Vyroda
     material_t material{};
     mesh->addMaterial(material);
 
-    _env_options |= PLP_ENV_OPTIONS::HAS_IRRADIANCE;//@todo finish IBL with real map
+    _env_options |= VYR_ENV_OPTIONS::HAS_IRRADIANCE;//@todo finish IBL with real map
 
     auto rdr_impl{ RendererComponentFactory::create<Skybox>() };
     //(*rdr_impl)(_renderer.get(), getComponentRenderingInfo(mesh.get()));
@@ -590,7 +591,7 @@ namespace Vyroda
     mesh->setHasShadow(false);
     mesh->setIsIndexed(false);
     mesh->setShaderName("water");
-    mesh->setName("_plp_water");
+    mesh->setName("_VYR_water");
 
     material_t material{};
     mesh->addMaterial(material);
@@ -610,7 +611,7 @@ namespace Vyroda
     mesh->setHasShadow(false);
     mesh->setIsIndexed(false);
     mesh->setShaderName("text");
-    mesh->setName("_plp_text_" + std::to_string(entity->getID()));
+    mesh->setName("_VYR_text_" + std::to_string(entity->getID()));
     mesh->setRoot();
 
     material_t material{};

@@ -1,5 +1,5 @@
 ##################### Vyroda-Engine Project ##############
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 4.3)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Build type" FORCE)

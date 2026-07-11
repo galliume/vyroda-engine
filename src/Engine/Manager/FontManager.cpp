@@ -174,7 +174,7 @@ namespace Vyroda
 
     VkImageView imageview { _renderer.getAPI().createFontImageView(image, VK_IMAGE_ASPECT_COLOR_BIT) };
 
-    texture.setName("_plp_font_atlas");
+    texture.setName("_VYR_font_atlas");
     texture.setImage(image);
     texture.setImageView(imageview);
     texture.setMipLevels(1);

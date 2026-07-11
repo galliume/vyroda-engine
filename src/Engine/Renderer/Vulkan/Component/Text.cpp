@@ -183,14 +183,6 @@ namespace Vyroda
       void* void_data { renderer.getAPI().getStagingMemoryPtr(image_index) };
       std::memcpy(static_cast<char*>(void_data) + current_offset, vertices.data(), static_cast<std::size_t>(buffer_size));
       
-      // renderer.getAPI().copyBuffer(
-      //   staging_buffer,
-      //   data->_vertex_buffer.buffer,
-      //   buffer_size,
-      //   current_offset,
-      //   0,
-      //   renderer.getCurrentFrameIndex());
-
       renderer.getAPI().addCopyBufferRequest(
         staging_buffer,
         data->_vertex_buffer.buffer,
@@ -198,8 +190,8 @@ namespace Vyroda
         renderer.getCurrentFrameIndex(),
         current_offset);
 
-      //   data->_is_dirty = true;
-      //   renderer.updateVertexBuffer(data, renderer.getCurrentFrameIndex());
+      data->_is_dirty = true;
+      renderer.updateVertexBuffer(data, renderer.getCurrentFrameIndex());
     }
 
     vkDestroyCommandPool(renderer.getDevice(), cmd_pool, nullptr);
@@ -220,7 +212,7 @@ namespace Vyroda
     RendererContext const& render_context)
   {
 
-    Texture atlas { render_context.textures->at("_plp_font_atlas")};
+    Texture atlas { render_context.textures->at("_VYR_font_atlas")};
 
     atlas.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
@@ -228,7 +220,7 @@ namespace Vyroda
       1u));
 
     if (atlas.getWidth() == 0) {
-      atlas = render_context.textures->at(PLP_EMPTY);
+      atlas = render_context.textures->at(VYR_EMPTY);
     }
 
     auto const sampler = renderer.getAPI().createKTXSampler(

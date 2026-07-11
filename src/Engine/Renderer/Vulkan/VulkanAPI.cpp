@@ -1,4 +1,3 @@
-
 /**
  * @file   VulkanAPI.cpp
  * @author  <Guillaume PERCEPIED>
@@ -94,7 +93,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 VulkanAPI::VulkanAPI(GLFWwindow* window)
   : _window(window)
 {
-#ifdef PLP_DEBUG_BUILD
+#ifdef VYR_DEBUG_BUILD
   _enable_validation_layers = true;
 #else
   _enable_validation_layers = false;
@@ -786,8 +785,8 @@ const SwapChainSupportDetails VulkanAPI::querySwapChainSupport(VkPhysicalDevice 
 VkSurfaceFormatKHR VulkanAPI::chooseSwapSurfaceFormat(std::vector<VkSurfaceFormatKHR> const & available_formats)
 {
   for (auto const & available_format : available_formats) {
-    if (available_format.format == PLP_VK_FORMAT_SURFACE
-      && available_format.colorSpace == PLP_VK_COLOR_SPACE) {
+    if (available_format.format == VYR_VK_FORMAT_SURFACE
+      && available_format.colorSpace == VYR_VK_COLOR_SPACE) {
       return available_format;
     }
   }
@@ -1132,7 +1131,7 @@ VkPipeline VulkanAPI::createGraphicsPipeline(PipeLineCreateInfo const& pipeline_
   rendering_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
   rendering_create_info.colorAttachmentCount = pipeline_create_info.has_color_attachment ? 1 : 0;
   rendering_create_info.pColorAttachmentFormats = & format;
-  rendering_create_info.depthAttachmentFormat = PLP_VK_FORMAT_DEPTH; //(VK_FORMAT_D24_UNORM_S8_UINT)
+  rendering_create_info.depthAttachmentFormat = VYR_VK_FORMAT_DEPTH; //(VK_FORMAT_D24_UNORM_S8_UINT)
   //rendering_create_info.stencilAttachmentFormat = VK_FORMAT_S8_UINT;
 
   pipeline_info.pNext = & rendering_create_info;
@@ -1860,6 +1859,7 @@ void VulkanAPI::draw(
   VkDeviceSize offsets[] = { 0 };
 
   if (data->_vertex_buffer.size <= 0) {
+    Logger::warn("vertex buffer empty!");
     return;
   }
 
@@ -2068,9 +2068,32 @@ void VulkanAPI::updateVertexBuffer(
   vkCmdCopyBuffer(transfer_cmd_buffer, _staging_buffer[image_index], buffer_to_update, 1, & copy_region);
 }
 
-void VulkanAPI::submitVertexUpdate(VkSemaphore & semaphore, std::size_t const image_index)
+void VulkanAPI::submitEmptyCmd(
+  VkSemaphore & semaphore)
 {
-  auto &transfer_cmd_buffer = _transfer_cmd_buffer[image_index];
+  VkSubmitInfo submit_info{};
+  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_info.commandBufferCount = 0;
+  submit_info.pCommandBuffers = nullptr;
+  submit_info.signalSemaphoreCount = 1;
+  submit_info.pSignalSemaphores = &semaphore;
+  VkResult result { VK_SUCCESS };
+
+  {
+    std::lock_guard<std::mutex> guard(_mutex_queue_submit);
+    result = vkQueueSubmit(_transfer_queues[_queue_index], 1, & submit_info, VK_NULL_HANDLE);
+  }
+
+  if (result != VK_SUCCESS) {
+    Logger::error("failed to submit an empty cmd {}", string_VkResult(result));
+  }
+}
+
+void VulkanAPI::submitVertexUpdate(
+  VkSemaphore & semaphore,
+  std::size_t const image_index)
+{
+  auto &transfer_cmd_buffer { _transfer_cmd_buffer[image_index] };
 
   vkEndCommandBuffer(transfer_cmd_buffer);
 
@@ -2080,7 +2103,7 @@ void VulkanAPI::submitVertexUpdate(VkSemaphore & semaphore, std::size_t const im
   submit_info.pCommandBuffers = &transfer_cmd_buffer;
   submit_info.signalSemaphoreCount = 1;
   submit_info.pSignalSemaphores = &semaphore;
-  VkResult result;
+  VkResult result { VK_SUCCESS };
 
   {
     std::lock_guard<std::mutex> guard(_mutex_queue_submit);
@@ -2109,13 +2132,13 @@ Buffer VulkanAPI::createUniformBuffers(
 
   VkBuffer buffer { createBuffer(
     buffer_size,
-    VK_BUFFER_USAGE_TRANSFER_DST_BIT
-    | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) };
+    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) };
 
   VkMemoryRequirements mem_requirements;
   vkGetBufferMemoryRequirements(_device, buffer, & mem_requirements);
 
-  auto memory_type = findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  auto memory_type = findMemoryType(mem_requirements.memoryTypeBits,
+                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   VkDeviceSize const size { mem_requirements.size };
 
   assert(size >= buffer_size && "requirements size must at least equals to the buffer_size");
@@ -2124,7 +2147,7 @@ Buffer VulkanAPI::createUniformBuffers(
     _device,
     size,
     memory_type,
-    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
     mem_requirements.alignment,
     DeviceMemoryPool::DeviceBufferType::UNIFORM);
 
@@ -2325,7 +2348,6 @@ void VulkanAPI::addCopyBufferRequest(
 
 void VulkanAPI::commitCopyBuffer(std::size_t const image_index)
 {
-
   {
     std::lock_guard<std::mutex> guard(_mutex_queue_submit);  
     auto & fence_buffer { _fence_buffer[image_index] };
@@ -2361,7 +2383,7 @@ void VulkanAPI::commitCopyBuffer(std::size_t const image_index)
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &_copy_cmd_buffer[image_index];
       
-    result = vkQueueSubmit(_transfer_queues[_queue_index], 1, & submit_info, fence_buffer);
+    result = vkQueueSubmit(_transfer_queues[_queue_index], 1, &submit_info, fence_buffer);
  
     if (result != VK_SUCCESS) {
       Logger::error("failed to copy buffer in commitCopyBuffer : {}", string_VkResult(result));
@@ -2388,7 +2410,7 @@ VkImageMemoryBarrier VulkanAPI::setupImageMemoryBarrier(
   result.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   result.image = image;
   result.subresourceRange.aspectMask = aspect_mask;
-  //those constants don't work on android
+  //those constants don't work on android?
   result.subresourceRange.levelCount = mip_lvl;
   result.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
   result.pNext = nullptr;
@@ -2491,7 +2513,7 @@ VkImage VulkanAPI::createDepthMapImage(
   image_info.extent.depth = 1;
   image_info.mipLevels = 1;
   image_info.arrayLayers = 1;
-  image_info.format = PLP_VK_FORMAT_DEPTH;
+  image_info.format = VYR_VK_FORMAT_DEPTH;
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   image_info.usage =
@@ -2546,7 +2568,7 @@ VkImageView VulkanAPI::createDepthMapImageView(
   create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   create_info.image = image;
   create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  create_info.format = PLP_VK_FORMAT_DEPTH;
+  create_info.format = VYR_VK_FORMAT_DEPTH;
   create_info.subresourceRange = {};
   create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
   create_info.subresourceRange.baseMipLevel = 0;
@@ -2785,7 +2807,7 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
 
   VkFormat VulkanAPI::findDepthFormat()
   {
-    return findSupportedFormat({ PLP_VK_FORMAT_DEPTH, PLP_VK_FORMAT_DEPTH_STENCIL },
+    return findSupportedFormat({ VYR_VK_FORMAT_DEPTH, VYR_VK_FORMAT_DEPTH_STENCIL },
       VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
   }
 
@@ -2809,7 +2831,7 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
 
   bool VulkanAPI::hasStencilComponent(VkFormat const format)
   {
-    return format == PLP_VK_FORMAT_DEPTH || format == PLP_VK_FORMAT_DEPTH_STENCIL;
+    return format == VYR_VK_FORMAT_DEPTH || format == VYR_VK_FORMAT_DEPTH_STENCIL;
   }
 
   VkSampleCountFlagBits VulkanAPI::getMaxUsableSampleCount()
@@ -2852,14 +2874,14 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     label.color[2] = b;
     label.color[3] = a;
 
-  #ifdef PLP_DEBUG_BUILD
+  #ifdef VYR_DEBUG_BUILD
     vkCmdBeginDebugUtilsLabelEXT(buffer, &label);
   #endif
   }
 
   void VulkanAPI::endMarker([[maybe_unused]] VkCommandBuffer buffer)
   {
-  #ifdef PLP_DEBUG_BUILD
+  #ifdef VYR_DEBUG_BUILD
     vkCmdEndDebugUtilsLabelEXT(buffer);
   #endif
   }
@@ -2905,13 +2927,13 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     barrier.srcAccessMask = sync_data.srcAccessMask;
     barrier.dstAccessMask = sync_data.dstAccessMask;
 
-    ImageMemoryBarrier plp_barrier {
+    ImageMemoryBarrier VYR_barrier {
       .barrier = barrier,
       .source_stage = sync_data.source_stage,
       .destination_stage = sync_data.destination_stage
     };
 
-    return plp_barrier;
+    return VYR_barrier;
     // vkCmdPipelineBarrier(
     //     cmd_buffer,
     //     sync_data.source_stage, sync_data.destination_stage,
@@ -3268,7 +3290,7 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     image_info.extent.depth = 1;
     image_info.mipLevels = mip_lvl;
     image_info.arrayLayers = 1;
-    image_info.format = PLP_VK_FORMAT_FONT;
+    image_info.format = VYR_VK_FORMAT_FONT;
     image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
     image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     image_info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -3368,7 +3390,7 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     create_info.image = image;
     create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
 
-    create_info.format = PLP_VK_FORMAT_FONT;
+    create_info.format = VYR_VK_FORMAT_FONT;
     create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
     create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;

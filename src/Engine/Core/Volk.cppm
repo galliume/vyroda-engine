@@ -350,7 +350,8 @@ export
   using ::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
   using ::VK_SUCCESS;
   using ::VK_VERTEX_INPUT_RATE_VERTEX;
-
+  using ::VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
+  
   // Types
   using ::VkAccessFlags;
   using ::VkAllocationCallbacks;
@@ -609,4 +610,6 @@ export
   using ::vkUpdateDescriptorSets;
   using ::vkWaitForFences;
   using ::vkResetDescriptorPool;
+  using ::VkSemaphoreSignalInfo;
+  using ::vkSignalSemaphore;
 }

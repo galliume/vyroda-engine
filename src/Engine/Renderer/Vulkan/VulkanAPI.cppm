@@ -198,7 +198,12 @@ namespace Vyroda
       VkBuffer buffer_to_update,
       std::size_t const image_index);
 
-    void submitVertexUpdate(VkSemaphore & semaphore, std::size_t const image_index) __attribute__((no_thread_safety_analysis));
+    void submitEmptyCmd(
+      VkSemaphore & semaphore);
+  
+    void submitVertexUpdate(
+      VkSemaphore & semaphore,
+      std::size_t const image_index) __attribute__((no_thread_safety_analysis));
 
     Buffer createIndexBuffer(
       std::vector<std::uint32_t> const& indices,
@@ -588,17 +593,17 @@ namespace Vyroda
     //bool _FramebufferResized = false;
 
     //VK_COLOR_SPACE_HDR10_ST2084_EXT
-    VkColorSpaceKHR PLP_VK_COLOR_SPACE{ VK_COLOR_SPACE_HDR10_ST2084_EXT };
+    VkColorSpaceKHR VYR_VK_COLOR_SPACE{ VK_COLOR_SPACE_HDR10_ST2084_EXT };
 
     //https://panoskarabelas.com/blog/posts/hdr_in_under_10_minutes/
     //VK_FORMAT_A2B10G10R10_UNORM_PACK32
-    VkFormat PLP_VK_FORMAT_SURFACE { VK_FORMAT_A2B10G10R10_UNORM_PACK32 };
-    VkFormat PLP_VK_FORMAT_COLOR { VK_FORMAT_A2B10G10R10_UNORM_PACK32 };
+    VkFormat VYR_VK_FORMAT_SURFACE { VK_FORMAT_A2B10G10R10_UNORM_PACK32 };
+    VkFormat VYR_VK_FORMAT_COLOR { VK_FORMAT_A2B10G10R10_UNORM_PACK32 };
     //VK_FORMAT_D16_UNORM, VK_FORMAT_D32_SFLOAT
-    VkFormat PLP_VK_FORMAT_DEPTH { VK_FORMAT_D32_SFLOAT }; //VK_FORMAT_D16_UNORM
+    VkFormat VYR_VK_FORMAT_DEPTH { VK_FORMAT_D32_SFLOAT }; //VK_FORMAT_D16_UNORM
     //VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT
-    VkFormat PLP_VK_FORMAT_DEPTH_STENCIL { VK_FORMAT_D32_SFLOAT_S8_UINT };
-    VkFormat PLP_VK_FORMAT_FONT{ VK_FORMAT_R8_UNORM };
+    VkFormat VYR_VK_FORMAT_DEPTH_STENCIL { VK_FORMAT_D32_SFLOAT_S8_UINT };
+    VkFormat VYR_VK_FORMAT_FONT{ VK_FORMAT_R8_UNORM };
 
     VkBuffer getStagingBuffer(std::size_t const image_index) { return _staging_buffer[image_index]; }
     VkDeviceMemory getStagingMemory(std::size_t const image_index) { return _staging_device_memory[image_index]; }

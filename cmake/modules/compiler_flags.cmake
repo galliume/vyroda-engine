@@ -43,6 +43,7 @@ function(set_vyroda_compiler_flags target)
     -Wno-unsafe-buffer-usage
     -Wno-covered-switch-default
     -Wno-deprecated-declarations
-    -Wno-thread-safety-negative)
+    -Wno-thread-safety-negative
+    -Wno-enum-enum-conversion) #ktx error
 
 endfunction()

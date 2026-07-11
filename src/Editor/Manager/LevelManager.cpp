@@ -24,7 +24,7 @@ import Engine.Renderer.RendererComponentTypes;
 import Engine.Renderer.VulkanRenderer;
 
 namespace Vyroda {
-  static int plp_update_skybox(
+  static int VYR_update_skybox(
     ClientData client_data,
     Tcl_Interp*,
     int,
@@ -84,8 +84,8 @@ namespace Vyroda {
     {
       Tcl_CreateObjCommand(
         tcl_interp,
-        "plp_update_skybox",
-        plp_update_skybox,
+        "VYR_update_skybox",
+        VYR_update_skybox,
         &render_manager,
         nullptr);
     }

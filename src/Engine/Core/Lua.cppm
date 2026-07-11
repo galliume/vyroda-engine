@@ -19,6 +19,7 @@ export module Engine.Core.LUA;
 #undef lua_tonumber
 #undef lua_pushcfunction
 #undef luaL_loadfile
+#undef luaL_openlibs
 
 export
 {
@@ -42,11 +43,14 @@ export
   using ::lua_tolstring;
   
   using ::luaL_newstate;
-  using ::luaL_openlibs;
   using ::luaL_loadfilex;
   using ::lua_pcallk;
   using ::lua_tonumberx;
   using ::lua_pushcclosure;
+
+  inline void luaL_openlibs(lua_State* L) {
+    ::luaL_openselectedlibs(L, -1, 0);
+  }
 
   inline void lua_register(lua_State* L, const char* n, lua_CFunction f) {
     ::lua_pushcclosure(L, f, 0);

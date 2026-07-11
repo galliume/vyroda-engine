@@ -141,7 +141,7 @@ void Water::operator()(
     RendererContext const& render_context)
   {
 
-    Texture tex { render_context.textures->at(PLP_EMPTY)};
+    Texture tex { render_context.textures->at(VYR_EMPTY)};
 
     tex.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
@@ -149,27 +149,27 @@ void Water::operator()(
       0));
 
     if (tex.getWidth() == 0) {
-      tex = render_context.textures->at(PLP_EMPTY);
+      tex = render_context.textures->at(VYR_EMPTY);
     }
 
-    Texture texture_normal{ render_context.textures->at(PLP_WATER_NORMAL_1) };
+    Texture texture_normal{ render_context.textures->at(VYR_WATER_NORMAL_1) };
       texture_normal.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
       TextureWrapMode::WRAP,
       1));
 
     if (texture_normal.getWidth() == 0) {
-      texture_normal = render_context.textures->at(PLP_EMPTY);
+      texture_normal = render_context.textures->at(VYR_EMPTY);
     }
 
-    Texture texture_normal2{ render_context.textures->at(PLP_WATER_NORMAL_2) };
+    Texture texture_normal2{ render_context.textures->at(VYR_WATER_NORMAL_2) };
       texture_normal2.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
       TextureWrapMode::WRAP,
       1));
 
     if (texture_normal2.getWidth() == 0) {
-      texture_normal2 = render_context.textures->at(PLP_EMPTY);
+      texture_normal2 = render_context.textures->at(VYR_EMPTY);
     }
 
     render_context.skybox->setSampler(renderer.getAPI().createKTXSampler(

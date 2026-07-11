@@ -5,23 +5,23 @@ import std;
 namespace Vyroda
 {
   //default textures const, needs a real assets management (unique id etc.)
-  export inline constexpr std::string PLP_EMPTY{ "_plp_empty" };
-  export inline constexpr std::string PLP_ERROR{ "_plp_error" };
-  export inline constexpr std::string PLP_SAND{ "sand" };
-  export inline constexpr std::string PLP_GRASS{ "grass" };
-  export inline constexpr std::string PLP_GROUND{ "ground" };
-  export inline constexpr std::string PLP_LOW_NOISE{ "low_noise" };
-  export inline constexpr std::string PLP_HI_NOISE { "hi_noise" };
-  export inline constexpr std::string PLP_SNOW{ "snow" };
-  export inline constexpr std::string PLP_WATER_NORMAL_1{ "_water_normal" };
-  export inline constexpr std::string PLP_WATER_NORMAL_2{ "_water_normal2" };
+  export inline constexpr std::string VYR_EMPTY{ "_VYR_empty" };
+  export inline constexpr std::string VYR_ERROR{ "_VYR_error" };
+  export inline constexpr std::string VYR_SAND{ "sand" };
+  export inline constexpr std::string VYR_GRASS{ "grass" };
+  export inline constexpr std::string VYR_GROUND{ "ground" };
+  export inline constexpr std::string VYR_LOW_NOISE{ "low_noise" };
+  export inline constexpr std::string VYR_HI_NOISE { "hi_noise" };
+  export inline constexpr std::string VYR_SNOW{ "snow" };
+  export inline constexpr std::string VYR_WATER_NORMAL_1{ "_water_normal" };
+  export inline constexpr std::string VYR_WATER_NORMAL_2{ "_water_normal2" };
 
-  export enum PLP_ENV_OPTIONS : std::uint32_t {
+  export enum VYR_ENV_OPTIONS : std::uint32_t {
     HAS_FOG = 1 << 0,
     HAS_IRRADIANCE = 1 << 1
   };
 
-  export enum PLP_MESH_OPTIONS : std::uint32_t {
+  export enum VYR_MESH_OPTIONS : std::uint32_t {
     HAS_BASE_COLOR = 1 << 0,
     HAS_SPECULAR = 1 << 1,
     HAS_NORMAL = 1 << 2,

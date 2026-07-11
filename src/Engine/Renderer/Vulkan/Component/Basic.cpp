@@ -130,7 +130,9 @@ namespace Vyroda
       renderer.getAPI().updateUniformBuffer(ubos, &ubos_data, renderer.getCurrentFrameIndex());
     }
 
-    createDescriptorSet(renderer, mesh, render_context);
+   if (mesh.getDescSet() == VK_NULL_HANDLE) {
+     createDescriptorSet(renderer, mesh, render_context);
+   }
     
     mesh.setIsDirty(false);
     vkDestroyCommandPool(renderer.getDevice(), cmd_pool, nullptr);
@@ -145,7 +147,7 @@ namespace Vyroda
 
     auto const & main_texture_name {
       (!mesh.getData()->_base_color.empty()
-      && mesh.getData()->_base_color != PLP_EMPTY)
+      && mesh.getData()->_base_color != VYR_EMPTY)
         ? mesh.getData()->_base_color
         : mesh.getData()->_textures.at(0)
     };
@@ -169,7 +171,7 @@ namespace Vyroda
       1));
 
     if (texture_bump.getWidth() == 0) {
-      texture_bump = render_context.textures->at(PLP_EMPTY);
+      texture_bump = render_context.textures->at(VYR_EMPTY);
     }
 
     Texture texture_specular{ getTexture(render_context, mesh.getData()->_specular_map)};
@@ -179,7 +181,7 @@ namespace Vyroda
     texture_specular.getMipLevels()));
 
     if (texture_specular.getWidth() == 0) {
-      texture_specular = render_context.textures->at(PLP_EMPTY);
+      texture_specular = render_context.textures->at(VYR_EMPTY);
     }
 
     Texture texture_metal_roughness { getTexture(render_context, mesh.getData()->_metal_roughness) };
@@ -189,7 +191,7 @@ namespace Vyroda
     texture_metal_roughness.getMipLevels()));
 
     if (texture_metal_roughness.getWidth() == 0) {
-      texture_metal_roughness = render_context.textures->at(PLP_EMPTY);
+      texture_metal_roughness = render_context.textures->at(VYR_EMPTY);
     }
 
     Texture texture_emissive { getTexture(render_context, mesh.getData()->_emissive) };
@@ -199,7 +201,7 @@ namespace Vyroda
     texture_emissive.getMipLevels()));
 
     if (texture_emissive.getWidth() == 0) {
-      texture_emissive = render_context.textures->at(PLP_EMPTY);
+      texture_emissive = render_context.textures->at(VYR_EMPTY);
     }
 
     Texture texture_ao { getTexture(render_context, mesh.getData()->_ao) };
@@ -209,7 +211,7 @@ namespace Vyroda
     texture_ao.getMipLevels()));
 
     if (texture_ao.getWidth() == 0) {
-      texture_ao = render_context.textures->at(PLP_EMPTY);
+      texture_ao = render_context.textures->at(VYR_EMPTY);
     }
 
     std::vector<VkDescriptorImageInfo> image_info{};
@@ -262,7 +264,7 @@ namespace Vyroda
 
     if (it == render_context.textures->end()) {
       //Logger::warn("Cannot load texture : {}", name);
-      return render_context.textures->at(PLP_ERROR);
+      return render_context.textures->at(VYR_ERROR);
     }
 
     return it->second;

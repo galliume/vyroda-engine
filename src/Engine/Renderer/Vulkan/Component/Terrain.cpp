@@ -144,7 +144,7 @@ namespace Vyroda
       0));
 
     //@todo fix this ugly fix. Needs a real asset unique ID
-    Texture ground { render_context.textures->at(PLP_GROUND) };
+    Texture ground { render_context.textures->at(VYR_GROUND) };
 
     ground.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
@@ -152,10 +152,10 @@ namespace Vyroda
       0));
 
     if (ground.getWidth() == 0) {
-      ground = render_context.textures->at(PLP_EMPTY);
+      ground = render_context.textures->at(VYR_EMPTY);
     }
 
-    Texture grass { render_context.textures->at(PLP_GRASS) };
+    Texture grass { render_context.textures->at(VYR_GRASS) };
 
     grass.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
@@ -163,10 +163,10 @@ namespace Vyroda
       0));
 
     if (grass.getWidth() == 0) {
-      grass = render_context.textures->at(PLP_EMPTY);
+      grass = render_context.textures->at(VYR_EMPTY);
     }
 
-    Texture snow { render_context.textures->at(PLP_SNOW) };
+    Texture snow { render_context.textures->at(VYR_SNOW) };
 
     snow.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
@@ -174,10 +174,10 @@ namespace Vyroda
       0));
 
     if (snow.getWidth() == 0) {
-      snow = render_context.textures->at(PLP_EMPTY);
+      snow = render_context.textures->at(VYR_EMPTY);
     }
 
-    Texture sand { render_context.textures->at(PLP_SAND) };
+    Texture sand { render_context.textures->at(VYR_SAND) };
 
     sand.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
@@ -185,10 +185,10 @@ namespace Vyroda
       0));
 
     if (sand.getWidth() == 0) {
-      sand = render_context.textures->at(PLP_EMPTY);
+      sand = render_context.textures->at(VYR_EMPTY);
     }
 
-    Texture low_noise { render_context.textures->at(PLP_LOW_NOISE) };
+    Texture low_noise { render_context.textures->at(VYR_LOW_NOISE) };
 
     low_noise.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
@@ -196,10 +196,10 @@ namespace Vyroda
       0));
 
     if (low_noise.getWidth() == 0) {
-      low_noise = render_context.textures->at(PLP_EMPTY);
+      low_noise = render_context.textures->at(VYR_EMPTY);
     }
 
-    Texture hi_noise { render_context.textures->at(PLP_HI_NOISE) };
+    Texture hi_noise { render_context.textures->at(VYR_HI_NOISE) };
 
     hi_noise.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
@@ -207,7 +207,7 @@ namespace Vyroda
       0));
 
     if (hi_noise.getWidth() == 0) {
-      hi_noise = render_context.textures->at(PLP_EMPTY);
+      hi_noise = render_context.textures->at(VYR_EMPTY);
     }
 
     std::vector<VkDescriptorImageInfo> image_infos{};

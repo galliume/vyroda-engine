@@ -8,9 +8,9 @@ namespace eval AppMenu {
   $m add cascade -menu $m.file -label File
   $m add cascade -menu $m.edit -label Edit
 
-  $m.file add command -label "Close" -command "AppMenu::close_plp_edit"
+  $m.file add command -label "Close" -command "AppMenu::close_VYR_edit"
 
-  proc close_plp_edit {} {
+  proc close_VYR_edit {} {
     exit 0
   }
 }

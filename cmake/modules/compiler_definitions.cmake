@@ -17,7 +17,7 @@ function(set_vyroda_definitions target)
   endif()
 
   target_compile_definitions(${target} PRIVATE
-    $<$<CONFIG:DEBUG>:PLP_DEBUG_BUILD>
-    $<$<CONFIG:RELWITHDEBINFO>:PLP_DEBUG_BUILD>)
+    $<$<CONFIG:DEBUG>:VYR_DEBUG_BUILD>
+    $<$<CONFIG:RELWITHDEBINFO>:VYR_DEBUG_BUILD>)
 
 endfunction()
