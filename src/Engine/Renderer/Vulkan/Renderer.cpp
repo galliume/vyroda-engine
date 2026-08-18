@@ -199,11 +199,8 @@ namespace Vyroda
     semaphore_create_info.pNext = &timeline_create_info;
 
     for (std::size_t i { 0 }; i < buffer_size; ++i) {
-      _sema_render_completes[i].resize(buffer_size);
-      for (std::size_t x { 0 }; x < buffer_size; ++x) {
-        result = vkCreateSemaphore(_vulkan->getDevice(), &sema_create_info, nullptr, &_sema_render_completes[i][x]);
-        if (VK_SUCCESS != result) Logger::error("can't create _sema_render_completes semaphore");
-      }
+      result = vkCreateSemaphore(_vulkan->getDevice(), &sema_create_info, nullptr, &_sema_render_completes[i]);
+      if (VK_SUCCESS != result) Logger::error("can't create _sema_render_completes semaphore");
     }
     for (std::size_t i { 0 }; i < buffer_size; ++i) {
       result = vkCreateSemaphore(_vulkan->getDevice(), &sema_create_info, nullptr, &_sema_present_completes[i]);
@@ -247,9 +244,9 @@ namespace Vyroda
     VkResult result { vkAcquireNextImageKHR(_vulkan->getDevice(), _swapchain, max, _image_available[_current_frame], VK_NULL_HANDLE, &_image_index) };
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-      return;
+      Logger::debug("image out of date.");
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-      Logger::error("failed to acquire swap chain image!");
+      Logger::debug("failed to acquire swap chain image!");
     }
 
     vkResetFences(_vulkan->getDevice(), 1, &_fences_in_flight[_current_frame]);
@@ -259,36 +256,39 @@ namespace Vyroda
 
   void Renderer::startRender()
   {
-    auto &vertices_to_update { _vertices_to_update.at(_current_frame) };
+    //    auto &vertices_to_update { _vertices_to_update.at(_current_frame) };
     
-    if (!vertices_to_update.empty()) {    
-      _vulkan->startUpdateVertexBuffer(_current_frame);
+    //    if (!vertices_to_update.empty()) {
+      // _vulkan->startUpdateVertexBuffer(_current_frame);
 
-      for (std::size_t y { 0 }; y < vertices_to_update.size(); y++) {
+      // for (std::size_t y { 0 }; y < vertices_to_update.size(); y++) {
         
-        Data * data { vertices_to_update.at(y) };
+      //   Data * data { vertices_to_update.at(y) };
         
-        if (!data->_is_dirty) continue;
+      //   if (!data->_is_dirty) continue;
     
-        auto * buffer { static_cast<DeviceMemory*>(data->_vertex_buffer.memory)->getBuffer(data->_vertex_buffer.index) };
+      //   auto * buffer { static_cast<DeviceMemory*>(data->_vertex_buffer.memory)->getBuffer(data->_vertex_buffer.index) };
       
-        _vulkan->updateVertexBuffer(
-          data->_vertices,
-          buffer,
-          _current_frame);
+      //   _vulkan->updateVertexBuffer(
+      //     data->_vertices,
+      //     buffer,
+      //     _current_frame);
     
-        data->_is_dirty = false;
-      }
-      vertices_to_update.clear();
+      //   data->_is_dirty = false;
+      // }
+      // vertices_to_update.clear();
 
-      _vulkan->submitVertexUpdate(
-        _sema_present_completes[_current_frame],
-        _current_frame);
-    } else {
-      //@todo clean workaround
-      Logger::warn("empty cmd submited for frame {}", _current_frame);
-      _vulkan->submitEmptyCmd(_sema_present_completes[_current_frame]);
-    }
+      // _vulkan->submitVertexUpdate(
+      //   _sema_present_completes[_current_frame],
+      //   _current_frame);
+      //    } // else {
+    //   //@todo clean workaround
+    //   Logger::warn("empty cmd submited for frame {}", _current_frame);
+    //   _vulkan->submitEmptyCmd(_sema_present_completes[_current_frame]);
+    //   vkResetFences(_vulkan->getDevice(), 1, &_fences_in_flight[_current_frame]);
+    //   nextFrame();
+    //   return;
+    // }
     
     auto& cmd_buffer { _cmd_buffer_entities[_current_frame] };
     auto& colorview { _imageviews[_image_index] };
@@ -375,19 +375,25 @@ namespace Vyroda
   {
     auto& cmd_buffer { _cmd_buffer_entities[_current_frame] };
     auto const& camera { renderer_context.camera };
-    auto & pipeline { getPipeline(mesh.getShaderName()) };
+    auto& pipeline { getPipeline(mesh.getShaderName()) };
+
+    _vulkan->updateDescriptorSets(
+      mesh.getName(),
+      mesh.getUniformBuffers(),
+      _current_frame
+    );
 
     auto desc_set { _vulkan->getDescSet(mesh.getName(), _current_frame) };
-    auto desc_set_buffers { _vulkan->getDescSetBuffers(mesh.getName(), _current_frame) };    
+    // auto desc_set_buffers { _vulkan->getDescSetBuffers(mesh.getName(), _current_frame) };
 
-    if (desc_set_buffers.ubo.memory != nullptr) {
-    auto device_memory { static_cast<DeviceMemory*>(desc_set_buffers.ubo.memory) };
+    // if (desc_set_buffers.ubo.memory != nullptr) {
+    //   auto device_memory { static_cast<DeviceMemory*>(desc_set_buffers.ubo.memory) };
       
-    void* mapped;
-    vkMapMemory(_vulkan->getDevice(), *device_memory->getMemory(), 0, sizeof(UniformBufferObject), 0, &mapped);
-    std::memcpy(mapped, &mesh.getData()->_ubos.front(), sizeof(UniformBufferObject));
-    vkUnmapMemory(_vulkan->getDevice(), *device_memory->getMemory());
-    }
+    //   void* mapped;
+    //   vkMapMemory(_vulkan->getDevice(), *device_memory->getMemory(), 0, sizeof(UniformBufferObject), 0, &mapped);
+    //   std::memcpy(mapped, &mesh.getData()->_ubos.front(), sizeof(UniformBufferObject));
+    //   vkUnmapMemory(_vulkan->getDevice(), *device_memory->getMemory());
+    // }
     
     constants push_constants {
       .view = renderer_context.camera_view,
@@ -411,7 +417,7 @@ namespace Vyroda
     auto const& data { mesh.getData() };
     auto const& material { mesh.getMaterials().at(data->_material_id) };
 
-    VkBool32 blend_enable =
+    VkBool32 const blend_enable =
       (renderer_context.has_alpha_blend && material.alpha_mode >= 1.0f) ? VK_TRUE : VK_FALSE;
 
     vkCmdSetColorBlendEnableEXT(cmd_buffer, 0, 1, &blend_enable);
@@ -423,6 +429,7 @@ namespace Vyroda
       0, 1, &desc_set, 0, nullptr);
 
     if (material.double_sided == true && pipeline.pipeline_bis != VK_NULL_HANDLE) {
+      
       _vulkan->bindPipeline(cmd_buffer, pipeline.pipeline_bis);
       } else {
       _vulkan->bindPipeline(cmd_buffer, pipeline.pipeline);
@@ -436,7 +443,6 @@ namespace Vyroda
         vkCmdSetDepthBias(cmd_buffer, depth_bias_constant, depth_bias_clamp, depth_bias_slope);
     }
 
-    //Logger::warn("draw: {}", mesh.getName());
     _vulkan->draw(
       cmd_buffer,
       data,
@@ -755,7 +761,12 @@ namespace Vyroda
     //  _vulkan->transitionImageLayout(cmd_buffer, depth_image,
     //    VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
     // }
-    ImageMemoryBarrier const barrier_color { _vulkan->transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_ASPECT_COLOR_BIT) };
+    ImageMemoryBarrier const barrier_color {
+      _vulkan->transitionImageLayout(
+      image,
+      VK_IMAGE_LAYOUT_GENERAL,
+      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+      VK_IMAGE_ASPECT_COLOR_BIT) };
     
     std::array<VkImageMemoryBarrier, 1> barriers{};
     barriers[0] = barrier_color.barrier;
@@ -775,39 +786,45 @@ namespace Vyroda
 
   void Renderer::submit()
   {
-    if (_sema_render_completes[_current_frame].size() - 1 < _image_index) {
-      return;
-    }
+    // if (_sema_render_completes[_current_frame].size() - 1 < _image_index) {
+    //   return;
+    // }
 
     std::vector<VkCommandBuffer> const cmds_buffer {
         _draw_cmds[_current_frame].cmd_buffers
         | std::views::filter([](auto const& cmd) { return cmd != nullptr; })
         | std::ranges::to<std::vector>() };
 
-    if (cmds_buffer.empty()) {
-      vkResetFences(_vulkan->getDevice(), 1, &_fences_in_flight[_current_frame]);
-      _current_frame = (_current_frame + 1) % _max_frames_in_flight;
-      return;
-    }
+    // if (cmds_buffer.empty()) {
+    //   vkResetFences(_vulkan->getDevice(), 1, &_fences_in_flight[_current_frame]);
+    //   _current_frame = (_current_frame + 1) % _max_frames_in_flight;
+    //   return;
+    // }
 
     //auto &semaphore_present_complete { _sema_present_completes[_current_frame] };
-    auto &semaphore_render_complete { _sema_render_completes[_current_frame][_image_index] };
+    auto &semaphore_render_complete { _sema_render_completes[_current_frame] };
     auto &timeline_semaphore { _timeline_semaphores[_current_frame] };
-
     auto &_current_timeline_value { _current_timeline_values[_current_frame] };
+    
     std::uint64_t const draw_finished { _current_timeline_value + 1 };
-    std::uint64_t const finished { _current_timeline_value + 3 };
-    std::array<std::uint64_t, 2> wait_values { 0, 0 };
+    //std::uint64_t const finished { _current_timeline_value + 3 };
+
+    std::array<std::uint64_t, 1> wait_values { 0 };
     std::array<std::uint64_t, 2> signal_values { draw_finished, 0 };
 
     //VkPipelineStageFlags wait_stage_mask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-    std::array<VkPipelineStageFlags, 2> graphics_wait_stage_masks { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT };
-    std::array<VkSemaphore, 2> graphics_wait_semaphores { _image_available[_current_frame], _sema_present_completes[_current_frame] };
-    std::array<VkSemaphore, 2> graphics_signal_semaphores { timeline_semaphore, semaphore_render_complete };
+    std::array<VkPipelineStageFlags, 1> graphics_wait_stage_masks {
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    
+    std::array<VkSemaphore, 1> graphics_wait_semaphores {
+      _image_available[_current_frame] };
+
+    std::array<VkSemaphore, 2> graphics_signal_semaphores {
+      timeline_semaphore, semaphore_render_complete };
 
     VkTimelineSemaphoreSubmitInfoKHR timeline_submit_info{};
     timeline_submit_info.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
-    timeline_submit_info.waitSemaphoreValueCount = 2;
+    timeline_submit_info.waitSemaphoreValueCount = 1;
     timeline_submit_info.pWaitSemaphoreValues = wait_values.data();
     timeline_submit_info.signalSemaphoreValueCount = 2;
     timeline_submit_info.pSignalSemaphoreValues = signal_values.data();
@@ -816,7 +833,7 @@ namespace Vyroda
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit_info.commandBufferCount = static_cast<std::uint32_t>(cmds_buffer.size());
     submit_info.pCommandBuffers = cmds_buffer.data();
-    submit_info.waitSemaphoreCount = 2;
+    submit_info.waitSemaphoreCount = 1;
     submit_info.pWaitSemaphores = graphics_wait_semaphores.data();
     submit_info.pWaitDstStageMask = graphics_wait_stage_masks.data();
     submit_info.signalSemaphoreCount = 2;
@@ -836,17 +853,26 @@ namespace Vyroda
     present_info.pImageIndices = &_image_index;
     present_info.pResults = nullptr;
 
+    //Logger::debug("presenting frame {}", _current_frame);
     _vulkan->submit(queue, { submit_info }, present_info, _fences_in_flight[_current_frame]);
+    //Logger::debug("done frame {}", _current_frame);
+    
+    _current_timeline_value = draw_finished;
 
-    _current_timeline_value = finished;
-
-    _previous_frame = _current_frame;
-    _current_frame = (_current_frame + 1) % _max_frames_in_flight;
-    _draw_cmds[_current_frame].clear();
+    nextFrame();
+    
     onFinishRender();
+    
     _vulkan->updateQueueIndex();
   }
 
+  void Renderer::nextFrame()
+  {
+    _previous_frame = _current_frame;
+    _current_frame = (_current_frame + 1) % _max_frames_in_flight;
+    _draw_cmds[_current_frame].clear();
+  }
+  
   void Renderer::setRayPick(
     float const,
     float const,

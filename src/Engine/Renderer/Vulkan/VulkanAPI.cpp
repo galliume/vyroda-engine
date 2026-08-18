@@ -1575,6 +1575,44 @@ DescSetsBuffers& VulkanAPI::getDescSetBuffers(std::string const& name, std::uint
 
 void VulkanAPI::updateDescriptorSets(
   std::string const& name,
+  std::vector<Buffer> const& uniform_buffers,
+  std::uint32_t const frame_index,
+  VkDescriptorType const type)
+{
+  auto& descset { _desc_sets[name].at(frame_index) };
+
+  if (descset == VK_NULL_HANDLE) {
+    Logger::error("desc set null for {}", name);
+  }
+
+  std::array<VkWriteDescriptorSet, 1> desc_writes{};
+  std::vector<VkDescriptorBufferInfo> buffer_infos;
+
+  std::for_each(std::begin(uniform_buffers), std::end(uniform_buffers),
+  [& buffer_infos](const Buffer & uniformBuffer)
+  {
+    VkDescriptorBufferInfo buffer_info{};
+    buffer_info.buffer = uniformBuffer.buffer;
+    buffer_info.offset = 0;
+    buffer_info.range = VK_WHOLE_SIZE;
+    buffer_infos.emplace_back(buffer_info);
+  });
+
+  desc_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  desc_writes[0].dstSet = descset;
+  desc_writes[0].dstBinding = 0;
+  desc_writes[0].dstArrayElement = 0;
+  desc_writes[0].descriptorType = type;
+  desc_writes[0].descriptorCount = static_cast<std::uint32_t>(buffer_infos.size());
+  desc_writes[0].pBufferInfo = buffer_infos.data();
+
+
+  //Logger::debug("{}::{}", __FILE__, __LINE__);
+  vkUpdateDescriptorSets(_device, static_cast<std::uint32_t>(desc_writes.size()), desc_writes.data(), 0, nullptr);
+}
+
+void VulkanAPI::updateDescriptorSets(
+  std::string const& name,
   std::vector<Buffer>& uniform_buffers,
   std::vector<VkDescriptorImageInfo>& image_info,
   VkDescriptorType const type)
@@ -1606,7 +1644,7 @@ void VulkanAPI::updateDescriptorSets(
     desc_writes[0].dstBinding = 0;
     desc_writes[0].dstArrayElement = 0;
     desc_writes[0].descriptorType = type;
-    desc_writes[0].descriptorCount = 1;
+    desc_writes[0].descriptorCount = static_cast<std::uint32_t>(buffer_infos.size());
     desc_writes[0].pBufferInfo = buffer_infos.data();
 
     desc_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1617,6 +1655,7 @@ void VulkanAPI::updateDescriptorSets(
     desc_writes[1].descriptorCount = static_cast<std::uint32_t>(image_info.size());
     desc_writes[1].pImageInfo = image_info.data();
 
+    //Logger::debug("{}::{}", __FILE__, __LINE__);
     vkUpdateDescriptorSets(_device, static_cast<std::uint32_t>(desc_writes.size()), desc_writes.data(), 0, nullptr);
   }
 }
@@ -1728,7 +1767,8 @@ void VulkanAPI::updateDescriptorSets(
     desc_writes[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     desc_writes[6].descriptorCount = static_cast<std::uint32_t>(csm_image_info.size());
     desc_writes[6].pImageInfo = csm_image_info.data();
-    
+
+    //Logger::debug("{}::{}", __FILE__, __LINE__);
     vkUpdateDescriptorSets(_device, static_cast<std::uint32_t>(desc_writes.size()), desc_writes.data(), 0, nullptr);
   }
 }
@@ -1837,6 +1877,7 @@ VkResult VulkanAPI::queueSubmit(
     vkWaitForFences(_device, 1, & fence_submit, VK_TRUE, UINT32_MAX);
     vkResetFences(_device, 1, &fence_submit);
 
+    //Logger::debug("{}::{}", __FILE__, __LINE__);
     result = vkQueueSubmit(_graphics_queues[queue_index], 1, &submit_info, fence_submit);
   }
 
@@ -2081,6 +2122,7 @@ void VulkanAPI::submitEmptyCmd(
 
   {
     std::lock_guard<std::mutex> guard(_mutex_queue_submit);
+    //Logger::debug("{}::{}", __FILE__, __LINE__);    
     result = vkQueueSubmit(_transfer_queues[_queue_index], 1, & submit_info, VK_NULL_HANDLE);
   }
 
@@ -2090,7 +2132,7 @@ void VulkanAPI::submitEmptyCmd(
 }
 
 void VulkanAPI::submitVertexUpdate(
-  VkSemaphore & semaphore,
+  VkSemaphore &,
   std::size_t const image_index)
 {
   auto &transfer_cmd_buffer { _transfer_cmd_buffer[image_index] };
@@ -2101,12 +2143,13 @@ void VulkanAPI::submitVertexUpdate(
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &transfer_cmd_buffer;
-  submit_info.signalSemaphoreCount = 1;
-  submit_info.pSignalSemaphores = &semaphore;
+  submit_info.signalSemaphoreCount = 0;
+  submit_info.pSignalSemaphores = nullptr;
   VkResult result { VK_SUCCESS };
 
   {
     std::lock_guard<std::mutex> guard(_mutex_queue_submit);
+    //Logger::debug("{}::{}", __FILE__, __LINE__);    
     result = vkQueueSubmit(_transfer_queues[_queue_index], 1, & submit_info, VK_NULL_HANDLE);
   }
   _update_vertex_offsets[image_index].store(0);
@@ -2132,7 +2175,7 @@ Buffer VulkanAPI::createUniformBuffers(
 
   VkBuffer buffer { createBuffer(
     buffer_size,
-    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) };
+    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT) };
 
   VkMemoryRequirements mem_requirements;
   vkGetBufferMemoryRequirements(_device, buffer, & mem_requirements);
@@ -2147,7 +2190,7 @@ Buffer VulkanAPI::createUniformBuffers(
     _device,
     size,
     memory_type,
-    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
     mem_requirements.alignment,
     DeviceMemoryPool::DeviceBufferType::UNIFORM);
 
@@ -2382,7 +2425,7 @@ void VulkanAPI::commitCopyBuffer(std::size_t const image_index)
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &_copy_cmd_buffer[image_index];
-      
+    //Logger::debug("{}::{}", __FILE__, __LINE__);      
     result = vkQueueSubmit(_transfer_queues[_queue_index], 1, &submit_info, fence_buffer);
  
     if (result != VK_SUCCESS) {
@@ -2954,6 +2997,7 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
       //SCOPED_TIMER();
       //std::lock_guard<std::mutex> guard(_mutex_queue_submit);
 
+      //Logger::debug("{}::{}", __FILE__, __LINE__);
       VkResult result = vkQueueSubmit(queue, static_cast<std::uint32_t>(submit_infos.size()), submit_infos.data(), fence);
 
       if (result != VK_SUCCESS) {
@@ -3127,7 +3171,8 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     vkCreateFence(_device, &fence_info, nullptr, &transfer_fence);
 
     {
-      std::lock_guard<std::mutex> guard(_mutex_queue_submit);
+      std::lock_guard<std::mutex> guard(_mutex_queue_submit); 
+      //Logger::debug("{}::{}", __FILE__, __LINE__);     
       result = vkQueueSubmit(_transfer_queues[_queue_index], 1, &submit_info, transfer_fence);
     }
 
@@ -3489,6 +3534,7 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     VkResult result;
     {
       std::lock_guard<std::mutex> guard(_mutex_queue_submit);
+      //Logger::debug("{}::{}", __FILE__, __LINE__);      
       result = vkQueueSubmit(_transfer_queues[_queue_index], 1, & submit_info, fence_buffer);
     }
 
@@ -3521,7 +3567,6 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     copy_region.srcOffset = src_offset;
     copy_region.dstOffset = dst_offset;
     copy_region.size = size;
-
     vkCmdCopyBuffer(_copy_cmd_buffer[image_index], src_buffer, dst_buffer, 1, & copy_region);
   }
 

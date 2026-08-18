@@ -165,10 +165,11 @@ namespace Vyroda
     std::uint32_t _shadow_map_resolution { 2048 };
     //const std::size_t _max_render_thread{ 4 };
 
+    void nextFrame();
     void onFinishRender();
     void setPerspective();
     void setupShadowDescSets(VkBuffer buffer);
-
+ 
   private:
 
     std::vector<std::vector<Data*>> _vertices_to_update{};
@@ -248,7 +249,7 @@ namespace Vyroda
 
     std::vector<VkSemaphore> _image_available;
     std::vector<VkSemaphore> _sema_present_completes;
-    std::vector<std::vector<VkSemaphore>> _sema_render_completes;
+    std::vector<VkSemaphore> _sema_render_completes;
 
     std::vector<VkFence> _images_in_flight{};
     std::vector<VkFence> _fences_in_flight{};

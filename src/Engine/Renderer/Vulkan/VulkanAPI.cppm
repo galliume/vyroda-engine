@@ -135,7 +135,7 @@ namespace Vyroda
       std::uint32_t const frame_index);
 
     DescSetsBuffers& getDescSetBuffers(std::string const& name,
-      std::uint32_t const frame_index);    
+      std::uint32_t const frame_index);
     
     void updateDescriptorSets(
       std::string const& name,
@@ -144,6 +144,12 @@ namespace Vyroda
       std::vector<VkDescriptorImageInfo>& cube_map_image_info,
       Buffer& light_storage_buffer,
       std::vector<VkDescriptorImageInfo>& csm_image_info);
+
+    void updateDescriptorSets(
+      std::string const& name,
+      std::vector<Buffer> const& uniform_buffer,
+      std::uint32_t const frame_index,
+      VkDescriptorType const type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
     void updateDescriptorSets(
       std::string const& name,

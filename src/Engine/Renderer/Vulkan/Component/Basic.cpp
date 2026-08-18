@@ -130,7 +130,7 @@ namespace Vyroda
       renderer.getAPI().updateUniformBuffer(ubos, &ubos_data, renderer.getCurrentFrameIndex());
     }
 
-   if (mesh.getDescSet() == VK_NULL_HANDLE) {
+    if (!renderer.getAPI().hasDescSet(mesh.getName())) {
      createDescriptorSet(renderer, mesh, render_context);
    }
     
@@ -240,19 +240,17 @@ namespace Vyroda
     std::vector<VkDescriptorImageInfo> csm_image_info{};
     csm_image_info.emplace_back(renderer.getCSMSamplers(), renderer.getCSMImageViews(), VK_IMAGE_LAYOUT_GENERAL);
 
-    if (!renderer.getAPI().hasDescSet(mesh.getName())) {
-       renderer.getAPI().createDescriptorSets(mesh.getName(), renderer.getPipeline(mesh.getShaderName()), 1);
-          
-      auto light_buffer {render_context.light_buffer};
-    
-      renderer.getAPI().updateDescriptorSets(
-        mesh.getName(),                  
-        image_info,
-        depth_map_image_info,
-        env_info,
-        light_buffer,
-        csm_image_info);
-    }
+    renderer.getAPI().createDescriptorSets(mesh.getName(), renderer.getPipeline(mesh.getShaderName()), 1);
+        
+    auto light_buffer {render_context.light_buffer};
+  
+    renderer.getAPI().updateDescriptorSets(
+      mesh.getName(),
+      image_info,
+      depth_map_image_info,
+      env_info,
+      light_buffer,
+      csm_image_info);
   }
 
   Texture const& Basic::getTexture(

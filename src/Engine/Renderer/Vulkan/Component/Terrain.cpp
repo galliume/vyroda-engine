@@ -233,19 +233,26 @@ namespace Vyroda
     std::vector<VkDescriptorImageInfo> depth_map_image_info{};
     depth_map_image_info.emplace_back(renderer.getDepthMapSamplers(), renderer.getDepthMapImageViews(), VK_IMAGE_LAYOUT_GENERAL);
 
+    render_context.skybox->setSampler(renderer.getAPI().createKTXSampler(
+      TextureWrapMode::CLAMP_TO_EDGE,
+      TextureWrapMode::CLAMP_TO_EDGE,
+      0));
+
     std::vector<VkDescriptorImageInfo> env_infos{};
     env_infos.emplace_back(render_context.skybox->getSampler(), render_context.skybox->getImageView(), VK_IMAGE_LAYOUT_GENERAL );
 
-    renderer.getAPI().createDescriptorSets(mesh.getName(), renderer.getPipeline(mesh.getShaderName()) , 1);
+    if (!renderer.getAPI().hasDescSet(mesh.getName())) {
+      renderer.getAPI().createDescriptorSets(mesh.getName(), renderer.getPipeline(mesh.getShaderName()) , 1);
 
-    auto light_buffer { render_context.light_buffer };
+      auto light_buffer { render_context.light_buffer };
 
-    renderer.getAPI().updateDescriptorSets(
-      mesh.getName(),                  
-      image_infos,
-      depth_map_image_info,
-      env_infos,
-      light_buffer,
-      csm_image_info);
+      renderer.getAPI().updateDescriptorSets(
+        mesh.getName(),
+        image_infos,
+        depth_map_image_info,
+        env_infos,
+        light_buffer,
+        csm_image_info);
+      }
   }
 }

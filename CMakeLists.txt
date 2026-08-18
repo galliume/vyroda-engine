@@ -23,6 +23,7 @@ message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 configure_file(VyrodaConfig.h.in VyrodaConfig.h)
 
+#include(optims)
 include(fetchDeps)
 include(packages)
 include(common_deps)
@@ -32,7 +33,6 @@ include(compiler_links)
 include(target_properties)
 include(subdirs)
 include(install)
-
 include(custom_targets)
 include(graphVizOptions)
 
@@ -46,10 +46,3 @@ set_vyroda_definitions(${PROJECT_NAME})
 set_vyroda_links(${PROJECT_NAME})
 set_vyroda_compiler_flags(${PROJECT_NAME})
 set_vyroda_target_properties(${PROJECT_NAME})
-
-#include(CheckIPOSupported)
-#check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
-#if(ipo_supported)
-#  message(STATUS "ipo_supported")
-#  set_target_properties(${PROJECT_NAME} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-#endif()

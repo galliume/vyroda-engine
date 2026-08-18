@@ -19,8 +19,6 @@ namespace Vyroda
   public:
     Data * getData() { return & _data; }
     Data const * getData() const { return & _data; }
-    VkDescriptorSet const * getDescSet() const { return & _descset; }
-    VkDescriptorSet getDescSet() { return _descset; }
     std::vector<material_t> const& getMaterials() const { return _materials; }
     std::vector<material_t> & getMaterials() { return _materials; }
     std::string const getName() const { return _name; }
@@ -35,9 +33,6 @@ namespace Vyroda
     bool isDirty() { return _is_dirty.load(); }
 
     void setData(Data data) { _data = std::move(data); }
-    void setDescSet(VkDescriptorSet descset) { _descset = descset; }
-    void setShadowMapDescSet(VkDescriptorSet descset) { _shadowmap_descset = descset; }
-    void setCSMDescSet(VkDescriptorSet descset) { _csm_descset = descset; }
     void setHasBufferStorage(bool has = true) { _has_storage_buffer = has; }
     void setHasPushConstants(bool has = true) { _has_push_constants = has; }
     void setIsDirty(bool dirty = true) { _is_dirty.store(dirty); }
@@ -47,11 +42,6 @@ namespace Vyroda
     void setObjectBuffer(ObjectBuffer objectBuffer) { _object_buffer = std::move(objectBuffer); }
 
     void addUbos(std::vector<std::vector<UniformBufferObject>> const& ubos);
-
-    VkDescriptorSet getShadowMapDescSet() const { return _shadowmap_descset; }
-    VkDescriptorSet getShadowMapDescSet() { return _shadowmap_descset; }
-    VkDescriptorSet getCSMDescSet() const { return _csm_descset; }
-    VkDescriptorSet getCSMDescSet() { return _csm_descset; }
 
     bool hasAnimation() const { return _has_animation; }
     bool hasBufferStorage() const { return _has_storage_buffer; }
@@ -115,9 +105,6 @@ namespace Vyroda
     ObjectBuffer _object_buffer;
 
     Data _data{};
-    VkDescriptorSet _descset {VK_NULL_HANDLE};
-    VkDescriptorSet _shadowmap_descset{VK_NULL_HANDLE};
-    VkDescriptorSet _csm_descset{};
     std::vector<material_t> _materials{};
 
     std::uint32_t _options{ 0 }; //used for options as push constants

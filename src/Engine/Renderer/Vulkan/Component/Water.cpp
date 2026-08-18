@@ -131,7 +131,10 @@ void Water::operator()(
       renderer.getAPI().updateUniformBuffer(mesh.getUniformBuffers().at(0), &mesh.getData()->_ubos.at(0), renderer.getCurrentFrameIndex());
     }
 
-    createDescriptorSet(renderer, mesh, render_context);
+    if (!renderer.getAPI().hasDescSet(mesh.getName())) {
+      createDescriptorSet(renderer, mesh, render_context);
+    }
+
     mesh.setIsDirty(false);
   }
 
@@ -183,6 +186,11 @@ void Water::operator()(
     image_infos.emplace_back(texture_normal.getSampler(), texture_normal.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
     image_infos.emplace_back(texture_normal2.getSampler(), texture_normal2.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
     image_infos.emplace_back(renderer.getCurrentSampler(), renderer.getCurrentImageView(), VK_IMAGE_LAYOUT_GENERAL);
+    
+    render_context.skybox->setSampler(renderer.getAPI().createKTXSampler(
+      TextureWrapMode::CLAMP_TO_EDGE,
+      TextureWrapMode::CLAMP_TO_EDGE,
+      0));
 
     std::vector<VkDescriptorImageInfo> env_infos{};
     env_infos.emplace_back(render_context.skybox->getSampler(), render_context.skybox->getImageView(), VK_IMAGE_LAYOUT_GENERAL );
@@ -198,7 +206,7 @@ void Water::operator()(
     auto light_buffer {render_context.light_buffer};
 
     renderer.getAPI().updateDescriptorSets(
-      mesh.getName(),                  
+      mesh.getName(),
       image_infos,
       depth_map_image_info,
       env_infos,

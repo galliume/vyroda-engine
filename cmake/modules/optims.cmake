@@ -1,0 +1,9 @@
+include(CheckIPOSupported)
+
+check_ipo_supported(RESULT result OUTPUT output)
+
+if(result)
+  set_property(TARGET ${PROJECT_NAME} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+  message(WARNING "IPO is not supported: ${output}")
+endif()

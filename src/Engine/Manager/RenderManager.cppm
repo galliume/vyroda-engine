@@ -319,7 +319,7 @@ namespace Vyroda
     void drawEntities(FrameContext const& frame_context);
     void updateBuffers();
     void updatePlayer();
-
+    
   private:
     std::string _current_level;
     std::string _current_skybox;

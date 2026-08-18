@@ -196,14 +196,14 @@ namespace Vyroda
       }
 
       updateEntities(frame_context);
-      //      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
+      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
       drawShadowmap(frame_context);
       drawEntities(frame_context);
 
       _renderer->submit();
 
-     updateBuffers();
-     updatePlayer();
+      updateBuffers();
+      updatePlayer();
 
       _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
       _renderer->getAPI().collectGarbage();
@@ -248,7 +248,7 @@ namespace Vyroda
       + frame_context.texts.size());
 
     if (frame_context.skybox_entity) {
-       _all_ids.push_back(frame_context.skybox_entity->getID());
+      _all_ids.push_back(frame_context.skybox_entity->getID());
      }
     
     if (frame_context.terrain_entity) {
@@ -454,7 +454,7 @@ namespace Vyroda
     auto* mesh_component { _component_manager->get<MeshComponent>(entity_id) };
     auto mesh { mesh_component->template has<Mesh>() };
     auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
-    //    Logger::debug("mesh {}", mesh->getName());
+
     if (mesh && rdr_impl) {
       if (mesh->isDirty()) {
         (*rdr_impl)(*_renderer.get(), *mesh, getRendererContext(camera_view_matrix));
@@ -463,6 +463,7 @@ namespace Vyroda
       RendererContext renderer_info { getRendererContext(camera_view_matrix) };
       renderer_info.stage_flag_bits = rdr_impl->getShaderStageFlags();
       renderer_info.has_alpha_blend = has_alpha_blend;
+      //Logger::warn("mesh {}", mesh->getName());
       _renderer->draw(*mesh, renderer_info);
     }
 

@@ -167,10 +167,8 @@ namespace Vyroda
 
       mat.alpha_mode = 1.0;
 
-      for (std::size_t i{ 0 }; i < mesh.getData()->_ubos.size(); i++) {
-        std::ranges::for_each(mesh.getData()->_ubos.at(i), [&](auto& data_ubo) {
+      for (auto& data_ubo : mesh.getData()->_ubos | std::views::join) {
           data_ubo.projection = projection;
-        });
       }
     } else {
       auto const image_index { renderer.getCurrentFrameIndex() };
@@ -200,7 +198,7 @@ namespace Vyroda
       renderer.getAPI().updateUniformBuffer(mesh.getUniformBuffers().at(0), &mesh.getData()->_ubos.at(0), renderer.getCurrentFrameIndex());
     }
 
-    if (mesh.getDescSet() == VK_NULL_HANDLE) {
+    if (!renderer.getAPI().hasDescSet(mesh.getName())) {
       createDescriptorSet(renderer, mesh, render_context);
     }
     mesh.setIsDirty(false);
