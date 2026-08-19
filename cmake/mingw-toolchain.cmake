@@ -1,5 +1,6 @@
 if(NOT DEFINED CMAKE_SYSROOT)
   set(CMAKE_SYSROOT "C:/msys64/ucrt64")
+  set(CMAKE_CXX_COMPILER_CLANG_MODULES_SOURCE_DIR "/ucrt64/share/libc++/v1/")
   message(STATUS "CMAKE_SYSROOT not defined, defaulting to ${CMAKE_SYSROOT}")
 endif()
 

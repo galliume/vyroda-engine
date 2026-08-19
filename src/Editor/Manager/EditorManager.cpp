@@ -34,7 +34,7 @@ namespace Vyroda {
     int,
     Tcl_Obj *const [])
   {
-    Tcl_SetResult(interp, const_cast<char*>("Hello from C++!"), TCL_STATIC);
+    Tcl_SetObjResult(interp, Tcl_NewStringObj("Hello from C++!", -1));
     return TCL_OK;
   }
 
@@ -84,16 +84,16 @@ namespace Vyroda {
     _tcl_interp = Tcl_CreateInterp();
 
     if (Tcl_Init(_tcl_interp) != TCL_OK) {
-      Logger::error("Could not init TCL : {}", Tcl_GetStringResult(_tcl_interp));
+      Logger::error("Could not init TCL : {}", Tcl_GetString(Tcl_GetObjResult(_tcl_interp)));
       return;
     }
     if (Tk_Init(_tcl_interp) != TCL_OK) {
-      Logger::error("Could not init TK : {}", Tcl_GetStringResult(_tcl_interp));
+      Logger::error("Could not init TK : {}", Tcl_GetString(Tcl_GetObjResult(_tcl_interp)));
       return;
     }
     //@todo fix root app path
     if (Tcl_EvalFile(_tcl_interp, "./src/Editor/Scripts/main.tcl") != TCL_OK) {
-      Logger::error("Could not init tcl_interp : {}", Tcl_GetStringResult(_tcl_interp));
+      Logger::error("Could not init tcl_interp : {}", Tcl_GetString(Tcl_GetObjResult(_tcl_interp)));
       return;
     }
 

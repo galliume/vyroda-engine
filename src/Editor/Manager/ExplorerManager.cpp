@@ -32,7 +32,7 @@ namespace Vyroda {
     }
     Tcl_IncrRefCount(sounds_list);
     if (Tcl_EvalObjEx(interp, sounds_list, TCL_EVAL_DIRECT) != TCL_OK) {
-      std::cerr << "Tcl Error: " << Tcl_GetStringResult(interp) << std::endl;
+      std::cerr << "Tcl Error: " << Tcl_GetString(Tcl_GetObjResult(interp)) << std::endl;
     }
     Tcl_DecrRefCount(sounds_list);
     return TCL_OK;

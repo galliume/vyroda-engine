@@ -1,31 +1,11 @@
 module;
 
+#include <cstdlib>
+#include <string_view>
 extern "C" {
   #include <tcl.h>
   #include <tclDecls.h>
   #include <tk.h>
-
-  inline void VYR_Tcl_SetResult(Tcl_Interp *interp, char *result, Tcl_FreeProc *freeProc) {
-    Tcl_SetResult(interp, result, freeProc);
-  }
-
-  inline int VYR_Tcl_Eval(Tcl_Interp *interp, const char *script) {
-    return Tcl_Eval(interp, script);
-  }
-
-  inline char* VYR_Tcl_GetStringResult(Tcl_Interp *interp) {
-    return Tcl_GetStringResult(interp);
-  }
-
-  inline const char* VYR_Tcl_SetVar(
-    Tcl_Interp *interp,
-    const char *part1,
-    const char *part2,
-    const char *newValue,
-    int flags)
-  {
-    return Tcl_SetVar2(interp, part1, part2, newValue, flags);
-  }
 }
 
 export module Engine.Core.TclTk;
@@ -51,10 +31,9 @@ export
   using ::Tcl_FreeProc;
   using ::Tcl_FindExecutable;
   using ::Tcl_CreateInterp;
-  using ::Tcl_Init;
   using ::Tk_Init;
   using ::Tcl_CreateObjCommand;
-  //using ::Tcl_GetString;
+  using ::Tcl_GetString;
   using ::Tcl_NewStringObj;
   using ::Tcl_SetObjResult;
   using ::Tcl_EvalEx;
@@ -76,24 +55,6 @@ export
   using ::Tcl_DoOneEvent;
 }
 
-#undef Tcl_SetResult
-#undef Tcl_Eval
-#undef Tcl_GetStringResult
-
-export inline void Tcl_SetResult(Tcl_Interp *interp, char *result, Tcl_FreeProc *freeProc) {
-  VYR_Tcl_SetResult(interp, result, freeProc);
-}
-
-export inline int Tcl_Eval(Tcl_Interp *interp, const char *script) {
-  return VYR_Tcl_Eval(interp, script);
-}
-
-export inline char* Tcl_GetStringResult(Tcl_Interp *interp) {
-  return VYR_Tcl_GetStringResult(interp);
-}
-
-
-
 export {
 
   inline constexpr int TCL_OK = 0;
@@ -108,4 +69,34 @@ export {
   inline Tcl_FreeProc* const TCL_STATIC = nullptr;
   inline Tcl_FreeProc* const TCL_VOLATILE = reinterpret_cast<Tcl_FreeProc*>(-1);
   inline Tcl_FreeProc* const TCL_DYNAMIC = reinterpret_cast<Tcl_FreeProc*>(3);
+}
+
+namespace Vyroda {
+  export inline int Tcl_Eval(Tcl_Interp *interp, const char *script) {
+    return Tcl_EvalEx(interp, script, script ? static_cast<int>(std::string_view(script).size()) : 0, 0);
+  }
+
+  // TODO: ugly workaround, tcl/tk9 is not yet in msys pacman repos...
+  export inline int Tcl_Init(Tcl_Interp* interp) {
+#ifdef _WIN32
+    _putenv("TCL_LIBRARY=C:/msys64/ucrt64/lib/tcl9.0.3/library");
+#endif
+
+    static const char* candidate_paths[] = {
+      "C:/msys64/ucrt64/lib/tcl9.0.3/library",
+      "C:/msys64/ucrt64/lib/tcl9/library",
+      "C:/msys64/ucrt64/lib/tcl9.0/library",
+      "C:/msys64/ucrt64/lib/tcl9.0",
+      "C:/msys64/ucrt64/share/tcl9.0"
+    };
+
+    for (const char* path : candidate_paths) {
+      ::Tcl_SetVar2(interp, "tcl_library", nullptr, path, TCL_GLOBAL_ONLY);
+      if (::Tcl_Init(interp) == TCL_OK) {
+        return TCL_OK;
+      }
+    }
+
+    return ::Tcl_Init(interp);
+  }
 }

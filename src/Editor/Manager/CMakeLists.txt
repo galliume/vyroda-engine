@@ -30,3 +30,4 @@ target_link_libraries(
 set_vyroda_definitions(EditorManagers)
 set_vyroda_links(EditorManagers)
 set_vyroda_compiler_flags(EditorManagers)
+set_vyroda_target_properties(EditorManagers)

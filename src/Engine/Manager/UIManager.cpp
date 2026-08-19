@@ -34,11 +34,11 @@ namespace Vyroda
       _tcl_interp = Tcl_CreateInterp();
 
       if (Tcl_Init(_tcl_interp) != TCL_OK) {
-        Logger::error("Could not init TCL : {}", Tcl_GetStringResult(_tcl_interp));
+        Logger::error("Could not init TCL : {}", Tcl_GetString(Tcl_GetObjResult(_tcl_interp)));
         return;
       }
       if (Tk_Init(_tcl_interp) != TCL_OK) {
-        Logger::error("Could not init TK : {}", Tcl_GetStringResult(_tcl_interp));
+        Logger::error("Could not init TK : {}", Tcl_GetString(Tcl_GetObjResult(_tcl_interp)));
         return;
       }
 
@@ -59,10 +59,10 @@ namespace Vyroda
 
         auto* self { static_cast<UIManager*>(glfwGetWindowUserPointer(glfw_window)) };
 
-        std::string const cmd { std::format("update_ui_pos {} {}", std::to_string(xpos), std::to_string(ypos)) };
+        std::string const cmd { std::format("update_ui_pos {} {}", xpos, ypos) };
 
-        if (Tcl_Eval(self->_tcl_interp, cmd.c_str()) != TCL_OK) {
-          std::cout << std::format("Could not update ui pos : {} \n", Tcl_GetStringResult(self->_tcl_interp));
+        if (Tcl_EvalEx(self->_tcl_interp, cmd.c_str(), static_cast<int>(cmd.size()), 0) != TCL_OK) {
+          std::cout << std::format("Could not update ui pos : {} \n", Tcl_GetString(Tcl_GetObjResult(self->_tcl_interp)));
         }
       });
 
@@ -72,7 +72,7 @@ namespace Vyroda
       auto const& tk_scripts_path { root_path + "/src/Engine/GUI/Scripts/main.tcl" };
       
       if (Tcl_EvalFile(_tcl_interp, tk_scripts_path.c_str()) != TCL_OK) {
-        Logger::error("Could not init tcl_interp : {}", Tcl_GetStringResult(_tcl_interp));
+        Logger::error("Could not init tcl_interp : {}", Tcl_GetString(Tcl_GetObjResult(_tcl_interp)));
         return;
       }
       Tk_MainLoop();
