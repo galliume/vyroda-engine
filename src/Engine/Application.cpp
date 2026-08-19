@@ -57,8 +57,9 @@ namespace Vyroda
       _render_manager->getWindow().show();
     }
 
-    _ui_manager = std::make_unique<UIManager>(_render_manager->getWindow());
-    _ui_manager->init(root_path);
+    // TODO: needs more thoughts on tcl/tk menu
+    //_ui_manager = std::make_unique<UIManager>(_render_manager->getWindow());
+    //_ui_manager->init(root_path);
   }
 
   void Application::run() const

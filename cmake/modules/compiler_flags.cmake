@@ -2,6 +2,8 @@ function(set_vyroda_compiler_flags target)
 
   message(STATUS "Setting compiler flags for ${target}.")
 
+  # TODO: clean flags
+
   set(DEBUG_OPTIONS
     -g
     -Og
@@ -16,7 +18,9 @@ function(set_vyroda_compiler_flags target)
     -Werror
     -march=native
     -fvisibility=hidden
-    -DNDEBUG)
+    -DNDEBUG
+    -Wno-reserved-module-identifier
+    -Wno-reserved-identifier)
 
   set(RELWITHDEBINFO_OPTIONS
     -g

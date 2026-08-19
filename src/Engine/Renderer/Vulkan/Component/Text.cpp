@@ -139,7 +139,13 @@ namespace Vyroda
 
     //@todo rename to
     mesh.setOptions(options);
-    mesh.setName("__text__");
+
+    // TODO: proper naming...
+    if (isFlat()) {
+      mesh.setName("__text__");
+    } else {
+      mesh.setName("__not_flat_text__");
+    }
     
     auto const& data = mesh.getData();
 
