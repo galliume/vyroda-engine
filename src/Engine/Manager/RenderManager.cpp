@@ -100,31 +100,31 @@ namespace Vyroda
 
     //_audio_manager->startAmbient(1);
     
-    auto * const configManager = ConfigManagerLocator::get();
-    auto const& appConfig { configManager->appConfig() };
+    auto * const config_manager { ConfigManagerLocator::get() };
+    auto const& app_config { config_manager->appConfig() };
 
     _audio_manager->init();
-    _audio_manager->load(configManager->soundConfig());
+    _audio_manager->load(config_manager->soundConfig());
 
-    InputManagerLocator::get()->init(appConfig["input"]);
+    InputManagerLocator::get()->init(app_config["input"]);
 
-    auto const& shadowConfig { appConfig["shadow_resolution"] };
+    auto const& shadowConfig { app_config["shadow_resolution"] };
     _renderer->setShadowMapResolution(shadowConfig["width"].get<std::uint32_t>());
 
-    if (appConfig["defaultLevel"].empty()) {
+    if (app_config["defaultLevel"].empty()) {
       Logger::warn("defaultLevel conf not set.");
     }
 
-    _current_level = appConfig["defaultLevel"].get<std::string>();
+    _current_level = app_config["defaultLevel"].get<std::string>();
 
     loadData(_current_level);
 
-    if (appConfig["ambientMusic"].get<bool>()) {
+    if (app_config["ambientMusic"].get<bool>()) {
       _audio_manager->startAmbient();
     }
 
     if (!getCamera().isInit()) {
-      auto const& lvl_config{ configManager->lvlConfig() };
+      auto const& lvl_config{ config_manager->lvlConfig() };
       auto const& camera{ lvl_config["camera"] };
       glm::vec3 const start_pos = {
         camera["position"]["x"].template get<float>(),
@@ -585,12 +585,10 @@ namespace Vyroda
       : _current_skybox };
 
     std::latch count_down{ 3 };
-
     std::jthread textures(std::bind(_texture_manager->load(*_renderer), std::ref(count_down)));
     std::jthread skybox(std::bind(_texture_manager->loadSkybox(sb, *_renderer), std::ref(count_down)));
     std::jthread shaders(std::bind(_shader_manager->load(config_manager->shaderConfig()), std::ref(count_down)));
     count_down.wait();
-
     std::jthread entities(_entity_manager->load(*_renderer, lvl_data));
     entities.join();
     

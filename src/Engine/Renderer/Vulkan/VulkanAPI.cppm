@@ -645,12 +645,12 @@ namespace Vyroda
     std::uint32_t _current_frame{ 0 };
     std::uint32_t _extension_count;
     std::string _api_version;
-    std::uint32_t _queue_count { 2 };
+    std::uint32_t _queue_count { 1 };
 
     GLFWwindow* _window{ nullptr };
 
-    const std::vector<const char*> _validation_layers{ "VK_LAYER_KHRONOS_validation" };
-    const std::vector<const char*> _device_extensions{
+    std::vector<const char*> const _validation_layers{ "VK_LAYER_KHRONOS_validation" };
+    std::vector<const char*> const _device_extensions{
         VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME,
@@ -659,7 +659,7 @@ namespace Vyroda
         VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
         VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
         VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME,
-        VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME,
+        //        VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME,
         VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME
     };
 

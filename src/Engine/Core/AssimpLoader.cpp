@@ -649,10 +649,10 @@ namespace Vyroda
         mesh_data.vertices.emplace_back(std::move(vertex));
       }
 
+      mesh_data.indices.reserve(mesh->mNumFaces * 3);
+
       for (std::uint32_t f{ 0 }; f < mesh->mNumFaces; f++) {
         aiFace const* face = &mesh->mFaces[f];
-
-        mesh_data.indices.reserve(face->mNumIndices);
 
         for (std::uint32_t j{ 0 }; j < face->mNumIndices; j++) {
           mesh_data.indices.push_back(face->mIndices[j]);
@@ -680,7 +680,7 @@ namespace Vyroda
           bone_data.offset_matrix = ConvertMatrixToGLMFormat(bone->mOffsetMatrix);
           bone_data.name = bone_node->mName.C_Str();
           bone_data.parent_name = bone_node->mParent->mName.C_Str();
-          bone_data.weights.resize(bone->mNumWeights);
+          bone_data.weights.reserve(bone->mNumWeights);
 
           glm::vec3 skew;
           glm::vec4 perspective;
@@ -750,7 +750,7 @@ namespace Vyroda
           mesh_data.vertices_bones[vertex_id] = std::move(vertex_bones);
         }
       }
-      data.emplace_back(mesh_data);
+      data.emplace_back(std::move(mesh_data));
     }
 
     for (std::uint32_t i{ 0 }; i < node->mNumChildren; i++) {

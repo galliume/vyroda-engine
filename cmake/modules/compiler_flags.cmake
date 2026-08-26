@@ -48,6 +48,7 @@ function(set_vyroda_compiler_flags target)
     -Wno-covered-switch-default
     -Wno-deprecated-declarations
     -Wno-thread-safety-negative
+<<<<<<< HEAD
     -Wno-enum-enum-conversion #ktx error
     -Wno-reserved-identifier
     -Wno-lifetime-safety-intra-tu-constructor-suggestions
@@ -55,5 +56,12 @@ function(set_vyroda_compiler_flags target)
     -Wno-lifetime-safety-cross-tu-constructor-suggestions
     -Wno-lifetime-safety-cross-tu-suggestions
     -Wno-lifetime-safety-invalidation)
+=======
+    -Wno-enum-enum-conversion
+    -Wno-missing-prototypes
+    -Wno-lifetime-safety-suggestions
+    -Wno-lifetime-safety-invalidation
+    -Wno-unused-command-line-argument)
+>>>>>>> 2428525 (Fix linux build)
 
 endfunction()

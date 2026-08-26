@@ -49,8 +49,8 @@
         "rhs": "Linux"
       },
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/linux-toolchain.cmake"
-      }
+          "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/linux-toolchain.cmake"
+        }
     },
     {
       "name": "common",
@@ -76,6 +76,10 @@
         "CMAKE_MSVC_RUNTIME_LIBRARY": {
           "type": "STRING",
           "value": ""
+        },
+        "CMAKE_EXPORT_COMPILE_COMMANDS" : {
+            "type": "STRING",
+            "value": "ON"
         }
       }
     },

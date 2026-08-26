@@ -11,13 +11,16 @@ module;
 
 #include <atomic>
 #include <cassert>
+#include <stdio.h>
 #include <stdlib.h>
 
+#include <vulkan/vulkan_core.h>
+
 //@todo meh
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wswitch-enum"
-#include <vulkan/vk_enum_string_helper.h>
-#pragma clang diagnostic pop
+// #pragma clang diagnostic push
+// #pragma clang diagnostic ignored "-Wswitch-enum"
+// #include <vulkan/vk_enum_string_helper.h>
+// #pragma clang diagnostic pop
 
 module Engine.Renderer.VulkanAPI;
 
@@ -32,6 +35,11 @@ import Engine.Core.Volk;
 
 namespace Vyroda
 {
+  std::string string_VkResult(VkResult&)
+  {
+    return "to implement";
+  }
+  
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT const * create_info,
     VkAllocationCallbacks const * allocattor, VkDebugUtilsMessengerEXT* callback)
 {
@@ -93,6 +101,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 VulkanAPI::VulkanAPI(GLFWwindow* window)
   : _window(window)
 {
+#ifdef VYR_DEBUG_BUILD
   _enable_validation_layers = true;
 
   if (!glfwVulkanSupported()) {
@@ -370,7 +379,7 @@ void VulkanAPI::pickPhysicalDevice()
       _device_features = devices_features;
       _device_props2 = device_props2;
       _device_maintenance3_props = device_maintenance3_props;
-
+      Logger::debug("device name {}", _device_props.deviceName);
       _sample_count = getMaxUsableSampleCount();
 
       break;
@@ -818,9 +827,9 @@ uint32_t VulkanAPI::getImageCount() const
 {
   std::uint32_t image_count = _swapchain_support.capabilities.minImageCount + 1;
 
-  if (image_count > _swapchain_support.capabilities.maxImageCount) {
-    image_count = _swapchain_support.capabilities.maxImageCount;
-  }
+  // if (image_count > _swapchain_support.capabilities.maxImageCount) {
+  //   image_count = _swapchain_support.capabilities.maxImageCount;
+  // }
 
   return image_count;
 }
@@ -829,9 +838,9 @@ VkSwapchainKHR VulkanAPI::createSwapChain(
   std::vector<VkImage>& swapchain_images,
   VkSwapchainKHR const& old_swapchain)
 {
-  VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+  VkSwapchainKHR swapchain { VK_NULL_HANDLE };
 
-  std::uint32_t image_count = getImageCount();
+  auto image_count { getImageCount() };
 
   VkImageSubresourceLayers src_img_subrc_layers;
   src_img_subrc_layers.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1264,7 +1273,7 @@ VkShaderModule VulkanAPI::createShaderModule(std::vector<char> const& code)
 {
   VkShaderModuleCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  create_info.codeSize = code.size();
+  create_info.codeSize = code.size() * sizeof(uint32_t);
   create_info.pCode = reinterpret_cast<const std::uint32_t*>(code.data());
 
   VkShaderModule shader_module{};
@@ -2938,11 +2947,13 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     label.color[2] = b;
     label.color[3] = a;
 
+  #ifdef VYR_DEBUG_BUILD
     vkCmdBeginDebugUtilsLabelEXT(buffer, &label);
   }
 
   void VulkanAPI::endMarker([[maybe_unused]] VkCommandBuffer buffer)
   {
+  #ifdef VYR_DEBUG_BUILD
     vkCmdEndDebugUtilsLabelEXT(buffer);
   }
 

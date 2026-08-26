@@ -6,11 +6,11 @@
     "vampyropoda": {
       "path": "assets/texture/vampyropoda.jpg"
     },
-    "_VYR_empty": {
-      "path": "assets/texture/_VYR_empty.png"
+    "_vyr_empty": {
+      "path": "assets/texture/_vyr_empty.png"
     },
-    "_VYR_error": {
-      "path": "assets/texture/_VYR_error.png"
+    "_vyr_error": {
+      "path": "assets/texture/_vyr_error.png"
     },
     "grass": {
       "path": "assets/texture/terrain/grass.jpg"

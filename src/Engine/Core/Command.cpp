@@ -4,13 +4,6 @@ import std;
 
 namespace Vyroda
 {
-  Command::Command(
-    std::function<void()> request
-    , WhenToExecute w)
-    : _request(request), _when(w)
-  {
-  }
-
   //@todo WIP
   Response Command::execRequest()
   {

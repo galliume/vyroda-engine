@@ -22,7 +22,7 @@ namespace Vyroda
     fs::path path{};
     std::ifstream f;
 
-    path = _root_path + "/config/Vyroda.json";
+    path = _root_path + "/config/vyroda.json";
 
     f.open(fs::absolute(path));
     if (f.is_open()) _app_config = json::parse(f);
@@ -34,6 +34,7 @@ namespace Vyroda
     f.close();
 
     path = _root_path + "/config/shaders.json";
+
     f.open(fs::absolute(path));
     if (f.is_open()) _shader_config = json::parse(f);
     f.close();

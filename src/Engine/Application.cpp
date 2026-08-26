@@ -35,15 +35,14 @@ namespace Vyroda
     //CommandQueueManagerLocator::init();
     //@todo ugly fix
     auto const root_path { std::filesystem::absolute(__FILE__).parent_path().parent_path().parent_path().string() };
-
     ConfigManagerLocator::init(root_path);
-    auto const& appConfig { ConfigManagerLocator::get()->appConfig()["resolution"] };
+    auto const& app_config { ConfigManagerLocator::get()->appConfig()["resolution"] };
 
     auto window { std::make_unique<Window>() };
     window->init("Vyroda",
       root_path + "/vampyropoda.jpg",
-      appConfig["width"].get<std::uint16_t>(),
-      appConfig["height"].get<std::uint16_t>(),
+      app_config["width"].get<std::uint16_t>(),
+      app_config["height"].get<std::uint16_t>(),
       editor_mode);
 
     _render_manager = std::make_unique<RenderManager>();

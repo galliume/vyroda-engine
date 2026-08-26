@@ -55,3 +55,10 @@ add_library(
 
 target_include_directories(lua
   SYSTEM INTERFACE ${fetch_lua_SOURCE_DIR})
+
+set_target_properties(lua
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
