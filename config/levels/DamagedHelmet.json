@@ -22,7 +22,7 @@
       "z": 0.0
     }
   },
-  "hasFog" : false,
+  "hasFog": false,
   "player": "",
   "entities": {
     "DamagedHelmet": {
@@ -52,7 +52,7 @@
       "flipY": false,
       "count": 1,
       "hasBbox": false,
-      "hasAnimation": true,
+      "hasAnimation": false,
       "isPointLight": false,
       "animationScripts": {
         "anim0": "assets/scripts/animation/helmet/anim0.lua"
@@ -90,8 +90,7 @@
       "hasBbox": false,
       "hasAnimation": false,
       "isPointLight": false,
-      "animationScripts": {
-      },
+      "animationScripts": {},
       "hasShadow": true,
       "isIndexed": true,
       "debugNormal": true

@@ -359,7 +359,7 @@ void main()
   vec3 specular     = numerator / denominator;
 
   vec3 radiance = sun_light.color.rgb;
-  vec3 C_sun = (kD * (C_diffuse.rgb / PI) + specular) * radiance * 0.1;
+  vec3 C_sun = (kD * (C_diffuse.rgb / PI) + specular) * radiance;
 
   vec3 csm_coords = in_cascade_coord.xyz / in_cascade_coord.w;
   float csm_shadow = CalculateInfiniteShadow(csm_coords, in_blend);
