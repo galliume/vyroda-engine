@@ -38,12 +38,9 @@ layout(std430, binding = 1) readonly buffer LightBuffer {
     Light lights[];
 } lightData;
 
-layout(push_constant) uniform constants
+layout(push_constant) uniform shadowMapConstants
 {
-  mat4 view;
-  vec4 view_position;
-  layout(offset = 80) uint env_options;
-  layout(offset = 96) uint options;
+  mat4 model;
 } pc;
 
 //layout(location = 0) in vec4 position;

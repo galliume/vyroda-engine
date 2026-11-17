@@ -51,7 +51,7 @@ namespace Vyroda
     data->_texture_index = 0;
 
     if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {
-      Logger::debug("create vertex buffer: {}", "basic");
+      // Logger::debug("create vertex buffer: {}", "basic");
       data->_vertex_buffer = renderer.getAPI().createVertexBuffer(data->_vertices, renderer.getCurrentFrameIndex());
     } else {
       //suppose we have to update data
@@ -68,7 +68,7 @@ namespace Vyroda
     //@todo store and share data per similar meshes
     auto const& mat { mesh.getMaterials().at(data->_material_id) };
 
-    if (mesh.hasBufferStorage()) {
+    if (!mesh.hasBufferStorage()) {
       Material material{};
       material.base_color = mat.base_color;
       material.ambient = mat.ambient;
@@ -130,15 +130,23 @@ namespace Vyroda
 
     if (!renderer.getAPI().hasDescSet(mesh.getName())) {
       createDescriptorSet(renderer, mesh, render_context);
+      for (std::uint32_t i { 0 }; i < renderer.getMaxFramesInFlight(); ++i) {
+        auto& desc_buffers { renderer.getAPI().getDescSetBuffers(mesh.getName(), i) };
+        renderer.getAPI().updateStorageBuffer<ObjectBuffer>(
+          desc_buffers.storage,
+          *mesh.getObjectBuffer(),
+          i);
+      }
+    } else {
+      auto& desc_buffers { renderer.getAPI().getDescSetBuffers(mesh.getName(), renderer.getCurrentFrameIndex()) };
+      renderer.getAPI().updateStorageBuffer<ObjectBuffer>(
+        desc_buffers.storage,
+        *mesh.getObjectBuffer(),
+        renderer.getCurrentFrameIndex());
     }
-
-    auto& desc_buffers { renderer.getAPI().getDescSetBuffers(mesh.getName(), renderer.getCurrentFrameIndex()) };
-    renderer.getAPI().updateStorageBuffer<ObjectBuffer>(
-      desc_buffers.storage,
-      *mesh.getObjectBuffer(),
-      renderer.getCurrentFrameIndex());
     
     mesh.setIsDirty(false);
+    renderer.getAPI().commitCopyBuffer(renderer.getCurrentFrameIndex());
     vkDestroyCommandPool(renderer.getDevice(), cmd_pool, nullptr);
   }
 

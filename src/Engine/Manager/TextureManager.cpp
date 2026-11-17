@@ -107,6 +107,8 @@ namespace Vyroda
         original_name = file_name.string();
       } else if (std::filesystem::exists(file_name.replace_extension("png"))) {
         original_name = file_name.string();
+      } else if (std::filesystem::exists(file_name.replace_extension("dds"))) {
+        original_name = file_name.string();
       }
 
       files.append("\"" + original_name + "\" ");

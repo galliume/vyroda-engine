@@ -23,120 +23,177 @@
     }
   },
   "hasFog": false,
-  "player" : "",
+  "player": "",
   "entities": {
-    "dog" : {
+    "dog": {
       "mesh": "assets/mesh/dog/dog.obj",
       "shader": "main_basic",
       "positions": [
-        { "x": 0.8, "y": 0.40, "z": -1.2 }
+        {
+          "x": 0.8,
+          "y": 0.40,
+          "z": -1.2
+        }
       ],
       "scales": [
-        { "x": 1.0, "y": 1.0, "z": 1.0 }
+        {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
       ],
       "rotations": [
-        {"x": 0.0, "y": 0.0, "z": 0.0}
+        {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        }
       ],
       "flipY": false,
       "count": 1,
       "hasBbox": false,
       "hasAnimation": false,
       "isPointLight": false,
-      "animationScripts": {
-      },
+      "animationScripts": {},
       "hasShadow": true,
       "isIndexed": true,
       "debugNormal": true
     },
-    "Campfire" : {
+    "Campfire": {
       "mesh": "assets/mesh/campfire/Campfire.obj",
       "shader": "main_basic",
       "positions": [
-        { "x": 0.8, "y": 0.2, "z": -0.4 }
+        {
+          "x": 0.8,
+          "y": 0.2,
+          "z": -0.4
+        }
       ],
       "scales": [
-        { "x": 1.0, "y": 1.0, "z": 1.0 }
+        {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
       ],
       "rotations": [
-        { "x": 0.0, "y": 0.0, "z": 0.0 }
+        {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        }
       ],
       "flipY": false,
       "count": 1,
       "hasBbox": false,
       "hasAnimation": false,
       "isPointLight": false,
-      "animationScripts": {
-      },
+      "animationScripts": {},
       "hasShadow": true,
       "isIndexed": true,
       "debugNormal": true
     },
-    "dead_tree" : {
+    "dead_tree": {
       "mesh": "assets/mesh/tree/dead_tree.obj",
       "shader": "main_basic",
       "positions": [
-        { "x": -1.0, "y": 0.19, "z": -1.4 }
+        {
+          "x": -1.0,
+          "y": 0.19,
+          "z": -1.4
+        }
       ],
       "scales": [
-        { "x": 1.0, "y": 1.0, "z": 1.0 }
+        {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
       ],
       "rotations": [
-        { "x": 0.0, "y": 0.0, "z": 0.0 }
+        {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        }
       ],
       "flipY": false,
       "count": 1,
       "hasBbox": false,
       "hasAnimation": false,
       "isPointLight": false,
-      "animationScripts": {
-      },
+      "animationScripts": {},
       "hasShadow": true,
       "isIndexed": true,
       "debugNormal": true
     },
-    "moon" : {
+    "moon": {
       "mesh": "assets/mesh/moon/moon.obj",
       "shader": "main_basic",
       "positions": [
-        { "x": 0.5, "y": 4.5, "z": -3.00 }
+        {
+          "x": 0.5,
+          "y": 4.5,
+          "z": -3.00
+        }
       ],
       "scales": [
-        { "x": 1.0, "y": 1.0, "z": 1.0 }
+        {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
       ],
       "rotations": [
-        { "x": 0.0, "y": 0.0, "z": 0.0 }
+        {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        }
       ],
       "flipY": false,
       "count": 1,
       "hasBbox": false,
       "hasAnimation": false,
       "isPointLight": false,
-      "animationScripts": {
-      },
+      "animationScripts": {},
       "hasShadow": true,
       "isIndexed": true,
       "debugNormal": true
     },
-    "doghouse0908" : {
+    "doghouse0908": {
       "mesh": "assets/mesh/doghouse/doghouse0908.obj",
-      "textures": ["dog_base_color"],
+      "textures": [
+        "dog_base_color"
+      ],
       "shader": "main",
       "positions": [
-        { "x": 0.7, "y": 0.20, "z": -2.00 }
+        {
+          "x": 0.7,
+          "y": 0.20,
+          "z": -2.00
+        }
       ],
       "scales": [
-        { "x": 1.0, "y": 1.0, "z": 1.0 }
+        {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
       ],
       "rotations": [
-        { "x": 0.0, "y": -30.0, "z": 0.0 }
+        {
+          "x": 0.0,
+          "y": -30.0,
+          "z": 0.0
+        }
       ],
       "flipY": false,
       "count": 1,
       "hasBbox": false,
       "hasAnimation": false,
       "isPointLight": false,
-      "animationScripts": {
-      },
+      "animationScripts": {},
       "hasShadow": true,
       "isIndexed": true,
       "debugNormal": true
@@ -170,8 +227,7 @@
       "hasBbox": false,
       "hasAnimation": false,
       "isPointLight": false,
-      "animationScripts": {
-      },
+      "animationScripts": {},
       "hasShadow": true,
       "isIndexed": true,
       "debugNormal": true

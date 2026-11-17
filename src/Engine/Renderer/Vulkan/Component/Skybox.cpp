@@ -101,7 +101,7 @@ namespace Vyroda
     data._textures.emplace_back("skybox");
     data._vertices = vertices;
     if (data._vertex_buffer.buffer == VK_NULL_HANDLE) {
-      Logger::debug("create vertex buffer: {}", "skybox");
+      // Logger::debug("create vertex buffer: {}", "skybox");
       data._vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());
     }
     

@@ -553,7 +553,7 @@ namespace Vyroda
       descset_layout = createDescriptorSetLayout<DescSetLayoutType::Offscreen>();
       push_constants.offset = 0;
       push_constants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-      push_constants.size = sizeof(constants);
+      push_constants.size = sizeof(shadowMapConstants);
       need_bis = false;
 
       VkDescriptorPoolSize dpsSB;

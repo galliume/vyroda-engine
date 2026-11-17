@@ -514,7 +514,7 @@ void main()
 
   Light sun_light = lightData.lights[0];
 
-  vec3 L = normalize(-sun_light.direction.xyz);
+  vec3 L = normalize(sun_light.direction.xyz);
   vec3 H = normalize(L + V);
   float NdL = max(dot(normal, L), 0.0);
   float NdV = max(dot(normal, V), 0.0);

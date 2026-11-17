@@ -63,12 +63,9 @@ layout(location = 4) in vec2 texture_coord;
 
 layout(location = 0) out float out_length;
 
-layout(push_constant) uniform constants
+layout(push_constant) uniform shadowMapConstants
 {
-  mat4 view;
-  vec4 view_position;
-  layout(offset = 80) uint env_options;
-  layout(offset = 96) uint options;
+  mat4 model;
 } pc;
 
 void main()
@@ -77,7 +74,7 @@ void main()
 
   gl_Layer = face;
 
-  vec4 position = ubo.model * position;
+  vec4 position = pc.model * position;
   out_length = length(position - lightData.lights[1].position) / 500.f;
   
   mat4 light_matrices[6] = mat4[6](

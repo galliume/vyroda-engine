@@ -112,7 +112,7 @@ void Water::operator()(
     data->_ubos.push_back(ubos);
     data->_vertices = vertices;
     if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {
-      Logger::debug("create vertex buffer: {}", "water");      
+      //Logger::debug("create vertex buffer: {}", "water");      
       data->_vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());
     }
     

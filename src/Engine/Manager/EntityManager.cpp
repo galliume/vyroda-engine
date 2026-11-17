@@ -203,14 +203,14 @@ namespace Vyroda
       std::string name_texture_ao { VYR_EMPTY };
       std::string name_texture_base_color { VYR_EMPTY };
       std::string name_texture_transmission { VYR_EMPTY };
-      float alpha_mode{ 0.0 };
+      //float alpha_mode{ 0.0 };
 
       std::uint32_t options {0};
 
       if (!materials.empty()) {
 
         auto const& mat { materials.at(_data.material_ID) };
-        alpha_mode = mat.alpha_mode;
+        //alpha_mode = mat.alpha_mode;
         if (mat.alpha_mode == 2.0f) {
           has_alpha_blend = true;
         }

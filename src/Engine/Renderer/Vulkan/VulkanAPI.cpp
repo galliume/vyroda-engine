@@ -2157,7 +2157,7 @@ void VulkanAPI::submitVertexUpdate(
 
 Buffer VulkanAPI::createUniformBuffers(
   std::uint64_t const uniform_buffers_count,
-  std::size_t const image_index)
+  std::size_t const)
 {
   //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize buffer_size = sizeof(UniformBufferObject) * uniform_buffers_count;
@@ -2449,6 +2449,8 @@ void VulkanAPI::commitCopyBuffer(std::size_t const image_index)
     if (result != VK_SUCCESS) {
       Logger::error("failed to copy buffer in commitCopyBuffer : {}", string_VkResult(result));
     }
+    vkWaitForFences(_device, 1, &fence_buffer, VK_TRUE, UINT64_MAX);
+    _update_vertex_offsets[image_index].store(0);
   }
 }
 
@@ -3187,6 +3189,7 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     {
       std::lock_guard<std::mutex> guard(_mutex_queue_submit); 
       result = vkQueueSubmit(_transfer_queues[_queue_index], 1, &submit_info, transfer_fence);
+      vkWaitForFences(_device, 1, &transfer_fence, VK_TRUE, UINT64_MAX);
     }
 
     if (result != VK_SUCCESS) {

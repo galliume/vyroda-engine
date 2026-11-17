@@ -22,16 +22,16 @@
       "z": -3.0
     }
   },
-  "hasFog": true,
+  "hasFog": false,
   "player": "",
   "entities": {
     "san-miguel": {
-      "mesh": "assets/mesh/San_Miguel/san-miguel-low-poly.obj",
+      "mesh": "assets/mesh/San_Miguel/san-miguel.obj",
       "shader": "main_basic",
       "positions": [
         {
           "x": 0.0,
-          "y": 0.0,
+          "y": 50.0,
           "z": 0.0
         }
       ],
@@ -54,8 +54,7 @@
       "hasBbox": false,
       "hasAnimation": false,
       "isPointLight": false,
-      "animationScripts": {
-      },
+      "animationScripts": {},
       "hasShadow": true,
       "isIndexed": true,
       "debugNormal": true

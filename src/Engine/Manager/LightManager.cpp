@@ -137,9 +137,8 @@ namespace Vyroda
     auto min_z { std::numeric_limits<float>::max() };
     auto max_z { std::numeric_limits<float>::lowest() };
  
-    auto const L { projection * M_light };
     for (auto const& v : cascade_frustum) {
-      auto const Lv { L * v };
+      auto const Lv { M_light * v };
       min_x = std::min(min_x, Lv.x);
       max_x = std::max(max_x, Lv.x);
       min_y = std::min(min_y, Lv.y);
@@ -160,20 +159,17 @@ namespace Vyroda
 
     glm::vec3 const world_center {
       glm::inverse(M_light) *
-      glm::vec4(
-        snapped_camera.x,
-        snapped_camera.y,
-        (min_z + max_z) * 0.5f,
-        1.0f)
+      snapped_camera
     };
 
+    float const z_mult { 5.0f };
+    auto const z_range { (max_z - min_z) * z_mult };
+
     glm::mat4 const m_cascade { glm::lookAt(
-      world_center + glm::normalize(glm::vec3(_sun.direction)) * (max_z - min_z),
+      world_center + glm::normalize(glm::vec3(_sun.direction)) * z_range,
       world_center,
       glm::vec3(0.0f, 1.0f, 0.0f)
     ) };
-    
-    auto const z_range { max_z - min_z };
 
     glm::mat4 p_cascade { glm::mat4(0.0f) };
     p_cascade[0][0] = 2.0f / d;

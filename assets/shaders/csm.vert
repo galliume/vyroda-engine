@@ -49,12 +49,9 @@ layout(std430, binding = 1) readonly buffer LightBuffer {
     Light lights[];
 } lightData;
 
-layout(push_constant) uniform constants
+layout(push_constant) uniform shadowMapConstants
 {
-  mat4 view;
-  vec4 view_position;
-  layout(offset = 80) uint env_options;
-  layout(offset = 96) uint options;
+  mat4 model;
 } pc;
 
 layout(location = 0) in vec4 tangent;
@@ -79,6 +76,6 @@ void main()
     light.light_space_matrix_right     // slice 3
   );
 
-  gl_Position = light_matrices[face] * (ubo.model * position);
+  gl_Position = light_matrices[face] * (pc.model * position);
   gl_Position.z / gl_Position.w;
 }

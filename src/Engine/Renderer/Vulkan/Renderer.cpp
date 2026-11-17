@@ -392,6 +392,52 @@ namespace Vyroda
       Logger::warn("desc_set is null, skipping: {}", mesh.getName());
       return;
     }
+
+    std::string const& shader_name { mesh.getShaderName() };
+    if (shader_name != "skybox" && shader_name != "text") {
+      VkDescriptorImageInfo const depth_map_info {
+        .sampler = getDepthMapSamplers(),
+        .imageView = getDepthMapImageViews(),
+        .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+      };
+      VkDescriptorImageInfo const csm_info {
+        .sampler = getCSMSamplers(),
+        .imageView = getCSMImageViews(),
+        .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+      };
+      VkDescriptorBufferInfo const light_info {
+        .buffer = renderer_context.light_buffer.buffer,
+        .offset = 0,
+        .range = VK_WHOLE_SIZE
+      };
+
+      std::array<VkWriteDescriptorSet, 3> frame_writes{};
+      frame_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      frame_writes[0].dstSet = desc_set;
+      frame_writes[0].dstBinding = 3;
+      frame_writes[0].dstArrayElement = 0;
+      frame_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      frame_writes[0].descriptorCount = 1;
+      frame_writes[0].pImageInfo = &depth_map_info;
+
+      frame_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      frame_writes[1].dstSet = desc_set;
+      frame_writes[1].dstBinding = 5;
+      frame_writes[1].dstArrayElement = 0;
+      frame_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      frame_writes[1].descriptorCount = 1;
+      frame_writes[1].pBufferInfo = &light_info;
+
+      frame_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      frame_writes[2].dstSet = desc_set;
+      frame_writes[2].dstBinding = 6;
+      frame_writes[2].dstArrayElement = 0;
+      frame_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      frame_writes[2].descriptorCount = 1;
+      frame_writes[2].pImageInfo = &csm_info;
+
+      vkUpdateDescriptorSets(_vulkan->getDevice(), static_cast<std::uint32_t>(frame_writes.size()), frame_writes.data(), 0, nullptr);
+    }
     
     // auto desc_set_buffers { _vulkan->getDescSetBuffers(mesh.getName(), _current_frame) };
 
@@ -444,7 +490,6 @@ namespace Vyroda
       _vulkan->bindPipeline(cmd_buffer, pipeline.pipeline);
     }
 
-    std::string const& shader_name { mesh.getShaderName() };
     if (shader_name != "skybox" && shader_name != "text" && shader_name != "terrain" && shader_name != "water") {
         float const depth_bias_constant{ 1.25f };
         float const depth_bias_slope{ 1.75f };
@@ -589,11 +634,15 @@ namespace Vyroda
 
   void Renderer::drawShadowMap(
     Mesh const& mesh,
-    RendererContext const& renderer_context,
+    RendererContext const&,
     SHADOW_TYPE const shadow_type)
   {
     if (!_vulkan->hasDescSet("shadow_map") && !_vulkan->hasDescSet("csm")) {
       Logger::warn("bad desc set or shader name for mesh: {}", mesh.getName());
+      return;
+    }
+
+    if (mesh.getData()->_ubos.empty() || mesh.getData()->_ubos.front().empty()) {
       return;
     }
 
@@ -610,11 +659,8 @@ namespace Vyroda
     }
     auto & pipeline { getPipeline(pipeline_name) };
     
-    constants const push_constants {
-      .view = renderer_context.camera_view,
-      .view_position = glm::vec4(renderer_context.camera->getPos(), 1.0f),
-      .env_options = renderer_context.env_options,
-      .options = mesh.getOptions()
+    shadowMapConstants const push_constants {
+      .model = mesh.getData()->_ubos.front().front().model
     };
 
     vkCmdPushConstants(
@@ -623,29 +669,15 @@ namespace Vyroda
       VK_SHADER_STAGE_VERTEX_BIT
       | VK_SHADER_STAGE_FRAGMENT_BIT,
       0,
-      sizeof(constants),
+      sizeof(shadowMapConstants),
       &push_constants);
 
-    auto desc_set { _vulkan->getDescSet("shadow_map", _current_frame) };
-    auto desc_set_buffers { _vulkan->getDescSetBuffers("shadow_map", _current_frame) };
- 
-    if (shadow_type == SHADOW_TYPE::CSM) {
-      desc_set = _vulkan->getDescSet("csm", _current_frame);
-      desc_set_buffers = _vulkan->getDescSetBuffers("csm", _current_frame);
-    }
+    auto desc_set { _vulkan->getDescSet(pipeline_name, _current_frame) };
 
     if (desc_set == VK_NULL_HANDLE) {
       Logger::warn("shadow desc set empty: {}", mesh.getName());
       return;
     }
-    
-    [[maybe_unused]] auto * ubo_buffer { static_cast<DeviceMemory*>(desc_set_buffers.ubo.memory)->getBuffer(desc_set_buffers.ubo.index) };
-    [[maybe_unused]] auto * storage_buffer { static_cast<DeviceMemory*>(desc_set_buffers.storage.memory)->getBuffer(desc_set_buffers.storage.index) };
-    
-    // std::memcpy(ubo_buffer, &mesh.getData()->_ubos.front(), sizeof(UniformBufferObject));
-    // std::memcpy(storage_buffer, &mesh.getStorageBuffers().front(), sizeof(ObjectBuffer));
-    
-    //    Logger::debug("shadow mesh: {}", mesh.getName());
 
     vkCmdBindDescriptorSets(
      cmd_buffer,
@@ -821,7 +853,7 @@ namespace Vyroda
     std::array<std::uint64_t, 1> wait_values { 0 };
     std::array<std::uint64_t, 2> signal_values { draw_finished, 0 };
 
-    VkPipelineStageFlags wait_stage_mask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+    //VkPipelineStageFlags wait_stage_mask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     std::array<VkPipelineStageFlags, 1> graphics_wait_stage_masks {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     
@@ -969,6 +1001,16 @@ namespace Vyroda
     std::size_t const image_index)
   {
     std::lock_guard<std::mutex> guard(_mutex_vertices_update);
-    _vertices_to_update[image_index].push_back(data);
+    VkDeviceSize const buffer_size { sizeof(Vertex) * data->_vertices.size() };
+    auto const current_offset { _vulkan->reserveStagingMemoryOffset(buffer_size, image_index) };
+    void* void_data { _vulkan->getStagingMemoryPtr(image_index) };
+    std::memcpy(static_cast<char*>(void_data) + current_offset, data->_vertices.data(), static_cast<std::size_t>(buffer_size));
+
+    _vulkan->addCopyBufferRequest(
+      _vulkan->getStagingBuffer(image_index),
+      data->_vertex_buffer.buffer,
+      buffer_size,
+      image_index,
+      current_offset);
   }
 }
