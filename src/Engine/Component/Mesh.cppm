@@ -111,7 +111,7 @@ namespace Vyroda
     std::uint32_t _default_anim{};
 
     std::vector<IDType> _children{};
-    IDType _parent;
+    IDType _parent { 0 };
     bool _is_root { false };
     bool _is_visible { true };
   };

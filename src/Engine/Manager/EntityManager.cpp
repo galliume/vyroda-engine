@@ -102,7 +102,9 @@ namespace Vyroda
     auto const& path { root_path + "/" + raw_data.value("mesh", "") };
     auto const flip_Y { raw_data.value("flipY", false) };
     
-    auto callback = [this, &root_path, &root_mesh_entity_node, &raw_data, &renderer](
+    bool has_alpha_blend{ false };
+
+    auto callback = [this, &root_path, &root_mesh_entity_node, &raw_data, &renderer, &has_alpha_blend](
       PlpMeshData _data,
       std::vector<material_t> const materials,
       std::vector<Animation> const animations,
@@ -209,6 +211,9 @@ namespace Vyroda
 
         auto const& mat { materials.at(_data.material_ID) };
         alpha_mode = mat.alpha_mode;
+        if (mat.alpha_mode == 2.0f) {
+          has_alpha_blend = true;
+        }
 
         if (!mat.name_texture_diffuse.empty()) {
           name_texture = mat.name_texture_diffuse;
@@ -371,7 +376,7 @@ namespace Vyroda
 
       if (is_last) {
         {
-          if (alpha_mode == 2.0f) {
+          if (has_alpha_blend) {
             addTransparentEntity(root_mesh_entity_node->getEntity());
           } else {
             addEntity(root_mesh_entity_node->getEntity());

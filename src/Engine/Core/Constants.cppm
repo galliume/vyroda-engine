@@ -17,19 +17,19 @@ namespace Vyroda
   export inline constexpr std::string VYR_WATER_NORMAL_2{ "_water_normal2" };
 
   export enum VYR_ENV_OPTIONS : std::uint32_t {
-    HAS_FOG = 1 << 0,
-    HAS_IRRADIANCE = 1 << 1
+    HAS_FOG = 1u << 0,
+    HAS_IRRADIANCE = 1u << 1
   };
 
   export enum VYR_MESH_OPTIONS : std::uint32_t {
-    HAS_BASE_COLOR = 1 << 0,
-    HAS_SPECULAR = 1 << 1,
-    HAS_NORMAL = 1 << 2,
-    HAS_ALPHA = 1 << 3,
-    HAS_MR = 1 << 4,
-    HAS_EMISSIVE = 1 << 5,
-    HAS_AO = 1 << 6,
-    HAS_TRANSMISSION = 1 << 7
+    HAS_BASE_COLOR = 1u << 0,
+    HAS_SPECULAR = 1u << 1,
+    HAS_NORMAL = 1u << 2,
+    HAS_ALPHA = 1u << 3,
+    HAS_MR = 1u << 4,
+    HAS_EMISSIVE = 1u << 5,
+    HAS_AO = 1u << 6,
+    HAS_TRANSMISSION = 1u << 7
   };
 
   export enum class TextureWrapMode {

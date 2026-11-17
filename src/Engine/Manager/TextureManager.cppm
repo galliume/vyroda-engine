@@ -79,5 +79,6 @@ namespace Vyroda
     std::vector<material_t> _materials{};
 
     VkCommandPool _cmd_pool;
+    std::mutex _mutex_cmd_pool;
   };
 }

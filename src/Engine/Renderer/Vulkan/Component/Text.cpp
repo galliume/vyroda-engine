@@ -178,11 +178,12 @@ namespace Vyroda
       }
     } else {
       auto const image_index { renderer.getCurrentFrameIndex() };
-      auto const current_offset { renderer.getAPI().getCurrentStagingMemoryOffset(image_index) };
+      //auto const current_offset { renderer.getAPI().getCurrentStagingMemoryOffset(image_index) };
       //VkDeviceMemory staging_device_memory{ renderer.getAPI().getStagingMemory(renderer.getCurrentFrameIndex()) };
       VkBuffer staging_buffer { renderer.getAPI().getStagingBuffer(image_index) };
       VkDeviceSize const buffer_size { sizeof(Vertex) * vertices.size() };
-      renderer.getAPI().updateCurrentStagingMemoryOffset(buffer_size, image_index);
+      auto const current_offset { renderer.getAPI().reserveStagingMemoryOffset(buffer_size, image_index) };      
+      //renderer.getAPI().updateCurrentStagingMemoryOffset(buffer_size, image_index);
 
       void* void_data { renderer.getAPI().getStagingMemoryPtr(image_index) };
       std::memcpy(static_cast<char*>(void_data) + current_offset, vertices.data(), static_cast<std::size_t>(buffer_size));

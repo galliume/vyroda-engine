@@ -26,6 +26,7 @@ namespace Vyroda
     _swapchain = _vulkan->createSwapChain(_images);
 
     _max_frames_in_flight = _vulkan->getImageCount();
+
     auto const buffer_size { _max_frames_in_flight };
 
     _draw_cmds.resize(buffer_size);
@@ -373,6 +374,8 @@ namespace Vyroda
     Mesh const& mesh,
     RendererContext const& renderer_context)
   {
+    //Logger::debug("drawing {}", mesh.getName());
+
     auto& cmd_buffer { _cmd_buffer_entities[_current_frame] };
     auto const& camera { renderer_context.camera };
     auto& pipeline { getPipeline(mesh.getShaderName()) };
@@ -384,6 +387,12 @@ namespace Vyroda
     );
 
     auto desc_set { _vulkan->getDescSet(mesh.getName(), _current_frame) };
+
+    if (desc_set == VK_NULL_HANDLE) {
+      Logger::warn("desc_set is null, skipping: {}", mesh.getName());
+      return;
+    }
+    
     // auto desc_set_buffers { _vulkan->getDescSetBuffers(mesh.getName(), _current_frame) };
 
     // if (desc_set_buffers.ubo.memory != nullptr) {
@@ -418,7 +427,7 @@ namespace Vyroda
     auto const& material { mesh.getMaterials().at(data->_material_id) };
 
     VkBool32 const blend_enable =
-      (renderer_context.has_alpha_blend && material.alpha_mode >= 1.0f) ? VK_TRUE : VK_FALSE;
+      (material.alpha_mode == 2.0f || (renderer_context.has_alpha_blend && material.alpha_mode >= 1.0f)) ? VK_TRUE : VK_FALSE;
 
     vkCmdSetColorBlendEnableEXT(cmd_buffer, 0, 1, &blend_enable);
 
@@ -805,14 +814,14 @@ namespace Vyroda
     auto &semaphore_render_complete { _sema_render_completes[_current_frame] };
     auto &timeline_semaphore { _timeline_semaphores[_current_frame] };
     auto &_current_timeline_value { _current_timeline_values[_current_frame] };
-    
+
     std::uint64_t const draw_finished { _current_timeline_value + 1 };
     //std::uint64_t const finished { _current_timeline_value + 3 };
 
     std::array<std::uint64_t, 1> wait_values { 0 };
     std::array<std::uint64_t, 2> signal_values { draw_finished, 0 };
 
-    //VkPipelineStageFlags wait_stage_mask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+    VkPipelineStageFlags wait_stage_mask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     std::array<VkPipelineStageFlags, 1> graphics_wait_stage_masks {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     

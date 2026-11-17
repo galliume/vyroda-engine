@@ -51,6 +51,7 @@ namespace Vyroda
     data->_texture_index = 0;
 
     if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {
+      Logger::debug("create vertex buffer: {}", "basic");
       data->_vertex_buffer = renderer.getAPI().createVertexBuffer(data->_vertices, renderer.getCurrentFrameIndex());
     } else {
       //suppose we have to update data
@@ -60,14 +61,14 @@ namespace Vyroda
       }
     }
 
-    if (!data->_indices.empty()) {
+    if (!data->_indices.empty() && data->_indices_buffer.buffer == VK_NULL_HANDLE) {
      data->_indices_buffer = renderer.getAPI().createIndexBuffer(data->_indices, renderer.getCurrentFrameIndex());
     }
 
     //@todo store and share data per similar meshes
     auto const& mat { mesh.getMaterials().at(data->_material_id) };
 
-    if (mesh.getStorageBuffers()->empty()) {
+    if (mesh.hasBufferStorage()) {
       Material material{};
       material.base_color = mat.base_color;
       material.ambient = mat.ambient;
@@ -115,10 +116,7 @@ namespace Vyroda
       ObjectBuffer objectBuffer{};
       objectBuffer.material = material;
 
-      auto storageBuffer{ renderer.getAPI().createStorageBuffers(objectBuffer, renderer.getCurrentFrameIndex()) };
-
       mesh.setObjectBuffer(objectBuffer);
-      mesh.addStorageBuffer(storageBuffer);
       mesh.setHasBufferStorage();
     }
 
@@ -131,8 +129,14 @@ namespace Vyroda
     }
 
     if (!renderer.getAPI().hasDescSet(mesh.getName())) {
-     createDescriptorSet(renderer, mesh, render_context);
-   }
+      createDescriptorSet(renderer, mesh, render_context);
+    }
+
+    auto& desc_buffers { renderer.getAPI().getDescSetBuffers(mesh.getName(), renderer.getCurrentFrameIndex()) };
+    renderer.getAPI().updateStorageBuffer<ObjectBuffer>(
+      desc_buffers.storage,
+      *mesh.getObjectBuffer(),
+      renderer.getCurrentFrameIndex());
     
     mesh.setIsDirty(false);
     vkDestroyCommandPool(renderer.getDevice(), cmd_pool, nullptr);

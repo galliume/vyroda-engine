@@ -93,11 +93,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 VulkanAPI::VulkanAPI(GLFWwindow* window)
   : _window(window)
 {
-#ifdef VYR_DEBUG_BUILD
   _enable_validation_layers = true;
-#else
-  _enable_validation_layers = false;
-#endif
 
   if (!glfwVulkanSupported()) {
     throw std::runtime_error("vulkan not supported");
@@ -136,11 +132,11 @@ VulkanAPI::VulkanAPI(GLFWwindow* window)
   for (auto& buffers : _buffer_copy_request) {
     buffers.reserve(256);
   }
-
+  
   for (std::size_t i {0}; i < buffer_size; i++) {
     vkCreateFence(_device, & fence_info, nullptr, & _fence_submit[i]);
     vkCreateFence(_device, & fence_info, nullptr, & _fence_buffer[i]);
-
+    
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = _staging_size; // staging area
@@ -795,7 +791,7 @@ VkSurfaceFormatKHR VulkanAPI::chooseSwapSurfaceFormat(std::vector<VkSurfaceForma
 
 VkPresentModeKHR VulkanAPI::chooseSwapPresentMode(std::vector<VkPresentModeKHR> const &)
 {
-  return VK_PRESENT_MODE_MAILBOX_KHR;
+  return VK_PRESENT_MODE_MAILBOX_KHR;//VK_PRESENT_MODE_FIFO_KHR
 }
 
 VkExtent2D VulkanAPI::chooseSwapExtent( VkSurfaceCapabilitiesKHR const & capabilities)
@@ -1524,7 +1520,7 @@ void VulkanAPI::createDescriptorSets(
     auto& descsets{ _desc_sets[name] };
 
     if (descsets.empty()) {
-      std::uint32_t const size { 3 };
+      std::uint32_t const size { getImageCount() };
 
       auto& buffers { _desc_sets_buffers[name] };
 
@@ -1541,6 +1537,7 @@ void VulkanAPI::createDescriptorSets(
 
         if (result != VK_SUCCESS) {
           Logger::error("failed to allocate descriptor sets: {}", string_VkResult(result));
+          descset = VK_NULL_HANDLE;
         }
         _nb_desc_sets += 1;
         
@@ -1583,6 +1580,7 @@ void VulkanAPI::updateDescriptorSets(
 
   if (descset == VK_NULL_HANDLE) {
     Logger::error("desc set null for {}", name);
+    return;
   }
 
   std::array<VkWriteDescriptorSet, 1> desc_writes{};
@@ -1624,6 +1622,7 @@ void VulkanAPI::updateDescriptorSets(
 
     if (descset == VK_NULL_HANDLE) {
       Logger::error("desc set null for {} n {}", name, i);
+      continue;
     }
         
     std::array<VkWriteDescriptorSet, 2> desc_writes{};
@@ -1679,6 +1678,7 @@ void VulkanAPI::updateDescriptorSets(
 
     if (descset == VK_NULL_HANDLE) {
       Logger::error("desc set null for {} n {}", name, i);
+      continue;
     }
     
     std::array<VkWriteDescriptorSet, 7> desc_writes{};
@@ -1877,7 +1877,6 @@ VkResult VulkanAPI::queueSubmit(
     vkWaitForFences(_device, 1, & fence_submit, VK_TRUE, UINT32_MAX);
     vkResetFences(_device, 1, &fence_submit);
 
-    //Logger::debug("{}::{}", __FILE__, __LINE__);
     result = vkQueueSubmit(_graphics_queues[queue_index], 1, &submit_info, fence_submit);
   }
 
@@ -1900,7 +1899,7 @@ void VulkanAPI::draw(
   VkDeviceSize offsets[] = { 0 };
 
   if (data->_vertex_buffer.size <= 0) {
-    Logger::warn("vertex buffer empty!");
+    //Logger::warn("vertex buffer empty!");
     return;
   }
 
@@ -2105,7 +2104,6 @@ void VulkanAPI::updateVertexBuffer(
   copy_region.srcOffset = current_offset;
   copy_region.dstOffset = 0;
   copy_region.size = buffer_size;
-
   vkCmdCopyBuffer(transfer_cmd_buffer, _staging_buffer[image_index], buffer_to_update, 1, & copy_region);
 }
 
@@ -2122,7 +2120,6 @@ void VulkanAPI::submitEmptyCmd(
 
   {
     std::lock_guard<std::mutex> guard(_mutex_queue_submit);
-    //Logger::debug("{}::{}", __FILE__, __LINE__);    
     result = vkQueueSubmit(_transfer_queues[_queue_index], 1, & submit_info, VK_NULL_HANDLE);
   }
 
@@ -2149,7 +2146,6 @@ void VulkanAPI::submitVertexUpdate(
 
   {
     std::lock_guard<std::mutex> guard(_mutex_queue_submit);
-    //Logger::debug("{}::{}", __FILE__, __LINE__);    
     result = vkQueueSubmit(_transfer_queues[_queue_index], 1, & submit_info, VK_NULL_HANDLE);
   }
   _update_vertex_offsets[image_index].store(0);
@@ -2165,13 +2161,13 @@ Buffer VulkanAPI::createUniformBuffers(
 {
   //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize buffer_size = sizeof(UniformBufferObject) * uniform_buffers_count;
-  std::vector<UniformBufferObject> dummy {};
-  dummy.reserve(uniform_buffers_count);
+  // std::vector<UniformBufferObject> dummy {};
+  // dummy.reserve(uniform_buffers_count);
 
-  auto & staging_buffer { _staging_buffer[image_index] };
-  std::size_t const current_offset { _update_vertex_offsets[image_index].fetch_add(buffer_size, std::memory_order_relaxed) };
+  // auto & staging_buffer { _staging_buffer.at(image_index) };
+  // std::size_t const current_offset { _update_vertex_offsets.at(image_index).fetch_add(buffer_size, std::memory_order_relaxed) };
 
-  std::memcpy(static_cast<char*>(_staging_data_ptr[image_index]) + current_offset, dummy.data(), static_cast<std::size_t>(buffer_size));
+  // std::memcpy(static_cast<char*>(_staging_data_ptr.at(image_index)) + current_offset, dummy.data(), static_cast<std::size_t>(buffer_size));
 
   VkBuffer buffer { createBuffer(
     buffer_size,
@@ -2197,7 +2193,7 @@ Buffer VulkanAPI::createUniformBuffers(
   auto const index { device_memory->bindBufferToMemory(buffer, size, mem_requirements.alignment) };
   auto const offset { device_memory->getOffset(index) };
 
-  addCopyBufferRequest(staging_buffer, buffer, buffer_size, image_index, current_offset, 0);
+  //addCopyBufferRequest(staging_buffer, buffer, buffer_size, image_index, current_offset, 0);
   //copyBuffer(staging_buffer, buffer, buffer_size, current_offset, 0, image_index);
 
   Buffer uniform_buffer;
@@ -2319,13 +2315,15 @@ void VulkanAPI::updateUniformBuffer(
 
 void VulkanAPI::createTransferCmdPool()
 {
-  _transfer_cmd_buffer.resize(3);
-  _transfer_cmd_pool.resize(3);
+  auto const buffer_size { getImageCount() };
+  
+  _transfer_cmd_buffer.resize(buffer_size);
+  _transfer_cmd_pool.resize(buffer_size);
 
-  _copy_cmd_buffer.resize(3);
-  _copy_cmd_pool.resize(3);
+  _copy_cmd_buffer.resize(buffer_size);
+  _copy_cmd_pool.resize(buffer_size);
 
-  for (std::size_t i {0}; i < 3; i++) {
+  for (std::size_t i {0}; i < buffer_size; i++) {
     VkCommandPoolCreateInfo const pool_info {
       .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
       .pNext = nullptr,
@@ -2392,47 +2390,68 @@ void VulkanAPI::addCopyBufferRequest(
 void VulkanAPI::commitCopyBuffer(std::size_t const image_index)
 {
   {
-    std::lock_guard<std::mutex> guard(_mutex_queue_submit);  
+    std::lock_guard<std::mutex> guard(_mutex_queue_submit);
+
     auto & fence_buffer { _fence_buffer[image_index] };
-    vkWaitForFences(_device, 1, &fence_buffer, VK_TRUE, UINT64_MAX);
-         
-    vkResetFences(_device, 1, &fence_buffer);
-    vkResetCommandBuffer(_copy_cmd_buffer[image_index], 0);
-           
+    auto & cmd_buffer { _copy_cmd_buffer[image_index] };
+
     VkCommandBufferBeginInfo begin_info{};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-          
-    VkResult result { vkBeginCommandBuffer(_copy_cmd_buffer[image_index], &begin_info) };
-           
+
+    vkWaitForFences(_device, 1, &fence_buffer, VK_TRUE, UINT64_MAX);
+    vkResetFences(_device, 1, &fence_buffer);
+    vkResetCommandBuffer(cmd_buffer, 0);
+
+    VkResult result { vkBeginCommandBuffer(cmd_buffer, &begin_info) };
+
     if (result != VK_SUCCESS) {
       Logger::error("vkBeginCommandBuffer failed in startCopyBuffer");
     }
            
-    for (auto const& buffer : _buffer_copy_request[image_index]) {
+    for (auto & buffer : _buffer_copy_request[image_index]) {
       VkBufferCopy copy_region{};
       copy_region.srcOffset = buffer.src_offset;
       copy_region.dstOffset = buffer.dst_offset;
       copy_region.size = buffer.size;
-      vkCmdCopyBuffer(_copy_cmd_buffer[image_index], buffer.src_buffer, buffer.dst_buffer, 1, & copy_region);
+      vkCmdCopyBuffer(cmd_buffer, buffer.src_buffer, buffer.dst_buffer, 1, & copy_region);
+
+      VkBufferMemoryBarrier2 barrier{};
+      barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+      barrier.srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT;
+      barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+      barrier.dstStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT;
+      barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+      barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      barrier.buffer = buffer.dst_buffer;
+      barrier.offset = buffer.dst_offset;
+      barrier.size   = buffer.size;
+
+      VkDependencyInfo dep{};
+      dep.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+      dep.bufferMemoryBarrierCount = 1;
+      dep.pBufferMemoryBarriers = &barrier;
+
+      vkCmdPipelineBarrier2(cmd_buffer, &dep);
     }
-           
+
     _buffer_copy_request[image_index].clear();
-    
-    vkEndCommandBuffer(_copy_cmd_buffer[image_index]);
-           
+
+    vkEndCommandBuffer(cmd_buffer);
+
     VkSubmitInfo submit_info{};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &_copy_cmd_buffer[image_index];
-    //Logger::debug("{}::{}", __FILE__, __LINE__);      
+    submit_info.pCommandBuffers = &cmd_buffer;
     result = vkQueueSubmit(_transfer_queues[_queue_index], 1, &submit_info, fence_buffer);
- 
+
     if (result != VK_SUCCESS) {
       Logger::error("failed to copy buffer in commitCopyBuffer : {}", string_VkResult(result));
     }
   }
 }
+
 
 VkImageMemoryBarrier VulkanAPI::setupImageMemoryBarrier(
   VkImage image,
@@ -2917,16 +2936,12 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     label.color[2] = b;
     label.color[3] = a;
 
-  #ifdef VYR_DEBUG_BUILD
     vkCmdBeginDebugUtilsLabelEXT(buffer, &label);
-  #endif
   }
 
   void VulkanAPI::endMarker([[maybe_unused]] VkCommandBuffer buffer)
   {
-  #ifdef VYR_DEBUG_BUILD
     vkCmdEndDebugUtilsLabelEXT(buffer);
-  #endif
   }
 
   void VulkanAPI::waitIdle()
@@ -2995,9 +3010,8 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
   {
     {
       //SCOPED_TIMER();
-      //std::lock_guard<std::mutex> guard(_mutex_queue_submit);
+      std::lock_guard<std::mutex> guard(_mutex_queue_submit);
 
-      //Logger::debug("{}::{}", __FILE__, __LINE__);
       VkResult result = vkQueueSubmit(queue, static_cast<std::uint32_t>(submit_infos.size()), submit_infos.data(), fence);
 
       if (result != VK_SUCCESS) {
@@ -3010,8 +3024,8 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
         Logger::error("Error on queue present: {}", string_VkResult(result));
       }
 
-      //vkQueueWaitIdle(queue);
-      //vkDeviceWaitIdle(_device);
+      vkQueueWaitIdle(queue);
+      vkDeviceWaitIdle(_device);
     }
   }
 
@@ -3172,7 +3186,6 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
 
     {
       std::lock_guard<std::mutex> guard(_mutex_queue_submit); 
-      //Logger::debug("{}::{}", __FILE__, __LINE__);     
       result = vkQueueSubmit(_transfer_queues[_queue_index], 1, &submit_info, transfer_fence);
     }
 
@@ -3534,7 +3547,6 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     VkResult result;
     {
       std::lock_guard<std::mutex> guard(_mutex_queue_submit);
-      //Logger::debug("{}::{}", __FILE__, __LINE__);      
       result = vkQueueSubmit(_transfer_queues[_queue_index], 1, & submit_info, fence_buffer);
     }
 
@@ -3560,6 +3572,7 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
 
     if (_update_vertex_offsets[image_index].load() + size > _staging_size) {
       endCopyBuffer(image_index);
+      _update_vertex_offsets[image_index].store(0);
       startCopyBuffer(image_index);
     }
 

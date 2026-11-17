@@ -288,13 +288,13 @@ namespace Vyroda
       T const& storage_buffer,
       std::size_t const image_index)
     {
-      //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
+      std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
       VkDeviceSize const buffer_size { sizeof(T) };
 
-      auto & staging_buffer { _staging_buffer[image_index] };
-      std::size_t const current_offset { _update_vertex_offsets[image_index] };
+      auto & staging_buffer { _staging_buffer.at(image_index) };
+      std::size_t const current_offset { _update_vertex_offsets.at(image_index).fetch_add(buffer_size, std::memory_order_relaxed) };
 
-      std::memcpy(static_cast<char*>(_staging_data_ptr[image_index]) + current_offset, &storage_buffer, static_cast<std::size_t>(buffer_size));
+      std::memcpy(static_cast<char*>(_staging_data_ptr.at(image_index)) + current_offset, &storage_buffer, static_cast<std::size_t>(buffer_size));
       _update_vertex_offsets[image_index] += buffer_size;
 
       VkBuffer buffer { createBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) };
@@ -502,7 +502,7 @@ namespace Vyroda
 
     std::uint32_t getQueueCount() { return _queue_count; }
 
-    std::span<VkQueue> getPresentQueue() { return _present_queues; }
+    VkQueue getPresentQueue() { return _present_queues.at(0); }
 
     void waitIdle();
 
@@ -614,12 +614,13 @@ namespace Vyroda
     VkBuffer getStagingBuffer(std::size_t const image_index) { return _staging_buffer[image_index]; }
     VkDeviceMemory getStagingMemory(std::size_t const image_index) { return _staging_device_memory[image_index]; }
     void* getStagingMemoryPtr(std::size_t const image_index) { return _staging_data_ptr[image_index]; }
-    std::size_t getCurrentStagingMemoryOffset(std::size_t const image_index) { return _update_vertex_offsets[image_index]; }
-    void updateCurrentStagingMemoryOffset(std::size_t offset, std::size_t const image_index) { _update_vertex_offsets[image_index] += offset; }
-
+    //std::size_t getCurrentStagingMemoryOffset(std::size_t const image_index) { return _update_vertex_offsets[image_index]; }
+    //void updateCurrentStagingMemoryOffset(std::size_t offset, std::size_t const image_index) { _update_vertex_offsets[image_index] += offset; }
+    std::size_t reserveStagingMemoryOffset(std::size_t const size, std::size_t const image_index) { return _update_vertex_offsets[image_index].fetch_add(size, std::memory_order_relaxed); }
+    
     void updateQueueIndex() { _queue_index = (_queue_index + 1) % _queue_count; }
     void resetDescPool(VkDescriptorPool& pool);
-
+    
   private:
     bool isDeviceSuitable(VkPhysicalDevice& device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice& device);
@@ -739,7 +740,7 @@ namespace Vyroda
             .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
                             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT |
                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            .source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .source_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             .destination_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
           }
         },
@@ -759,17 +760,8 @@ namespace Vyroda
             .srcAccessMask = 0,
             .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT |
                             VK_ACCESS_TRANSFER_WRITE_BIT,
-            .source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .source_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             .destination_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
-          }
-        },
-        {
-          {VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL},
-          {
-            .srcAccessMask = 0,
-            .dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            .source_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-            .destination_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
           }
         }
     };

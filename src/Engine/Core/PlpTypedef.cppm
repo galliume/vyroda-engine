@@ -31,7 +31,7 @@ namespace Vyroda
   export struct alignas(16) ObjectBuffer
   {
     Material material;
-    std::vector<glm::mat4>bone_matrices;
+    //std::vector<glm::mat4>bone_matrices;
   };
 
   export struct constants

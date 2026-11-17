@@ -127,7 +127,7 @@ namespace Vyroda
     if (!std::filesystem::exists(path)) {
       //--generate-mipmap
       std::string cmd{
-        "ktx create --generate-mipmap --format " + ktx_format + " --assign-oetf " + oetf + " --convert-oetf " + oetf \
+        "ktx create --generate-mipmap --format " + ktx_format + " --convert-oetf " + oetf \
         + " --cubemap " + files + " " + path
       };
       Logger::debug("{}", cmd);
@@ -171,9 +171,15 @@ namespace Vyroda
     if (result != KTX_SUCCESS) {
       Logger::warn("Error while transcoding KTX file: {} error: {}", path, ktxErrorString(result));
     }
-
-    VkCommandBuffer cmd_buffer { renderer.getAPI().allocateCommandBuffers(_cmd_pool, 1, false)[0] };
-    VkImage texture_image { renderer.getAPI().createKTXImage(cmd_buffer, ktx_texture, _cmd_pool) };
+    
+    VkCommandBuffer cmd_buffer {};
+    VkImage texture_image {};
+    {
+      std::lock_guard<std::mutex> guard(_mutex_cmd_pool);
+      cmd_buffer = renderer.getAPI().allocateCommandBuffers(_cmd_pool, 1, false)[0];
+      texture_image = renderer.getAPI().createKTXImage(cmd_buffer, ktx_texture, _cmd_pool);
+    }
+    
     VkImageView texture_imageview { renderer.getAPI().createKTXImageView(ktx_texture, texture_image, aspect_flags) };
 
     Texture texture;
@@ -299,7 +305,7 @@ namespace Vyroda
     }
 
     options.append(" --uastc-quality " + std::to_string(quality));
-    options.append(" --assign-oetf " + oetf);
+    //    options.append(" --assign-oetf " + oetf);
 
     if (!std::filesystem::exists(file_name_ktx)) {
       std::string cmd{

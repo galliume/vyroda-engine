@@ -8,6 +8,7 @@ import Engine.Component.Texture;
 import Engine.Core.Constants;
 import Engine.Core.MaterialTypes;
 import Engine.Core.GLM;
+import Engine.Core.Logger;
 import Engine.Core.MeshTypes;
 import Engine.Core.PlpTypedef;
 import Engine.Core.Vertex;
@@ -110,7 +111,11 @@ void Water::operator()(
 
     data->_ubos.push_back(ubos);
     data->_vertices = vertices;
-    data->_vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());
+    if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {
+      Logger::debug("create vertex buffer: {}", "water");      
+      data->_vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());
+    }
+    
     data->_texture_index = 0;
 
     auto& mat { mesh.getMaterials().at(0) };

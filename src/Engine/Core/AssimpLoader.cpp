@@ -293,6 +293,7 @@ namespace Vyroda
             //}
           }
         }
+        
         if (mat->GetTextureCount(aiTextureType_OPACITY) > 0) {
           aiString texture_path;
           aiTextureMapMode wrap_mode_u { aiTextureMapMode_Clamp };
@@ -424,7 +425,6 @@ namespace Vyroda
         if (mat->Get(AI_MATKEY_TWOSIDED, isDoubleSided) == aiReturn_SUCCESS) {
           material.double_sided = (isDoubleSided == 1) ? true : false;
         }
-
         materials.emplace_back(material);
       }
     }

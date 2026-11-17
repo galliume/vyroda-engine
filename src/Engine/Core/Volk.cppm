@@ -540,6 +540,7 @@ export
   using ::vkCmdEndRendering;
   using ::vkCmdEndRenderPass;
   using ::vkCmdPipelineBarrier;
+  using ::vkCmdPipelineBarrier2;
   using ::vkCmdPushConstants;
   using ::vkCmdSetColorBlendEnableEXT;
   using ::vkCmdSetColorBlendEquationEXT;

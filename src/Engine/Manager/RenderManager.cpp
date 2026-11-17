@@ -145,6 +145,7 @@ namespace Vyroda
     prepareSkybox();
     prepareTerrain();
     prepareWater();
+    updateBuffers();
 
     FontManager::Text text {
       .id = 0,
@@ -196,17 +197,18 @@ namespace Vyroda
       }
 
       updateEntities(frame_context);
+    
+      _renderer->start();
       _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
+      
       drawShadowmap(frame_context);
       drawEntities(frame_context);
-
+      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
+      
       _renderer->submit();
 
-      updateBuffers();
       updatePlayer();
-
-      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
-      _renderer->getAPI().collectGarbage();
+      //_renderer->getAPI().collectGarbage();
     }
   }
  
@@ -323,8 +325,6 @@ namespace Vyroda
     //   });
     //   offset += n;
     // }
-
-    _renderer->start();
     
     tasks.emplace_back([frame_context, this]() {
       _renderer->startShadowMap(SHADOW_TYPE::CSM);
@@ -542,7 +542,8 @@ namespace Vyroda
     count_down.wait();
 
     std::jthread entities(_entity_manager->load(*_renderer, lvl_data));
-
+    entities.join();
+    
     setIsLoaded();
   }
 

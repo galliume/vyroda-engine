@@ -107,7 +107,11 @@ namespace Vyroda
     ubos.push_back(ubo);
 
     data->_vertices = vertices;
-    data->_vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());
+    if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {
+      Logger::debug("create vertex buffer: {}", "terrain");
+      data->_vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());
+    }
+
     data->_texture_index = 0;
     data->_ubos.resize(1);
     data->_ubos[0] = ubos;
