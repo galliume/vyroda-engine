@@ -28,14 +28,13 @@ namespace Vyroda
     std::string const& tese_path,
     std::string const& tesc_path)
   {
-
-    if (!std::filesystem::exists(vert_path)) {
-      Logger::critical("vertex shader file {} does not exits.", vert_path);
+    if (vert_path.empty() || !std::filesystem::is_regular_file(vert_path)) {
+      Logger::critical("vertex shader file {} does not exist.", vert_path);
       return;
     }
 
-    if (!std::filesystem::exists(frag_path)) {
-      Logger::critical("fragment shader file {} does not exits.", frag_path);
+    if (frag_path.empty() || !std::filesystem::is_regular_file(frag_path)) {
+      Logger::critical("fragment shader file {} does not exist.", frag_path);
       return;
     }
 
@@ -44,33 +43,40 @@ namespace Vyroda
 
     _shaders->shaders[name]["vert"] = _renderer.getAPI().createShaderModule(vert_shader);
     _shaders->shaders[name]["frag"] = _renderer.getAPI().createShaderModule(frag_shader);
-    if (!geom_path.empty() && std::filesystem::exists(geom_path)) {
-      auto const geom_shader { Tools::readFile(geom_path) };
 
-      if (!geom_shader.empty()) {
-        _shaders->shaders[name]["geom"] = _renderer.getAPI().createShaderModule(geom_shader);
-      }
-    } else {
-      Logger::warn("geometry shader file {} does not exits.", geom_path);
-      }
+    if (!geom_path.empty()) {
+      if (std::filesystem::is_regular_file(geom_path)) {
+        auto const geom_shader { Tools::readFile(geom_path) };
 
-    if (!tese_path.empty() && std::filesystem::exists(tese_path)) {
-      auto const tese_shader { Tools::readFile(tese_path) };
-      if (!tese_shader.empty()) {
-        _shaders->shaders[name]["tese"] =  _renderer.getAPI().createShaderModule(tese_shader);
+        if (!geom_shader.empty()) {
+          _shaders->shaders[name]["geom"] = _renderer.getAPI().createShaderModule(geom_shader);
+        }
+      } else {
+        Logger::warn("geometry shader file {} does not exist.", geom_path);
       }
-    } else {
-      Logger::warn("tese shader file {} does not exits.", tese_path);
     }
 
-    if (!tesc_path.empty() && std::filesystem::exists(tesc_path)) {
-      auto const tesc_shader { Tools::readFile(tesc_path) };
-
-      if (!tesc_shader.empty()) {
-        _shaders->shaders[name]["tesc"] = _renderer.getAPI().createShaderModule(tesc_shader);
+    if (!tese_path.empty()) {
+      if (std::filesystem::is_regular_file(tese_path)) {
+        auto const tese_shader { Tools::readFile(tese_path) };
+        if (!tese_shader.empty()) {
+          _shaders->shaders[name]["tese"] =  _renderer.getAPI().createShaderModule(tese_shader);
+        }
+      } else {
+        Logger::warn("tese shader file {} does not exist.", tese_path);
       }
-    } else {
-      Logger::warn("tesc shader file {} does not exits.", tesc_path);
+    }
+
+    if (!tesc_path.empty()) {
+      if (std::filesystem::is_regular_file(tesc_path)) {
+        auto const tesc_shader { Tools::readFile(tesc_path) };
+
+        if (!tesc_shader.empty()) {
+          _shaders->shaders[name]["tesc"] = _renderer.getAPI().createShaderModule(tesc_shader);
+        }
+      } else {
+        Logger::warn("tesc shader file {} does not exist.", tesc_path);
+      }
     }
 
     createGraphicPipeline(name);
@@ -93,13 +99,23 @@ namespace Vyroda
         auto key = static_cast<std::string>(shader.key());
         auto data = shader.value();
 
+        auto get_path = [&](std::string const& stage) -> std::string {
+          if (data.contains(stage) && !data[stage].is_null()) {
+            auto path_str = data[stage].get<std::string>();
+            if (!path_str.empty()) {
+              return root_path + "/" + path_str;
+            }
+          }
+          return "";
+        };
+
         addShader(
           key,
-          root_path + "/" + data["vert"].get<std::string>(),
-          root_path + "/" + data["frag"].get<std::string>(),
-          root_path + "/" + data["geom"].get<std::string>(),
-          root_path + "/" + data["tese"].get<std::string>(),
-          root_path + "/" + data["tesc"].get<std::string>());
+          get_path("vert"),
+          get_path("frag"),
+          get_path("geom"),
+          get_path("tese"),
+          get_path("tesc"));
       }
       count_down.count_down();
     };

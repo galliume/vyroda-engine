@@ -1273,7 +1273,7 @@ VkShaderModule VulkanAPI::createShaderModule(std::vector<char> const& code)
 {
   VkShaderModuleCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  create_info.codeSize = code.size() * sizeof(uint32_t);
+  create_info.codeSize = code.size();
   create_info.pCode = reinterpret_cast<const std::uint32_t*>(code.data());
 
   VkShaderModule shader_module{};
