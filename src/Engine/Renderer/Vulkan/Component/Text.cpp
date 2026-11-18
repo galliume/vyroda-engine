@@ -34,18 +34,19 @@ namespace Vyroda
     if (!mesh.isDirty()) return;
 
     std::vector<Vertex> vertices;
-
+    
     auto const screen_width{
-        static_cast<float>(renderer.getAPI().getSwapChainExtent().width)};
-    auto const screen_height{
-      static_cast<float>(renderer.getAPI().getSwapChainExtent().height) };
-
-    float x { _position.x };
-    float y { _position.y };
-
+      static_cast<float>(renderer.getAPI().getSwapChainExtent().width)};
+      auto const screen_height{
+        static_cast<float>(renderer.getAPI().getSwapChainExtent().height) };
+        
+        float x { _position.x };
+        float y { _position.y };
+        
     auto const utf16_text{ fmt::detail::utf8_to_utf16(_text).str() };
     float const width{ static_cast<float>(render_context.atlas_width) };
     float const height{ static_cast<float>(render_context.atlas_height) };
+    vertices.reserve(utf16_text.size() * 6);
 
     glm::vec4 const tangent { 1.0f, 0.0f, 0.0f, 1.0f };
     glm::vec4 const normal { 0.0f, 1.0f, 0.0f, 0.0f };
@@ -55,7 +56,7 @@ namespace Vyroda
       FT_ULong const ft_char { static_cast<FT_ULong>(*c) };
 
       auto const glyph_index { FT_Get_Char_Index(render_context.face, ft_char) };
-      auto const ch { render_context.characters[glyph_index]} ;
+      auto const& ch { render_context.characters[glyph_index]} ;
 
       constexpr float epsilon = 1e-6f;
       if (std::abs(ch.size.x) < epsilon && std::abs(ch.size.y) < epsilon) {

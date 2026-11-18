@@ -62,7 +62,7 @@ To build and run the Vyroda Engine, you need recent and specific tooling:
 ### Build Steps
 
 1.  **Compile Shaders** (Windows & Linux):
-    `bin/shaders_compil.s`
+    `bin/shaders_compil.sh`
 
 2.  **List Presets:** Check available build configurations.
     `cmake --list-presets`

@@ -61,15 +61,14 @@ set(ASSIMP_BUILD_DEBUG OFF CACHE BOOL "" FORCE)
 set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 
-#fix unicode issue with rc file
-set(assimp_patch git apply ${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch/assimp.patch)
+set(assimp_patch ${CMAKE_COMMAND} -D "PATCH_FILE=${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch/assimp.patch" -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch/apply_patch.cmake)
 
 message(NOTICE "Fetching Assimp from https://github.com/assimp/assimp ...")
 FetchContent_Declare(
   fetch_assimp
   GIT_REPOSITORY https://github.com/assimp/assimp
   GIT_TAG ${ASSIMP_TAG}
-  #PATCH_COMMAND ${assimp_patch}
+  PATCH_COMMAND ${assimp_patch}
   GIT_SHALLOW ${FETCH_GIT_SHALLOW}
   GIT_PROGRESS ${FETCH_GIT_PROGRESS}
   UPDATE_DISCONNECTED ${FETCH_UPDATE_DISCONNECTED}

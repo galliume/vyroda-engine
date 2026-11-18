@@ -1,5 +1,7 @@
 message(NOTICE "Fetching FMT from https://github.com/fmtlib/fmt ...")
 
+set(FMT_MODULE OFF CACHE BOOL "" FORCE)
+
 if(WIN32)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDebugDLL" CACHE STRING "" FORCE)

@@ -48,6 +48,12 @@ function(set_vyroda_compiler_flags target)
     -Wno-covered-switch-default
     -Wno-deprecated-declarations
     -Wno-thread-safety-negative
-    -Wno-enum-enum-conversion) #ktx error
+    -Wno-enum-enum-conversion #ktx error
+    -Wno-reserved-identifier
+    -Wno-lifetime-safety-intra-tu-constructor-suggestions
+    -Wno-lifetime-safety-intra-tu-suggestions
+    -Wno-lifetime-safety-cross-tu-constructor-suggestions
+    -Wno-lifetime-safety-cross-tu-suggestions
+    -Wno-lifetime-safety-invalidation)
 
 endfunction()

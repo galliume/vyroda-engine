@@ -3026,8 +3026,8 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
         Logger::error("Error on queue present: {}", string_VkResult(result));
       }
 
-      vkQueueWaitIdle(queue);
-      vkDeviceWaitIdle(_device);
+      //vkQueueWaitIdle(queue);
+      //vkDeviceWaitIdle(_device);
     }
   }
 

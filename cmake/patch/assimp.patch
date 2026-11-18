@@ -1,13 +1,12 @@
-diff --git a/include/assimp/revision.h.in b/include/assimp/revision.h.in
-index 939d2940..a34c3d7e 100644
---- a/include/assimp/revision.h.in
-+++ b/include/assimp/revision.h.in
-@@ -18,7 +18,7 @@
- #else
- #define VER_FILEVERSION_STR         STR(VER_MAJOR) "." STR(VER_MINOR) "." STR(VER_PATCH) "." STR(VER_BUILD) " (Commit @GIT_COMMIT_HASH@)"
- #endif
--#define VER_COPYRIGHT_STR           "\xA9 2006-2023"
-+#define VER_COPYRIGHT_STR           L"\xA9 2006-2023"
+diff --git a/contrib/poly2tri/poly2tri/common/shapes.h b/contrib/poly2tri/poly2tri/common/shapes.h
+index fe32a29..470f63c 100644
+--- a/contrib/poly2tri/poly2tri/common/shapes.h
++++ b/contrib/poly2tri/poly2tri/common/shapes.h
+@@ -35,6 +35,7 @@
  
- #ifdef  NDEBUG
- #define VER_ORIGINAL_FILENAME_STR   "@CMAKE_SHARED_LIBRARY_PREFIX@assimp@LIBRARY_SUFFIX@.dll"
+ #include <cmath>
+ #include <cstddef>
++#include <ostream>
+ #include <stdexcept>
+ #include <vector>
+ 

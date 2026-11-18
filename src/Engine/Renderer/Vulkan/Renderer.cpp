@@ -185,7 +185,7 @@ namespace Vyroda
     VkFenceCreateInfo fence_info{};
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    _sema_render_completes.resize(buffer_size);
+    _sema_render_completes.resize(_images.size());
     _sema_present_completes.resize(buffer_size);
     _image_available.resize(buffer_size);
     _current_timeline_values.resize(buffer_size);
@@ -199,7 +199,7 @@ namespace Vyroda
     semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     semaphore_create_info.pNext = &timeline_create_info;
 
-    for (std::size_t i { 0 }; i < buffer_size; ++i) {
+    for (std::size_t i { 0 }; i < _images.size(); ++i) {
       result = vkCreateSemaphore(_vulkan->getDevice(), &sema_create_info, nullptr, &_sema_render_completes[i]);
       if (VK_SUCCESS != result) Logger::error("can't create _sema_render_completes semaphore");
     }
@@ -843,7 +843,7 @@ namespace Vyroda
     // }
 
     //auto &semaphore_present_complete { _sema_present_completes[_current_frame] };
-    auto &semaphore_render_complete { _sema_render_completes[_current_frame] };
+    auto &semaphore_render_complete { _sema_render_completes[_image_index] };
     auto &timeline_semaphore { _timeline_semaphores[_current_frame] };
     auto &_current_timeline_value { _current_timeline_values[_current_frame] };
 
