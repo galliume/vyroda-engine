@@ -44,7 +44,7 @@ namespace Vyroda
   private:
 
     //check std::execution: https://en.cppreference.com/w/cpp/experimental/execution.html
-    std::ptrdiff_t _thread_count { static_cast<std::ptrdiff_t>(std::thread::hardware_concurrency()) };
+    std::ptrdiff_t _thread_count { std::min<std::ptrdiff_t>(4, static_cast<std::ptrdiff_t>(std::thread::hardware_concurrency())) };
     std::unique_ptr<BarrierData> _barrier_data;
 
     std::vector<WorkerContext> _worker_contexts;

@@ -45,15 +45,20 @@ print_text()
     _print "$1" "1"
 }
 
+FORCE=false
+if [[ "$1" == "-f" || "$1" == "--force" ]]; then
+    FORCE=true
+fi
+
 compile()
 {
     shader=$1
     type=$2
 
-    if  md5sum --status -c ./assets/shaders/${shader}.${type}.checksum; then
+    if [[ "$FORCE" == false ]] && [ -f "./assets/shaders/spv/${shader}_${type}.spv" ] && md5sum --status -c ./assets/shaders/${shader}.${type}.checksum 2>/dev/null; then
         print_text "Shader [${shader}.${type}] already up to date"
     else
-        ${GLSLC_BIN} -V ./assets/shaders/${shader}.${type} -o ./assets/shaders/spv/${shader}_${type}.spv -gVS
+        ${GLSLC_BIN} -V -gVS ./assets/shaders/${shader}.${type} -o ./assets/shaders/spv/${shader}_${type}.spv
         retval=$?
         
         if [ "$retval" != 0 ]

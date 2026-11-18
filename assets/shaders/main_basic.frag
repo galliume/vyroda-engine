@@ -50,13 +50,9 @@ layout(location = 0) in FRAG_VAR {
   vec3 view_pos;
   vec2 texture_coord;
   vec3 norm;
-  vec4 color;
   mat3 TBN;
-  mat4 sun_light;
   vec4 cascade_coord;
-  float depth;
   vec3 blend;
-  vec3 n;
 } var;
 
 struct Light {
@@ -191,11 +187,10 @@ float linear_to_sRGB(float color)
   }
 }
 
-float ShadowCalculation(vec3 light_coord, Light l, float NdL)
+float ShadowCalculation(vec3 light_coord)
 {
   vec3 p = light_coord;
-  float shadow_offset = 2.f/2048.f;//@todo push constant
-  vec2 depth_transform = vec2(l.projection[2][2], l.projection[2][3]);
+  const float shadow_offset = 2.f/2048.f;//@todo push constant
 
   vec3 absq = abs(p);
   float mxy = max(absq.x, absq.y);
@@ -211,8 +206,7 @@ float ShadowCalculation(vec3 light_coord, Light l, float NdL)
   limit.xy -= oxy * (1.f / 2048.f);
   limit.yz -= oyz * (1.f / 2048.f);
 
-  //float depth = depth_transform.x + depth_transform.y / m;
-  float depth = length(p) / 500.0f;//far plane
+  float depth = length(p) * (1.0f / 500.0f);//far plane
   float light = texture(tex_shadow_sampler, vec4(p, depth));
 
   p.xy -= oxy;
@@ -225,19 +219,22 @@ float ShadowCalculation(vec3 light_coord, Light l, float NdL)
   p.xy -= oxy * 2.0;
   light += texture(tex_shadow_sampler, vec4(clamp(p.xyz, -limit, limit), depth));
 
-  light *= 0.2;
-
-  return light;
+  return light * 0.2;
 }
 
 float CalculateInfiniteShadow(vec3 cascade_coord0, vec3 cascade_blend)
 {
-  Light sun_light = lightData.lights[0];
+  vec3 cascade_scale1  = lightData.lights[0].cascade_scale1.xyz;
+  vec3 cascade_scale2  = lightData.lights[0].cascade_scale2.xyz;
+  vec3 cascade_scale3  = lightData.lights[0].cascade_scale3.xyz;
+  vec3 cascade_offset1 = lightData.lights[0].cascade_offset1.xyz;
+  vec3 cascade_offset2 = lightData.lights[0].cascade_offset2.xyz;
+  vec3 cascade_offset3 = lightData.lights[0].cascade_offset3.xyz;
 
   vec3 p1, p2;
-  vec3 cascade_coord1 = cascade_coord0 * sun_light.cascade_scale1.xyz + sun_light.cascade_offset1.xyz;
-  vec3 cascade_coord2 = cascade_coord0 * sun_light.cascade_scale2.xyz + sun_light.cascade_offset2.xyz;
-  vec3 cascade_coord3 = cascade_coord0 * sun_light.cascade_scale3.xyz + sun_light.cascade_offset3.xyz;
+  vec3 cascade_coord1 = cascade_coord0 * cascade_scale1 + cascade_offset1;
+  vec3 cascade_coord2 = cascade_coord0 * cascade_scale2 + cascade_offset2;
+  vec3 cascade_coord3 = cascade_coord0 * cascade_scale3 + cascade_offset3;
 
   bool beyond_cascade2 = (cascade_blend.y >= 0.0);
   bool beyond_cascade3 = (cascade_blend.z >= 0.0);
@@ -253,40 +250,36 @@ float CalculateInfiniteShadow(vec3 cascade_coord0, vec3 cascade_blend)
   vec3 blend = clamp(cascade_blend, 0.0, 1.0);
   float weight = (beyond_cascade2) ? blend.y - blend.z : 1.0 - blend.x;
 
-  float texel1 = (3.0f / 16.0f * (1.0f / 2048.f));
-  float texel2 = (3.0f / 16.0f * (1.0f / 2048.f));  
-  //  float texel1 = sun_light.cascade_texel_sizes[int(p1.z)]; 
-  //  float texel2 = sun_light.cascade_texel_sizes[int(p2.z)];
- 
-  float delta1 = 3.0f * texel1;
-  vec4 shadow_offset1[2] = vec4[2](
+  const float texel1 = (3.0f / 16.0f * (1.0f / 2048.f));
+  const float delta1 = 3.0f * texel1;
+  const vec4 shadow_offset1[2] = vec4[2](
     vec4(-texel1, -delta1, delta1, -texel1),
     vec4(texel1, delta1, -delta1, texel1)
   );
-  
-  float delta2 = 3.0f * texel2;
-  vec4 shadow_offset2[2] = vec4[2](
-    vec4(-texel2, -delta2, delta2, -texel2),
-    vec4(texel2, delta2, -delta2, texel2)
-  );
 
-  p1.xy = shadow_coord1 + shadow_offset1[0].xy;
-  float light1 = texture(csm, vec4(p1.xy, p1.z, depth1));
-  p1.xy = shadow_coord1 + shadow_offset1[0].zw;
-  light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
-  p1.xy = shadow_coord1 + shadow_offset1[1].xy;
-  light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
-  p1.xy = shadow_coord1 + shadow_offset1[1].zw;
-  light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
+  float light1 = 0.0;
+  if (weight > 0.0) {
+    p1.xy = shadow_coord1 + shadow_offset1[0].xy;
+    light1 = texture(csm, vec4(p1.xy, p1.z, depth1));
+    p1.xy = shadow_coord1 + shadow_offset1[0].zw;
+    light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
+    p1.xy = shadow_coord1 + shadow_offset1[1].xy;
+    light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
+    p1.xy = shadow_coord1 + shadow_offset1[1].zw;
+    light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
+  }
 
-  p2.xy = shadow_coord2 + shadow_offset2[0].xy;
-  float light2 = texture(csm, vec4(p2.xy, p2.z, depth2));
-  p2.xy = shadow_coord2 + shadow_offset2[0].zw;
-  light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
-  p2.xy = shadow_coord2 + shadow_offset2[1].xy;
-  light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
-  p2.xy = shadow_coord2 + shadow_offset2[1].zw;
-  light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
+  float light2 = 0.0;
+  if (weight < 1.0) {
+    p2.xy = shadow_coord2 + shadow_offset1[0].xy;
+    light2 = texture(csm, vec4(p2.xy, p2.z, depth2));
+    p2.xy = shadow_coord2 + shadow_offset1[0].zw;
+    light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
+    p2.xy = shadow_coord2 + shadow_offset1[1].xy;
+    light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
+    p2.xy = shadow_coord2 + shadow_offset1[1].zw;
+    light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
+  }
 
   return mix(light2, light1, weight) * 0.25;
 }
@@ -494,8 +487,7 @@ void main()
   vec4 C_diffuse = material.base_color * tex_color;
   float color_alpha = C_diffuse.a;
 
-  if (material.alpha.x == 1.0 && color_alpha < material.alpha.y) discard;
-  if (material.base_color.a < material.alpha.y) discard;
+  if (material.alpha.x == 1.0 && (color_alpha < material.alpha.y || material.base_color.a < material.alpha.y)) discard;
 
   vec3 p = var.frag_pos;
   vec3 v = var.view_pos;
@@ -503,18 +495,12 @@ void main()
 
   vec3 F0 = mix(vec3(0.04), C_diffuse.xyz, metallic);
 
-  // vec4 C_specular = material.specular;
-  // if (bool((pc.options >> HAS_SPECULAR) & 1u)) {
-  //   C_specular = texture(tex_sampler[SPECULAR_INDEX], var.texture_coord);
-  // };
-
   vec3 out_lights = vec3(0.0);
 
-  vec3 F90 = vec3(1.0);
+  vec3 sun_dir   = lightData.lights[0].direction.xyz;
+  vec3 sun_color = lightData.lights[0].color.rgb;
 
-  Light sun_light = lightData.lights[0];
-
-  vec3 L = normalize(sun_light.direction.xyz);
+  vec3 L = normalize(sun_dir);
   vec3 H = normalize(L + V);
   float NdL = max(dot(normal, L), 0.0);
   float NdV = max(dot(normal, V), 0.0);
@@ -523,7 +509,8 @@ void main()
 
   vec3 F = FresnelSchlick(HdV, F0);
   float D = GGXDistribution(NdH, roughness);
-  float G = SmithGeometryGGX(roughness, NdV) * SmithGeometryGGX(roughness, NdL);
+  float G1_V = SmithGeometryGGX(roughness, NdV);
+  float G = G1_V * SmithGeometryGGX(roughness, NdL);
 
   vec3 numerator    = D * G * F;
   float denominator = 4.0 * NdV * NdL + 0.0001;
@@ -534,9 +521,9 @@ void main()
   vec3 csm_coords = var.cascade_coord.xyz / var.cascade_coord.w;
   float csm_shadow = CalculateInfiniteShadow(csm_coords, var.blend);
 
-  vec3 C_sun = (kD * (C_diffuse.rgb / PI) + specular) * sun_light.color.rgb * csm_shadow;
+  vec3 C_sun = (kD * (C_diffuse.rgb / PI) + specular) * sun_color * csm_shadow;
 
-  vec3 kS_amb = FresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
+  vec3 kS_amb = FresnelSchlickRoughness(NdV, F0, roughness);
   vec3 kD_amb = (1.0 - kS_amb) * (1.0 - metallic);
 
   vec3 diff_irradiance = vec3(0.0);
@@ -544,11 +531,10 @@ void main()
 
   if (bool((pc.env_options >> HAS_IRRADIANCE) & 1u))
   {
-    float lod = 9.0;
+    const float lod = 9.0;
     vec3 r = reflect(-V, normal);
     diff_irradiance = textureLod(env_sampler[ENVIRONMENT_MAP_INDEX], normal, lod).rgb;
     spec_irradiance = textureLod(env_sampler[ENVIRONMENT_MAP_INDEX], r, roughness * lod).rgb;
-    //irradiance = srgb_to_linear(irradiance);
   }
   
   vec3 C_ambient = ((kD_amb * (C_diffuse.rgb / PI) * diff_irradiance) + (kS_amb * spec_irradiance)) * ao * 0.01;
@@ -558,67 +544,40 @@ void main()
     vec3 light_pos = lightData.lights[i].position.xyz;
     vec3 l = light_pos - p;
 
-    //@todo check thoses attenuation functions
-    //float d = length(light_pos - p);
     float attenuation = InverseSquareAttenuation(l);
-    //float attenuation = 1.0 / (lightData.lights[i].clq.x + lightData.lights[i].clq.y * d + lightData.lights[i].clq.z * (d * d));
-    //vec3 C_light = srgb_to_linear(lightData.lights[i].color.rgb) * attenuation;
     vec3 C_light = lightData.lights[i].color.rgb * attenuation;
 
     vec3 L = normalize(l);
     vec3 H = normalize(L + V);
     float NdL = max(dot(normal, L), 0.0);
-    float NdV = max(dot(normal, V), 0.0); 
     float NdH = max(dot(normal, H), 0.0);
     float HdV = max(dot(H, V), 0.0);
 
     vec3 F = FresnelSchlick(HdV, F0);
     float D = GGXDistribution(NdH, roughness);
-    float G = SmithGeometryGGX(roughness, NdV) * SmithGeometryGGX(roughness, NdL);
+    float G = G1_V * SmithGeometryGGX(roughness, NdL);
 
     vec3 numerator    = D * G * F;
     float denominator = 4.0 * NdV * NdL + 0.0001;
     vec3 specular     = numerator / denominator;
 
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - metallic;
+    vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);
 
     vec3 curr = (kD * (C_diffuse.rgb / PI) + specular) * C_light * NdL;
 
     if (i == 1) {
-      vec3 frag_to_light = p - lightData.lights[i].position.xyz;
-      curr *= ShadowCalculation(frag_to_light, lightData.lights[i], NdL);
+      curr *= ShadowCalculation(-l);
     }
     out_lights += curr;
   }
 
-  // C_sun *= 0.05;
-  // C_ambient *= 0.05;
-  vec4 color = vec4(C_ambient + C_sun + out_lights, color_alpha);
-  //color.xyz *= PI;
-  
-  color.rgb += emissive.rgb;
+  vec4 color = vec4(C_ambient + C_sun + out_lights + emissive.rgb, color_alpha);
 
-  float has_fog = ((pc.env_options >> HAS_FOG) & 1u);
-  color.rgb = mix(color.rgb, ApplyFog(color.rgb, v, p.y), has_fog);
-//
-//  color.r = linear_to_sRGB(color.r);
-//  color.g = linear_to_sRGB(color.g);
-//  color.b = linear_to_sRGB(color.b);
-
-  //final_color = color;
-  //@todo check how to get the precise value
-  float white_point = 1000;
-  final_color = vec4(0.0, 0.0, 0.0, color_alpha);
-  final_color.rgb = linear_to_hdr10(color.rgb, white_point);
-  if (material.alpha.x == 2.0) {
-    final_color = vec4(linear_to_hdr10(color.rgb, white_point), color_alpha);
+  if (bool((pc.env_options >> HAS_FOG) & 1u)) {
+    color.rgb = ApplyFog(color.rgb, v, p.y);
   }
 
-  //float exposure = 1.0;
-  //final_color.rgb = vec3(1.0) - exp(-final_color.rgb * exposure);
-  //final_color = vec4(linear_to_hdr10(normal.xyz, white_point), 1.0);
- // final_color.rgb = normalize(normal) * 0.5 + 0.5;
-  //final_color.rgb = vec3(var.blend.x, var.blend.y, var.blend.z);
+  //@todo check how to get the precise value
+  const float white_point = 1000.0;
+  final_color = vec4(linear_to_hdr10(color.rgb, white_point), color_alpha);
 }

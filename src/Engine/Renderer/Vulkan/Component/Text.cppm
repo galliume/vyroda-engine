@@ -21,6 +21,7 @@ namespace Vyroda
       RendererContext const& render_context);
 
     void setText(std::string_view text) { _text = text; }
+    std::string_view getText() const noexcept { return _text; }
     void setPosition(glm::vec3 const& position) { _position = position; }
     void setColor(glm::vec3 const& color) { _color = glm::vec4(color, 1.0f); }
     void setScale(float const scale) { _scale = scale; }

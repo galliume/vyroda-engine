@@ -71,24 +71,20 @@ layout(push_constant) uniform shadowMapConstants
 void main()
 {
   int face = gl_InstanceIndex;
-
   gl_Layer = face;
 
-  vec4 position = pc.model * position;
-  out_length = length(position - lightData.lights[1].position) / 500.f;
-  
-  mat4 light_matrices[6] = mat4[6](
-    lightData.lights[1].light_space_matrix_right,  // face 0
-    lightData.lights[1].light_space_matrix_left,   // face 1
-    lightData.lights[1].light_space_matrix_top,    // face 2
-    lightData.lights[1].light_space_matrix_bottom, // face 3
-    lightData.lights[1].light_space_matrix,        // face 4 (front)
-    lightData.lights[1].light_space_matrix_back    // face 5
-  );
+  vec4 world_pos = pc.model * position;
+  out_length = length(world_pos - lightData.lights[1].position) * (1.0f / 500.0f);
 
-  //vec4 p = ubo.projection * pc.view * position;
-  //gl_Position = p.xyww;
-  //gl_Position = pc.view * ubo.model * position;
-  gl_Position =  light_matrices[face] * position;
-  gl_Position.z / gl_Position.w;
+  mat4 light_matrix;
+  switch (face) {
+    case 0:  light_matrix = lightData.lights[1].light_space_matrix_right;  break;
+    case 1:  light_matrix = lightData.lights[1].light_space_matrix_left;   break;
+    case 2:  light_matrix = lightData.lights[1].light_space_matrix_top;    break;
+    case 3:  light_matrix = lightData.lights[1].light_space_matrix_bottom; break;
+    case 4:  light_matrix = lightData.lights[1].light_space_matrix;        break;
+    default: light_matrix = lightData.lights[1].light_space_matrix_back;   break;
+  }
+
+  gl_Position = light_matrix * world_pos;
 } 

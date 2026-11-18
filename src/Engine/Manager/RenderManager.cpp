@@ -327,7 +327,7 @@ namespace Vyroda
     //   offset += n;
     // }
     
-    tasks.emplace_back([frame_context, this]() {
+    tasks.emplace_back([&frame_context, this]() {
       _renderer->startShadowMap(SHADOW_TYPE::CSM);
       for (auto const id : frame_context.not_clipped_visible_ids) {
         drawShadowMap(id, SHADOW_TYPE::CSM, frame_context.camera_view_matrix);
@@ -338,7 +338,7 @@ namespace Vyroda
       _renderer->endShadowMap(SHADOW_TYPE::CSM);
     });
     
-    tasks.emplace_back([frame_context, this]() {
+    tasks.emplace_back([&frame_context, this]() {
       _renderer->startShadowMap(SHADOW_TYPE::SPOT_LIGHT);
       for (auto const id : frame_context.not_clipped_visible_ids) {
         drawShadowMap(id, SHADOW_TYPE::SPOT_LIGHT, frame_context.camera_view_matrix);
@@ -520,45 +520,43 @@ namespace Vyroda
     _renderer->getAPI().updateStorageBuffer<LightObjectBuffer>(
       _light_buffers.at(frame_index), light_object_buffer, frame_index);
 
-    for (std::uint32_t i { 0 }; i < _renderer->getMaxFramesInFlight(); ++i) {
-      VkDescriptorBufferInfo const light_buffer_info {
-        .buffer = _light_buffers.at(i).buffer,
+    VkDescriptorBufferInfo const light_buffer_info {
+      .buffer = _light_buffers.at(frame_index).buffer,
+      .offset = 0,
+      .range = VK_WHOLE_SIZE
+    };
+
+    for (auto const* shadow_name : { "shadow_map", "csm" }) {
+      if (!_renderer->getAPI().hasDescSet(shadow_name)) continue;
+
+      auto descset { _renderer->getAPI().getDescSet(shadow_name, frame_index) };
+      if (descset == VK_NULL_HANDLE) continue;
+
+      auto& desc_buffers { _renderer->getAPI().getDescSetBuffers(shadow_name, frame_index) };
+      VkDescriptorBufferInfo const ubo_buffer_info {
+        .buffer = desc_buffers.ubo.buffer,
         .offset = 0,
         .range = VK_WHOLE_SIZE
       };
 
-      for (auto const* shadow_name : { "shadow_map", "csm" }) {
-        if (!_renderer->getAPI().hasDescSet(shadow_name)) continue;
+      std::array<VkWriteDescriptorSet, 2> writes{};
+      writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      writes[0].dstSet = descset;
+      writes[0].dstBinding = 0;
+      writes[0].dstArrayElement = 0;
+      writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      writes[0].descriptorCount = 1;
+      writes[0].pBufferInfo = &ubo_buffer_info;
 
-        auto descset { _renderer->getAPI().getDescSet(shadow_name, i) };
-        if (descset == VK_NULL_HANDLE) continue;
+      writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      writes[1].dstSet = descset;
+      writes[1].dstBinding = 1;
+      writes[1].dstArrayElement = 0;
+      writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      writes[1].descriptorCount = 1;
+      writes[1].pBufferInfo = &light_buffer_info;
 
-        auto& desc_buffers { _renderer->getAPI().getDescSetBuffers(shadow_name, i) };
-        VkDescriptorBufferInfo const ubo_buffer_info {
-          .buffer = desc_buffers.ubo.buffer,
-          .offset = 0,
-          .range = VK_WHOLE_SIZE
-        };
-
-        std::array<VkWriteDescriptorSet, 2> writes{};
-        writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writes[0].dstSet = descset;
-        writes[0].dstBinding = 0;
-        writes[0].dstArrayElement = 0;
-        writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        writes[0].descriptorCount = 1;
-        writes[0].pBufferInfo = &ubo_buffer_info;
-
-        writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writes[1].dstSet = descset;
-        writes[1].dstBinding = 1;
-        writes[1].dstArrayElement = 0;
-        writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        writes[1].descriptorCount = 1;
-        writes[1].pBufferInfo = &light_buffer_info;
-
-        vkUpdateDescriptorSets(_renderer->getDevice(), static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
-      }
+      vkUpdateDescriptorSets(_renderer->getDevice(), static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
     }
   }
 
@@ -697,7 +695,7 @@ namespace Vyroda
       if (rdr_impl) {
         auto text_rdr { rdr_impl->has<Text>() };
 
-        if (text_rdr) {
+        if (text_rdr && text_rdr->getText() != text) {
           text_rdr->setText(text);
           mesh->setIsDirty(true);
         }

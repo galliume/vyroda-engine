@@ -292,10 +292,9 @@ namespace Vyroda
       VkDeviceSize const buffer_size { sizeof(T) };
 
       auto & staging_buffer { _staging_buffer.at(image_index) };
-      std::size_t const current_offset { _update_vertex_offsets.at(image_index).fetch_add(buffer_size, std::memory_order_relaxed) };
+      std::size_t const current_offset { reserveStagingMemoryOffset(buffer_size, image_index) };
 
       std::memcpy(static_cast<char*>(_staging_data_ptr.at(image_index)) + current_offset, &storage_buffer, static_cast<std::size_t>(buffer_size));
-      _update_vertex_offsets[image_index] += buffer_size;
 
       VkBuffer buffer { createBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) };
       VkMemoryRequirements mem_requirements;
@@ -338,10 +337,9 @@ namespace Vyroda
     {
       //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
       VkDeviceSize buffer_size { sizeof(T) };
-      std::size_t const current_offset { _update_vertex_offsets[image_index] };
+      std::size_t const current_offset { reserveStagingMemoryOffset(buffer_size, image_index) };
 
       std::memcpy(static_cast<char*>(_staging_data_ptr[image_index]) + current_offset, &object_buffer, static_cast<std::size_t>(buffer_size));
-      _update_vertex_offsets[image_index] += buffer_size;
 
       addCopyBufferRequest(
         _staging_buffer[image_index],
@@ -616,7 +614,13 @@ namespace Vyroda
     void* getStagingMemoryPtr(std::size_t const image_index) { return _staging_data_ptr[image_index]; }
     //std::size_t getCurrentStagingMemoryOffset(std::size_t const image_index) { return _update_vertex_offsets[image_index]; }
     //void updateCurrentStagingMemoryOffset(std::size_t offset, std::size_t const image_index) { _update_vertex_offsets[image_index] += offset; }
-    std::size_t reserveStagingMemoryOffset(std::size_t const size, std::size_t const image_index) { return _update_vertex_offsets[image_index].fetch_add(size, std::memory_order_relaxed); }
+    std::size_t reserveStagingMemoryOffset(std::size_t const size, std::size_t const image_index)
+    {
+      if (_update_vertex_offsets[image_index].load(std::memory_order_relaxed) + size > _staging_size) {
+        commitCopyBuffer(image_index);
+      }
+      return _update_vertex_offsets[image_index].fetch_add(size, std::memory_order_relaxed);
+    }
     
     void updateQueueIndex() { _queue_index = (_queue_index + 1) % _queue_count; }
     void resetDescPool(VkDescriptorPool& pool);

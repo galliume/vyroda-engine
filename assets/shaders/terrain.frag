@@ -65,7 +65,6 @@ layout(location = 1) in vec4 in_weights;
 layout(location = 2) in vec4 in_normal;
 layout(location = 3) in vec4 in_position;
 layout(location = 4) in vec3 in_view_position;
-layout(location = 5) in mat3 in_inverse_model;
 
 layout(location = 8) in float in_depth;
 layout(location = 9) in vec4 in_cascade_coord;
@@ -220,11 +219,10 @@ vec3 ApplyFog(vec3 shaded_color, vec3 v, float height)
   return (mix(fog_color, shaded_color, f));
 }
 
-float ShadowCalculation(vec3 light_coord, Light l, float NdL)
+float ShadowCalculation(vec3 light_coord)
 {
   vec3 p = light_coord;
-  float shadow_offset = 2.f/2048.f;//@todo push constant
-  vec2 depth_transform = vec2(l.projection[2][2], l.projection[2][3]);
+  const float shadow_offset = 2.f/2048.f;//@todo push constant
 
   vec3 absq = abs(p);
   float mxy = max(absq.x, absq.y);
@@ -240,8 +238,7 @@ float ShadowCalculation(vec3 light_coord, Light l, float NdL)
   limit.xy -= oxy * (1.f / 2048.f);
   limit.yz -= oyz * (1.f / 2048.f);
 
-  //float depth = depth_transform.x + depth_transform.y / m;
-  float depth = length(p) / 500.0f;//far plane
+  float depth = length(p) * (1.0f / 500.0f);//far plane
   float light = texture(tex_shadow_sampler, vec4(p, depth));
 
   p.xy -= oxy;
@@ -254,19 +251,22 @@ float ShadowCalculation(vec3 light_coord, Light l, float NdL)
   p.xy -= oxy * 2.0;
   light += texture(tex_shadow_sampler, vec4(clamp(p.xyz, -limit, limit), depth));
 
-  light *= 0.2;
-
-  return light;
+  return light * 0.2;
 }
 
 float CalculateInfiniteShadow(vec3 cascade_coord0, vec3 cascade_blend)
 {
-  Light sun_light = lightData.lights[0];
+  vec3 cascade_scale1  = lightData.lights[0].cascade_scale1.xyz;
+  vec3 cascade_scale2  = lightData.lights[0].cascade_scale2.xyz;
+  vec3 cascade_scale3  = lightData.lights[0].cascade_scale3.xyz;
+  vec3 cascade_offset1 = lightData.lights[0].cascade_offset1.xyz;
+  vec3 cascade_offset2 = lightData.lights[0].cascade_offset2.xyz;
+  vec3 cascade_offset3 = lightData.lights[0].cascade_offset3.xyz;
 
   vec3 p1, p2;
-  vec3 cascade_coord1 = cascade_coord0 * sun_light.cascade_scale1.xyz + sun_light.cascade_offset1.xyz;
-  vec3 cascade_coord2 = cascade_coord0 * sun_light.cascade_scale2.xyz + sun_light.cascade_offset2.xyz;
-  vec3 cascade_coord3 = cascade_coord0 * sun_light.cascade_scale3.xyz + sun_light.cascade_offset3.xyz;
+  vec3 cascade_coord1 = cascade_coord0 * cascade_scale1 + cascade_offset1;
+  vec3 cascade_coord2 = cascade_coord0 * cascade_scale2 + cascade_offset2;
+  vec3 cascade_coord3 = cascade_coord0 * cascade_scale3 + cascade_offset3;
 
   bool beyond_cascade2 = (cascade_blend.y >= 0.0);
   bool beyond_cascade3 = (cascade_blend.z >= 0.0);
@@ -282,31 +282,37 @@ float CalculateInfiniteShadow(vec3 cascade_coord0, vec3 cascade_blend)
   vec3 blend = clamp(cascade_blend, 0.0, 1.0);
   float weight = (beyond_cascade2) ? blend.y - blend.z : 1.0 - blend.x;
 
-  float texel = (3.0f / 16.0f * (1.0f / 2048.f));
-  float delta = 3.0f * texel;
+  const float texel = (3.0f / 16.0f * (1.0f / 2048.f));
+  const float delta = 3.0f * texel;
 
-  vec4 shadow_offset[2] = vec4[2](
+  const vec4 shadow_offset[2] = vec4[2](
     vec4(-texel, -delta, delta, -texel),
     vec4(texel, delta, -delta, texel)
   );
 
-  p1.xy = shadow_coord1 + shadow_offset[0].xy;
-  float light1 = texture(csm, vec4(p1.xy, p1.z, depth1));
-  p1.xy = shadow_coord1 + shadow_offset[0].zw;
-  light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
-  p1.xy = shadow_coord1 + shadow_offset[1].xy;
-  light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
-  p1.xy = shadow_coord1 + shadow_offset[1].zw;
-  light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
+  float light1 = 0.0;
+  if (weight > 0.0) {
+    p1.xy = shadow_coord1 + shadow_offset[0].xy;
+    light1 = texture(csm, vec4(p1.xy, p1.z, depth1));
+    p1.xy = shadow_coord1 + shadow_offset[0].zw;
+    light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
+    p1.xy = shadow_coord1 + shadow_offset[1].xy;
+    light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
+    p1.xy = shadow_coord1 + shadow_offset[1].zw;
+    light1 += texture(csm, vec4(p1.xy, p1.z, depth1));
+  }
 
-  p2.xy = shadow_coord2 + shadow_offset[0].xy;
-  float light2 = texture(csm, vec4(p2.xy, p2.z, depth2));
-  p2.xy = shadow_coord2 + shadow_offset[0].zw;
-  light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
-  p2.xy = shadow_coord2 + shadow_offset[1].xy;
-  light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
-  p2.xy = shadow_coord2 + shadow_offset[1].zw;
-  light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
+  float light2 = 0.0;
+  if (weight < 1.0) {
+    p2.xy = shadow_coord2 + shadow_offset[0].xy;
+    light2 = texture(csm, vec4(p2.xy, p2.z, depth2));
+    p2.xy = shadow_coord2 + shadow_offset[0].zw;
+    light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
+    p2.xy = shadow_coord2 + shadow_offset[1].xy;
+    light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
+    p2.xy = shadow_coord2 + shadow_offset[1].zw;
+    light2 += texture(csm, vec4(p2.xy, p2.z, depth2));
+  }
 
   return mix(light2, light1, weight) * 0.25;
 }
@@ -315,11 +321,23 @@ void main()
 {
   vec4 C_diffuse = vec4(0.0);
 
-  // Texture splatting for albedo
-  C_diffuse += texture(tex_sampler[TERRAIN_SAND], in_texture_coord) * in_weights.x;
-  C_diffuse += texture(tex_sampler[TERRAIN_GROUND], in_texture_coord) * in_weights.y;
-  C_diffuse += texture(tex_sampler[TERRAIN_GRASS], in_texture_coord) * in_weights.z;
-  C_diffuse += texture(tex_sampler[TERRAIN_SNOW], in_texture_coord) * in_weights.w;
+  // Pre-compute explicit derivatives once so conditional texture splatting stays mip-safe
+  vec2 uv_dx = dFdx(in_texture_coord);
+  vec2 uv_dy = dFdy(in_texture_coord);
+
+  // Texture splatting for albedo: skip zero-weight layers (at most 2 layers overlap at any height!)
+  if (in_weights.x > 0.0) {
+    C_diffuse += textureGrad(tex_sampler[TERRAIN_SAND], in_texture_coord, uv_dx, uv_dy) * in_weights.x;
+  }
+  if (in_weights.y > 0.0) {
+    C_diffuse += textureGrad(tex_sampler[TERRAIN_GROUND], in_texture_coord, uv_dx, uv_dy) * in_weights.y;
+  }
+  if (in_weights.z > 0.0) {
+    C_diffuse += textureGrad(tex_sampler[TERRAIN_GRASS], in_texture_coord, uv_dx, uv_dy) * in_weights.z;
+  }
+  if (in_weights.w > 0.0) {
+    C_diffuse += textureGrad(tex_sampler[TERRAIN_SNOW], in_texture_coord, uv_dx, uv_dy) * in_weights.w;
+  }
 
   vec3 p = in_position.xyz;
   vec3 v = in_view_position;
@@ -327,18 +345,17 @@ void main()
   vec3 normal = normalize(in_normal.xyz);
 
   // PBR material properties for terrain (dielectric)
-  float metallic = 0.1;
-  float roughness = 0.9; // Terrain is generally very rough
+  const float metallic = 0.1;
+  const float roughness = 0.9; // Terrain is generally very rough
 
   // Base reflectivity for a non-metal
   vec3 F0 = mix(vec3(0.04), C_diffuse.xyz, metallic);
-  float P = 1.0; // Fresnel power
-  vec3 F90 = vec3(1.0);
 
   // Sun light calculation
-  Light sun_light = lightData.lights[0];
+  vec3 sun_pos   = lightData.lights[0].position.xyz;
+  vec3 sun_color = lightData.lights[0].color.rgb;
 
-  vec3 L = normalize(sun_light.position.xyz);
+  vec3 L = normalize(sun_pos);
   vec3 H = normalize(L + V);
   float NdL = max(dot(normal, L), 0.0);
   float NdV = max(dot(normal, V), 0.0);
@@ -351,15 +368,13 @@ void main()
   float G2 = SmithGeometryGGX(roughness, NdL);
   float G = G1 * G2;
 
-  vec3 kD = vec3(1.0) - F;
-  kD *= 1.0 - metallic;
+  vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);
 
   vec3 numerator    = D * G * F;
-  float denominator = 4.0 * max(NdV, 0.0) * max(NdL, 0.0) + 0.0001;
+  float denominator = 4.0 * NdV * NdL + 0.0001;
   vec3 specular     = numerator / denominator;
 
-  vec3 radiance = sun_light.color.rgb;
-  vec3 C_sun = (kD * (C_diffuse.rgb / PI) + specular) * radiance;
+  vec3 C_sun = (kD * (C_diffuse.rgb / PI) + specular) * sun_color;
 
   vec3 csm_coords = in_cascade_coord.xyz / in_cascade_coord.w;
   float csm_shadow = CalculateInfiniteShadow(csm_coords, in_blend);
@@ -375,41 +390,33 @@ void main()
     vec3 l = light_pos - p;
 
     //@todo check thoses attenuation functions
-    float d = length(light_pos - p);
     float attenuation = InverseSquareAttenuation(l);
     vec3 C_light = lightData.lights[i].color.rgb * attenuation;
 
     vec3 H = normalize(normalize(l) + V);
-    float NdL = max(dot(normal, L), 0.0);
-    float NdV = max(dot(normal, V), 0.0);
     float NdH = max(dot(normal, H), 0.0);
     float HdV = max(dot(H, V), 0.0);
 
     vec3 F  = FresnelSchlick(HdV, F0);
     float D = GGXDistribution(NdH, roughness);
-    float G = SmithGeometryGGX(roughness, NdV) * SmithGeometryGGX(roughness, NdL);
 
-    vec3 numerator    = D * G * F;
-    float denominator = 4.0 * max(NdV, 0.0) * max(NdL, 0.0) + 0.0001;
-    vec3 specular     = numerator / denominator;
+    vec3 numerator = D * G * F;
+    vec3 specular  = numerator / denominator;
 
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - metallic;
+    vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);
 
     vec3 curr = (kD * C_diffuse.rgb + specular) * C_light * NdL;
 
     //@temp
     if(i == 1) {
-      vec3 frag_to_light = p - lightData.lights[i].position.xyz;
-      float shadow = ShadowCalculation(frag_to_light, lightData.lights[i], NdL);
+      float shadow = ShadowCalculation(-l);
       curr *= shadow;
     }
 
     out_lights += curr;
   }
 
-  vec3 F_ambient = FresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
+  vec3 F_ambient = FresnelSchlickRoughness(NdV, F0, roughness);
   vec3 kS_amb = F_ambient;
   vec3 kD_amb = (1.0 - kS_amb) * (1.0 - metallic);
   
@@ -418,27 +425,21 @@ void main()
 
   if (bool((pc.env_options >> HAS_IRRADIANCE) & 1u))
   {
-    float lod = 9.0;
-    vec3 r = reflect(-V, normalize(normal));
+    const float lod = 9.0;
+    vec3 r = reflect(-V, normal);
     diff_irradiance = textureLod(env_sampler[ENVIRONMENT_MAP_INDEX], normal, lod).rgb;
     spec_irradiance = textureLod(env_sampler[ENVIRONMENT_MAP_INDEX], r, roughness * lod).rgb;
-    //irradiance = srgb_to_linear(irradiance);
   }
   
   vec3 C_ambient = ((kD_amb * C_diffuse.xyz * diff_irradiance + specular) + (kS_amb * spec_irradiance));
 
-  // C_sun *= 0.05;
-  // C_ambient *= 0.05;
   vec4 color = vec4(C_ambient + C_sun + out_lights , 1.0);
   
-  float has_fog = ((pc.env_options >> HAS_FOG) & 1u);
-  color.rgb = mix(color.rgb, ApplyFog(color.rgb, v, p.y), has_fog);
+  if (bool((pc.env_options >> HAS_FOG) & 1u)) {
+    color.rgb = ApplyFog(color.rgb, v, p.y);
+  }
 
   //@todo check how to get the precise value
-  float white_point = 1000;
-  final_color = vec4(0.0, 0.0, 0.0, 1.0);
-  final_color.rgb = linear_to_hdr10(color.rgb, white_point);
-  
-  // float exposure = 1.0;
-  // final_color.rgb = vec3(1.0) - exp(-final_color.rgb* exposure);
+  const float white_point = 1000.0;
+  final_color = vec4(linear_to_hdr10(color.rgb, white_point), 1.0);
 }

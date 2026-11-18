@@ -68,14 +68,13 @@ void main()
   int face = gl_InstanceIndex;
   gl_Layer = face;
 
-  Light light = lightData.lights[0];
-  mat4 light_matrices[4] = mat4[4](
-    light.light_space_matrix,          // slice 0
-    light.light_space_matrix_left,     // slice 1
-    light.light_space_matrix_top,      // slice 2
-    light.light_space_matrix_right     // slice 3
-  );
+  mat4 light_matrix;
+  switch (face) {
+    case 0:  light_matrix = lightData.lights[0].light_space_matrix;       break;
+    case 1:  light_matrix = lightData.lights[0].light_space_matrix_left;  break;
+    case 2:  light_matrix = lightData.lights[0].light_space_matrix_top;   break;
+    default: light_matrix = lightData.lights[0].light_space_matrix_right; break;
+  }
 
-  gl_Position = light_matrices[face] * (pc.model * position);
-  gl_Position.z / gl_Position.w;
+  gl_Position = light_matrix * (pc.model * position);
 }

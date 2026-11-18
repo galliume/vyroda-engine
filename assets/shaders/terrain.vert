@@ -67,12 +67,10 @@ layout(std430, binding = 5) readonly buffer LightBuffer {
 } lightData;
 
 layout(location = 0) out vec2 out_texture_coord;
-layout(location = 1) out vec4 out_position;
 
 void main()
 {
   out_texture_coord = texture_coord;
-  out_position = ubo.model * position;
 
   gl_Position = position;
 }

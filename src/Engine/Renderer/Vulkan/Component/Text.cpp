@@ -1,4 +1,4 @@
-﻿module;
+module;
 
 #include <fmt/format.h>
 
@@ -153,8 +153,6 @@ namespace Vyroda
     data->_vertices = vertices;
     data->_texture_index = 0;
 
-    auto cmd_pool = renderer.getAPI().createCommandPool();
-
     if (data->_ubos.empty()) {
       data->_vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());
 
@@ -177,33 +175,11 @@ namespace Vyroda
       for (auto& data_ubo : mesh.getData()->_ubos | std::views::join) {
           data_ubo.projection = projection;
       }
+
+      renderer.getAPI().updateUniformBuffer(mesh.getUniformBuffers().at(0), &mesh.getData()->_ubos.at(0), renderer.getCurrentFrameIndex());
     } else {
-      auto const image_index { renderer.getCurrentFrameIndex() };
-      //auto const current_offset { renderer.getAPI().getCurrentStagingMemoryOffset(image_index) };
-      //VkDeviceMemory staging_device_memory{ renderer.getAPI().getStagingMemory(renderer.getCurrentFrameIndex()) };
-      VkBuffer staging_buffer { renderer.getAPI().getStagingBuffer(image_index) };
-      VkDeviceSize const buffer_size { sizeof(Vertex) * vertices.size() };
-      auto const current_offset { renderer.getAPI().reserveStagingMemoryOffset(buffer_size, image_index) };      
-      //renderer.getAPI().updateCurrentStagingMemoryOffset(buffer_size, image_index);
-
-      void* void_data { renderer.getAPI().getStagingMemoryPtr(image_index) };
-      std::memcpy(static_cast<char*>(void_data) + current_offset, vertices.data(), static_cast<std::size_t>(buffer_size));
-      
-      renderer.getAPI().addCopyBufferRequest(
-        staging_buffer,
-        data->_vertex_buffer.buffer,
-        buffer_size,
-        renderer.getCurrentFrameIndex(),
-        current_offset);
-
       data->_is_dirty = true;
       renderer.updateVertexBuffer(data, renderer.getCurrentFrameIndex());
-    }
-
-    vkDestroyCommandPool(renderer.getDevice(), cmd_pool, nullptr);
-
-    if (!mesh.getData()->_ubos.empty()) {
-      renderer.getAPI().updateUniformBuffer(mesh.getUniformBuffers().at(0), &mesh.getData()->_ubos.at(0), renderer.getCurrentFrameIndex());
     }
 
     if (!renderer.getAPI().hasDescSet(mesh.getName())) {

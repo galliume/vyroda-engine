@@ -93,7 +93,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 VulkanAPI::VulkanAPI(GLFWwindow* window)
   : _window(window)
 {
+#ifdef VYR_DEBUG_BUILD
   _enable_validation_layers = true;
+#else
+  _enable_validation_layers = false;
+#endif
 
   if (!glfwVulkanSupported()) {
     throw std::runtime_error("vulkan not supported");
@@ -1993,7 +1997,7 @@ Buffer VulkanAPI::createIndexBuffer(
   VkDeviceSize const buffer_size { sizeof(std::uint32_t) * indices.size() };
 
   auto & staging_buffer { _staging_buffer[image_index] };
-  std::size_t const current_offset { _update_vertex_offsets[image_index].fetch_add(buffer_size, std::memory_order_relaxed) };
+  std::size_t const current_offset { reserveStagingMemoryOffset(buffer_size, image_index) };
 
   std::memcpy(static_cast<char*>(_staging_data_ptr[image_index]) + current_offset, indices.data(), static_cast<std::size_t>(buffer_size));
 
@@ -2036,7 +2040,7 @@ Buffer VulkanAPI::createVertexBuffer(
   //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize const buffer_size { sizeof(Vertex) * vertices.size() };
   auto & staging_buffer { _staging_buffer[image_index] };
-  std::size_t const current_offset { _update_vertex_offsets[image_index].fetch_add(buffer_size, std::memory_order_relaxed) };
+  std::size_t const current_offset { reserveStagingMemoryOffset(buffer_size, image_index) };
 
   std::memcpy(static_cast<char*>(_staging_data_ptr[image_index]) + current_offset, vertices.data(), static_cast<std::size_t>(buffer_size));
 
@@ -2289,7 +2293,7 @@ void VulkanAPI::updateUniformBuffer(
     //std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
   VkDeviceSize buffer_size = sizeof(UniformBufferObject) * uniform_buffer_objects->size();
   //auto &copy_cmd_buffer = _copy_cmd_buffer[image_index];
-  std::size_t const current_offset { _update_vertex_offsets[image_index].fetch_add(buffer_size, std::memory_order_relaxed) };
+  std::size_t const current_offset { reserveStagingMemoryOffset(buffer_size, image_index) };
 
   std::memcpy(static_cast<char*>(_staging_data_ptr[image_index]) + current_offset, uniform_buffer_objects->data(), static_cast<std::size_t>(buffer_size));
 
@@ -2390,6 +2394,11 @@ void VulkanAPI::addCopyBufferRequest(
 void VulkanAPI::commitCopyBuffer(std::size_t const image_index)
 {
   {
+    if (_buffer_copy_request[image_index].empty()) {
+      _update_vertex_offsets[image_index].store(0);
+      return;
+    }
+
     std::lock_guard<std::mutex> guard(_mutex_queue_submit);
 
     auto & fence_buffer { _fence_buffer[image_index] };

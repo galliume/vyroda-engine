@@ -35,13 +35,9 @@ layout(location = 0) out FRAG_VAR {
   vec3 view_pos;
   vec2 texture_coord;
   vec3 norm;
-  vec4 color;
   mat3 TBN;
-  mat4 sun_light;
   vec4 cascade_coord;
-  float depth;
   vec3 blend;
-  vec3 n;
 } frag_var;
 
 struct Light {
@@ -128,36 +124,21 @@ void main()
   frag_var.TBN = TBN;
 
   vec4 world_pos = ubo.model * position;
-  vec4 local_space = position;
 
   frag_var.norm = N;
   frag_var.frag_pos = world_pos.xyz;
   frag_var.view_pos = vec3(pc.view_position) - world_pos.xyz;
-
-  Light sun_light = lightData.lights[0];
-
-  frag_var.sun_light = sun_light.view;
   frag_var.texture_coord = texture_coord;
-  frag_var.color = color;
+
   vec4 view_pos = pc.view * world_pos;
-  frag_var.depth = -view_pos.z;
+  float depth = -view_pos.z;
 
-  frag_var.cascade_coord = sun_light.cascade0 * world_pos;
-  vec3 cascade0 = frag_var.cascade_coord.xyz / frag_var.cascade_coord.w;
+  frag_var.cascade_coord = lightData.lights[0].cascade0 * world_pos;
 
-  mat4 camera_inverse = inverse(pc.view);
-  vec3 n = -camera_inverse[2].xyz;
-  vec3 c = camera_inverse[3].xyz;
- 
-  float inv_z_dist0 = 1.0 / (sun_light.cascade_max_splits.x - sun_light.cascade_min_splits.y);
-  float inv_z_dist1 = 1.0 / (sun_light.cascade_max_splits.y - sun_light.cascade_min_splits.z);
-  float inv_z_dist2 = 1.0 / (sun_light.cascade_max_splits.z - sun_light.cascade_min_splits.w);
+  vec4 min_splits = lightData.lights[0].cascade_min_splits;
+  vec4 max_splits = lightData.lights[0].cascade_max_splits;
+  vec3 inv_z_dist = 1.0 / (max_splits.xyz - min_splits.yzw);
+  frag_var.blend = (vec3(depth) - min_splits.yzw) * inv_z_dist;
 
-  vec4 d1 = (inv_z_dist0 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.y)))) * ubo.model;
-  vec4 d2 = (inv_z_dist1 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.z)))) * ubo.model;
-  vec4 d3 = (inv_z_dist2 * (vec4(n, (-dot(n, c) - sun_light.cascade_min_splits.w)))) * ubo.model;
-
-  frag_var.blend = vec3(dot(d1, position), dot(d2, position), dot(d3, position));
-
-  gl_Position = ubo.projection * pc.view * world_pos;
+  gl_Position = ubo.projection * view_pos;
 } 

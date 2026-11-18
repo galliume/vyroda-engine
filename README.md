@@ -40,7 +40,7 @@ See the engine rendering advanced glTF assets:
 
 To build and run the Vyroda Engine, you need recent and specific tooling:
 
-1.  **C++ Compiler:** A recent version of **Clang (22.x)** with C++26 support.
+1.  **C++ Compiler:** A recent version of **Clang (23.x)** with C++26 support.
 2.  **Build System:** **CMake (4.x)**.
 3.  **Vulkan SDK:** The latest official [Vulkan SDK](https://vulkan.lunarg.com/).
     * Ensure the environment variables **`VULKAN_SDK`**, **`Vulkan_LIBRARY`**, and **`Vulkan_INCLUDE_DIR`** are correctly configured.

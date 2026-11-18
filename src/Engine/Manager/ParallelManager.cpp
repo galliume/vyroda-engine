@@ -14,13 +14,17 @@ namespace Vyroda
 {
   struct BarrierData
   {
-    std::ptrdiff_t thread_count{ static_cast<std::ptrdiff_t>(std::thread::hardware_concurrency()) };
-    std::barrier<> start{ thread_count + 1 };
-    std::barrier<> done{ thread_count + 1 };
+    explicit BarrierData(std::ptrdiff_t const count)
+      : start{ count + 1 }
+      , done{ count + 1 }
+    {}
+
+    std::barrier<> start;
+    std::barrier<> done;
   };
 
   ParallelManager::ParallelManager()
-  : _barrier_data{ std::make_unique<BarrierData>() }
+  : _barrier_data{ std::make_unique<BarrierData>(_thread_count) }
   {
     _worker_contexts.resize(static_cast<std::size_t>(_thread_count));
     _workers.reserve(static_cast<std::size_t>(_thread_count));

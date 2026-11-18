@@ -146,7 +146,6 @@ namespace Vyroda
     }
     
     mesh.setIsDirty(false);
-    renderer.getAPI().commitCopyBuffer(renderer.getCurrentFrameIndex());
     vkDestroyCommandPool(renderer.getDevice(), cmd_pool, nullptr);
   }
 

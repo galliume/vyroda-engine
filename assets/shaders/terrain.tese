@@ -67,7 +67,6 @@ layout(location = 1) out vec4 out_weights;
 layout(location = 2) out vec4 out_normal;
 layout(location = 3) out vec4 out_position;
 layout(location = 4) out vec3 out_view_position;
-layout(location = 5) out mat3 out_inverse_model;
 
 // CSM outputs for the fragment shader
 layout(location = 8) out float out_depth;
@@ -130,25 +129,15 @@ void main()
   out_normal = normal;
   out_position = world_pos;
   out_view_position = vec3(pc.view_position - out_position);
-  out_inverse_model = inverse(mat3(ubo.model));
   out_depth = -view_pos.z;
   
   out_cascade_coord = lightData.lights[0].cascade0 * world_pos;
-  vec3 cascade0 = out_cascade_coord.xyz / out_cascade_coord.w;
 
-  mat4 camera_inverse = inverse(pc.view);
-  vec3 n = camera_inverse[2].xyz;
-  vec3 c = camera_inverse[3].xyz;
-
-  float inv_z_dist0 = 1.0 / (lightData.lights[0].cascade_max_splits.x - lightData.lights[0].cascade_min_splits.y);
-  float inv_z_dist1 = 1.0 / (lightData.lights[0].cascade_max_splits.y - lightData.lights[0].cascade_min_splits.z);
-  float inv_z_dist2 = 1.0 / (lightData.lights[0].cascade_max_splits.z - lightData.lights[0].cascade_min_splits.w);
-
-  vec4 d1 = (inv_z_dist0 * (vec4(n, (-dot(n, c) - lightData.lights[0].cascade_min_splits.y)))) * ubo.model;
-  vec4 d2 = (inv_z_dist1 * (vec4(n, (-dot(n, c) - lightData.lights[0].cascade_min_splits.z)))) * ubo.model;
-  vec4 d3 = (inv_z_dist2 * (vec4(n, (-dot(n, c) - lightData.lights[0].cascade_min_splits.w)))) * ubo.model;
-
-  out_blend = vec3(dot(d1, out_position), dot(d2, out_position), dot(d3, out_position));
+  // View-space depth is out_depth = -view_pos.z
+  vec4 min_splits = lightData.lights[0].cascade_min_splits;
+  vec4 max_splits = lightData.lights[0].cascade_max_splits;
+  vec3 inv_z_dist = 1.0 / (max_splits.xyz - min_splits.yzw);
+  out_blend = (vec3(out_depth) - min_splits.yzw) * inv_z_dist;
 
   gl_Position = ubo.projection * view_pos;
 }

@@ -63,7 +63,6 @@ layout(std430, binding = 5) readonly buffer LightBuffer {
 
 layout(location = 0) in vec2 in_texture_coord[];
 layout(location = 1) in vec4 in_options[];
-layout(location = 2) in mat4 in_inverse_camera[];
 
 layout(location = 0) out vec2 out_texture_coord;
 layout(location = 1) out vec3 out_position;
@@ -76,10 +75,33 @@ layout(location = 7) out float out_depth;
 layout(location = 8) out vec4 out_cascade_coord;
 layout(location = 12) out vec3 out_blend;
 
+// Precomputed Gerstner wave constants for waves_count = 8:
+// xy = normalized direction D, z = sin(phase), w = cos(phase)
+const vec4 WAVE_DIR_PHASE[8] = vec4[8](
+  vec4(-0.07067847, 0.99749916, -0.43269396,  0.90154087),
+  vec4( 0.00865757, 0.99996252,  0.10865456, -0.99407957),
+  vec4(-0.17257926, 0.98499563, -0.92266263, -0.38560818),
+  vec4( 0.14563398, 0.98933854,  0.80778791, -0.58947324),
+  vec4(-0.08826368, 0.99609715, -0.53054715,  0.84765543),
+  vec4( 0.13019822, 0.99148798,  0.73766451, -0.67516744),
+  vec4( 0.12352328, 0.99234167,  0.70492578, -0.70928108),
+  vec4( 0.12687266, 0.99191901,  0.72154998, -0.69236235)
+);
+
+// x = w (frequency), y = A (amplitude), z = WA (w * A), w = steepness
+const vec4 WAVE_PARAMS[8] = vec4[8](
+  vec4( 1.0000000, 0.02000000, 0.02000000, 0.40000000),
+  vec4( 1.5000000, 0.01000000, 0.01500000, 0.26400000),
+  vec4( 2.2500000, 0.00500000, 0.01125000, 0.17424000),
+  vec4( 3.3750000, 0.00250000, 0.00843750, 0.11499840),
+  vec4( 5.0625000, 0.00125000, 0.00632813, 0.07589894),
+  vec4( 7.5937500, 0.00062500, 0.00474609, 0.05009330),
+  vec4(11.3906250, 0.00031250, 0.00355957, 0.03306158),
+  vec4(17.0859375, 0.00015625, 0.00266968, 0.02182064)
+);
+
 void main()
 {
-  //Light sun_light = lightData.lights[0];
-  
   float u = gl_TessCoord.x;
   float v = gl_TessCoord.y;
 
@@ -97,74 +119,37 @@ void main()
   vec4 p10 = gl_in[2].gl_Position;
   vec4 p11 = gl_in[3].gl_Position;
 
-  vec4 uVec = p01 - p00;
-  vec4 vVec = p10 - p00;
-  vec4 normal = normalize(vec4(cross(vVec.xyz, uVec.xyz), 0));
-
   vec4 p0 = (p01 - p00) * u + p00;
   vec4 p1 = (p11 - p10) * u + p10;
   vec4 p = (p1 - p0) * v + p0;
 
-  //p.y += 5.f;
-
-  float L = 2.0f;
-  float A = 0.01 * L;
-  const float g = 9.81f;
-  float w = 2.0f / L;
-  float w_pic = 0.1f;
-  float L_pic = w_pic / 2.0f;
-  float A_pic = 0.1f * L_pic;
-  //float w = sqrt(9.8 * ((2.0 * PI) / L));
-  float S = 10.0f; //m/s
-  float t = uintBitsToFloat(pc.options);
+  const float phi_t = 10.0f * uintBitsToFloat(pc.options); // S * (2.0 / L) * t = 10.0 * 1.0 * t
 
   vec3 bi = vec3(0.0);
   vec3 ta = vec3(0.0);
   vec3 n = vec3(0.0);
-
-  //@todo improve seed
-  float seed = PI;
-  float previous_dx = 0.0;
   vec4 displacement = vec4(0.0, 0.0, 0.0, 1.0);
-
-  float steepness = 0.4;
-  float steepness_factor = 0.66;
-  float A_factor = 0.5;
-  float w_factor = 1.5;
-  float l_factor = 0.75;
-
-  vec2 main_dir = vec2(0.0, 1.0); 
-  float spread = 0.5;
 
   const int waves_count = 8;
   for (int i = 0; i < waves_count; i++) {
-    //speed
-    //S *= A/A_pic;
-    float phi = S * (2.0f / L);
+    vec2 D         = WAVE_DIR_PHASE[i].xy;
+    float sinPhase = WAVE_DIR_PHASE[i].z;
+    float cosPhase = WAVE_DIR_PHASE[i].w;
 
-    //direction
-    seed = fract(sin(seed * 43758.5453 + i) * 43758.5453);
-    float angle = (seed - 0.5) * spread;
-    vec2 D = normalize(vec2(
-        main_dir.x * cos(angle) - main_dir.y * sin(angle),
-        main_dir.x * sin(angle) + main_dir.y * cos(angle)
-    ));
+    float w         = WAVE_PARAMS[i].x;
+    float A         = WAVE_PARAMS[i].y;
+    float WA        = WAVE_PARAMS[i].z;
+    float steepness = WAVE_PARAMS[i].w;
 
-    //phase
-    float phase = seed * (2.0 * PI);
-
-    //Wi(x, y, t) = Ai * sin(Di dot (x, y) * wi + t * phii);
-    // float X = (dot(D, p.xz)) * w + t * phi + phase;
-    // float W = A * sin(X);
-
-    float WA = w * A;
-    // float S = sin(w * dot(D, p.xz) + t * phi);
-    // float C = cos(w * dot(D, p.xz) + t * phi);
-    float base = w * dot(D, p.xz) + t * phi;
-    float X = base + phase;
-    float W = A * sin(X);
+    float base = w * dot(D, p.xz) + phi_t;
     float S = sin(base);
     float C = cos(base);
+
+    // Angle addition identities avoid 2 extra sin/cos calls per wave:
+    // sin(base + phase) = S * cosPhase + C * sinPhase
+    // cos(base + phase) = C * cosPhase - S * sinPhase
+    float sinX = S * cosPhase + C * sinPhase;
+    float cosX = C * cosPhase - S * sinPhase;
 
     float WAS = WA * S;
     float WAC = WA * C;
@@ -187,58 +172,37 @@ void main()
     n.z += DyWAC;
     n.y += steepnessWAS;
 
-    float steepnessA = steepness * A;
-    float cosX = cos(X);
-    
-    displacement.x += (steepnessA * D.x * cosX);
-    displacement.z += (steepnessA * D.y * cosX);
-    displacement.y += W;
-
-    previous_dx = displacement.x;
-
-    A *= A_factor;
-    w *= w_factor;
-    steepness *= clamp(steepness_factor, 0.0, 1.0);
+    float steepnessA_cosX = (steepness * A) * cosX;
+    displacement.x += steepnessA_cosX * D.x;
+    displacement.z += steepnessA_cosX * D.y;
+    displacement.y += A * sinX;
   }
 
   p.y += 2.0f + displacement.y;
 
-  vec3 base_bitangent = vec3(1.0, 0.0, 0.0);
-  vec3 base_tangent    = vec3(0.0, 0.0, 1.0);
-
   // Modify them based on the Gerstner derivatives
-  vec3 binormal = vec3(1.0 - bi.x, bi.y, -bi.z);
-  vec3 tangent  = vec3(-ta.x, ta.y, 1.0 - ta.z);
+  vec3 binormal = normalize(vec3(1.0 - bi.x, bi.y, -bi.z));
+  vec3 tangent  = normalize(vec3(-ta.x, ta.y, 1.0 - ta.z));
 
   // Transformed into world space
   out_normal = normalize(cross(tangent, binormal));
-  out_TBN = mat3(normalize(tangent), normalize(binormal), out_normal);
+  out_TBN = mat3(tangent, binormal, out_normal);
 
-  out_position = (ubo.model * vec4(p.xyz, 1.0)).xyz;
+  vec4 world_pos = ubo.model * vec4(p.xyz, 1.0);
+  out_position = world_pos.xyz;
   out_texture_coord = texCoord;
   out_view_position = vec3(pc.view_position) - out_position;
 
-  vec4 world_pos = ubo.model * p;
   vec4 view_pos = pc.view * world_pos;
   out_depth = -view_pos.z;
 
   out_cascade_coord = lightData.lights[0].cascade0 * world_pos;
-  vec3 cascade0 = out_cascade_coord.xyz / out_cascade_coord.w;
 
-  mat4 camera_inverse = inverse(pc.view);
-  vec3 nI = camera_inverse[2].xyz;
-  vec3 c = camera_inverse[3].xyz;
+  // View-space depth is out_depth = -view_pos.z
+  vec4 min_splits = lightData.lights[0].cascade_min_splits;
+  vec4 max_splits = lightData.lights[0].cascade_max_splits;
+  vec3 inv_z_dist = 1.0 / (max_splits.xyz - min_splits.yzw);
+  out_blend = (vec3(out_depth) - min_splits.yzw) * inv_z_dist;
 
-  float inv_z_dist0 = 1.0 / (lightData.lights[0].cascade_max_splits.x - lightData.lights[0].cascade_min_splits.y);
-  float inv_z_dist1 = 1.0 / (lightData.lights[0].cascade_max_splits.y - lightData.lights[0].cascade_min_splits.z);
-  float inv_z_dist2 = 1.0 / (lightData.lights[0].cascade_max_splits.z - lightData.lights[0].cascade_min_splits.w);
-
-  vec4 d1 = (inv_z_dist0 * (vec4(n, (-dot(nI, c) - lightData.lights[0].cascade_min_splits.y)))) * ubo.model;
-  vec4 d2 = (inv_z_dist1 * (vec4(n, (-dot(nI, c) - lightData.lights[0].cascade_min_splits.z)))) * ubo.model;
-  vec4 d3 = (inv_z_dist2 * (vec4(n, (-dot(nI, c) - lightData.lights[0].cascade_min_splits.w)))) * ubo.model;
-
-  out_blend = vec3(dot(d1, vec4(out_position, 1.0f)), dot(d2, vec4(out_position, 1.0f)), dot(d3, vec4(out_position, 1.0f)));
-
-  
   gl_Position = ubo.projection * view_pos;
 }
