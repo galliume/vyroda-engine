@@ -5,8 +5,8 @@ import std;
 namespace Vyroda
 {
   //default textures const, needs a real assets management (unique id etc.)
-  export inline constexpr std::string VYR_EMPTY{ "_VYR_empty" };
-  export inline constexpr std::string VYR_ERROR{ "_VYR_error" };
+  export inline constexpr std::string VYR_EMPTY{ "_vyr_empty" };
+  export inline constexpr std::string VYR_ERROR{ "_vyr_error" };
   export inline constexpr std::string VYR_SAND{ "sand" };
   export inline constexpr std::string VYR_GRASS{ "grass" };
   export inline constexpr std::string VYR_GROUND{ "ground" };

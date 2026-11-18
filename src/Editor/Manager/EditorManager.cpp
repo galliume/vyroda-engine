@@ -28,7 +28,7 @@ import Engine.Renderer.RendererComponentTypes;
 
 namespace Vyroda {
 
-  static int VYR_test_callback(
+  static int vyr_test_callback(
     ClientData,
     Tcl_Interp* interp,
     int,
@@ -39,7 +39,7 @@ namespace Vyroda {
   }
 
   //@todo fix unused when linux is implemented  
-  static int VYR_get_scene(
+  static int vyr_get_scene(
     [[maybe_unused]]ClientData client_data,
     [[maybe_unused]]Tcl_Interp* interp,
     int,
@@ -106,14 +106,14 @@ namespace Vyroda {
     _explorer_manager->registerCommand(_tcl_interp, _app->getRenderManager());
 
     Tcl_CreateObjCommand(_tcl_interp,
-                  "VYR_test_callback",
-                  VYR_test_callback,
+                  "vyr_test_callback",
+                  vyr_test_callback,
                   &_app->getRenderManager(),
                   nullptr);
 
     Tcl_CreateObjCommand(_tcl_interp,
-      "VYR_get_scene",
-      VYR_get_scene,
+      "vyr_get_scene",
+      vyr_get_scene,
       &_app->getRenderManager(),
       nullptr);
 

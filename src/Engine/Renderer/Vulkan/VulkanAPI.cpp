@@ -2998,13 +2998,13 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     barrier.srcAccessMask = sync_data.srcAccessMask;
     barrier.dstAccessMask = sync_data.dstAccessMask;
 
-    ImageMemoryBarrier VYR_barrier {
+    ImageMemoryBarrier vyr_barrier {
       .barrier = barrier,
       .source_stage = sync_data.source_stage,
       .destination_stage = sync_data.destination_stage
     };
 
-    return VYR_barrier;
+    return vyr_barrier;
     // vkCmdPipelineBarrier(
     //     cmd_buffer,
     //     sync_data.source_stage, sync_data.destination_stage,

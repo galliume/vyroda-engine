@@ -12,7 +12,7 @@ import Engine.Managers.TextureManager;
 import Engine.Managers.ConfigManagerLocator;
 
 namespace Vyroda {
-  static int VYR_list_ambient_sound (
+  static int vyr_list_ambient_sound (
     ClientData,
     Tcl_Interp* interp,
     int,
@@ -38,7 +38,7 @@ namespace Vyroda {
     return TCL_OK;
   }
 
-  static int VYR_play_sound(
+  static int vyr_play_sound(
     ClientData client_data,
     Tcl_Interp* interp,
     int,
@@ -62,15 +62,15 @@ namespace Vyroda {
     {
       Tcl_CreateObjCommand(
         tcl_interp,
-        "VYR_list_ambient_sound",
-        VYR_list_ambient_sound,
+        "vyr_list_ambient_sound",
+        vyr_list_ambient_sound,
         &render_manager,
         nullptr);
 
       Tcl_CreateObjCommand(
         tcl_interp,
-        "VYR_play_sound",
-        VYR_play_sound,
+        "vyr_play_sound",
+        vyr_play_sound,
         &render_manager,
         nullptr);
     }

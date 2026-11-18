@@ -8,6 +8,6 @@ namespace eval Stats {
   grid [ttk::button .c.test_callback -text "Test C++ callback" -command "Stats::call_back"] -column 0 -row 0 -stick w
 
   proc call_back {} {
-    puts [VYR_test_callback arg1 arg2]
+    puts [vyr_test_callback arg1 arg2]
   }
 }

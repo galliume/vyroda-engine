@@ -10,6 +10,6 @@ namespace eval RenderView {
 
   after 100 {
     set tk_hwnd [winfo id .c.render_view.g.scene]
-    VYR_get_scene $tk_hwnd
+    vyr_get_scene $tk_hwnd
   }
 }

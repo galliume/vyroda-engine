@@ -10,6 +10,6 @@ namespace eval Level {
   grid [ttk::button .c.level.g.skybox_button -text "bluesky skybox" -command "Level::update_skybox"] -column 0 -row 1 -sticky w
 
   proc update_skybox {} {
-    puts [VYR_update_skybox]
+    puts [vyr_update_skybox]
   }
 }

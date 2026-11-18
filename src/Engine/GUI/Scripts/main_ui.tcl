@@ -12,7 +12,7 @@ namespace eval MainUI {
   proc quit_game {} {
     
     if {[tk_messageBox -type yesno -icon warning -title "Leave ?" -message "Leave ?"] eq "yes"} {
-      VYR_quit_game
+      vyr_quit_game
     }
   }
 }

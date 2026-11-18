@@ -218,7 +218,7 @@ namespace Vyroda
     RendererContext const& render_context)
   {
 
-    Texture atlas { render_context.textures->at("_VYR_font_atlas")};
+    Texture atlas { render_context.textures->at("_vyr_font_atlas")};
 
     atlas.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,

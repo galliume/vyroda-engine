@@ -149,7 +149,7 @@ namespace Vyroda
 
     FontManager::Text text {
       .id = 0,
-      .name = "_VYR_title",
+      .name = "_vyr_title",
       .text = "₼ Vampyropoda-Studio ₼",
       .position = glm::vec3(0.0f, 100.0f, 0.0f),
       .color = glm::vec3(0.0f, 0.95, 1.f),
@@ -641,7 +641,7 @@ namespace Vyroda
     mesh->setHasShadow(false);
     mesh->setIsIndexed(false);
     mesh->setShaderName("water");
-    mesh->setName("_VYR_water");
+    mesh->setName("_vyr_water");
 
     material_t material{};
     mesh->addMaterial(material);
@@ -661,7 +661,7 @@ namespace Vyroda
     mesh->setHasShadow(false);
     mesh->setIsIndexed(false);
     mesh->setShaderName("text");
-    mesh->setName("_VYR_text_" + std::to_string(entity->getID()));
+    mesh->setName("_vyr_text_" + std::to_string(entity->getID()));
     mesh->setRoot();
 
     material_t material{};

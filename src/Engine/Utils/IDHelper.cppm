@@ -7,7 +7,7 @@ namespace Vyroda
   export using IDType = std::uint64_t;
   export using ComponentTypeID = IDType;
 
-  //inline std::atomic<IDType> _VYR_component_type_global_counter{ 0 };
+  //inline std::atomic<IDType> _vyr_component_type_global_counter{ 0 };
 
   //Unique ID for Entity
   export class GUIDGenerator
@@ -36,7 +36,7 @@ namespace Vyroda
   // public:
   //   static IDType GetID()
   //   {
-  //     static const IDType id = _VYR_component_type_global_counter++;
+  //     static const IDType id = _vyr_component_type_global_counter++;
   //     return id;
   //   }
   // };

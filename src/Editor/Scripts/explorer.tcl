@@ -16,13 +16,13 @@ namespace eval Explorer {
   grid .c.music.musics -column 0 -row 0 -sticky news -padx $::grid_padx -pady $::grid_pady
   grid .c.texture.textures -column 0 -row 0 -sticky news -padx $::grid_padx -pady $::grid_pady
 
-  bind .c.ambient.ambient_sounds <Double-Button-1> { VYR_play_sound [.c.ambient.ambient_sounds curselection] }
+  bind .c.ambient.ambient_sounds <Double-Button-1> { vyr_play_sound [.c.ambient.ambient_sounds curselection] }
 
   .c.tab_explorer add .c.ambient -text "Ambient Sounds"
   .c.tab_explorer add .c.music -text "Musics"
   .c.tab_explorer add .c.texture -text "Textures"
 
   after 100 {
-    VYR_list_ambient_sound
+    vyr_list_ambient_sound
   }
 }
