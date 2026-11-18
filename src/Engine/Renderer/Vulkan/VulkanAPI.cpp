@@ -35,7 +35,7 @@ import Engine.Core.Volk;
 
 namespace Vyroda
 {
-  std::string string_VkResult(VkResult&)
+  static std::string string_VkResult(VkResult&)
   {
     return "to implement";
   }
@@ -103,6 +103,9 @@ VulkanAPI::VulkanAPI(GLFWwindow* window)
 {
 #ifdef VYR_DEBUG_BUILD
   _enable_validation_layers = true;
+#else
+  _enable_validation_layers = false;
+#endif
 
   if (!glfwVulkanSupported()) {
     throw std::runtime_error("vulkan not supported");
@@ -2949,12 +2952,14 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
 
   #ifdef VYR_DEBUG_BUILD
     vkCmdBeginDebugUtilsLabelEXT(buffer, &label);
+  #endif
   }
 
   void VulkanAPI::endMarker([[maybe_unused]] VkCommandBuffer buffer)
   {
   #ifdef VYR_DEBUG_BUILD
     vkCmdEndDebugUtilsLabelEXT(buffer);
+  #endif
   }
 
   void VulkanAPI::waitIdle()

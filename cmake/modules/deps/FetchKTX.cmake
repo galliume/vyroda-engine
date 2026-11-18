@@ -32,3 +32,9 @@ set_target_properties(ktx ktxtools ktx2ktx2 ktx2check ktxinfo ktxsc toktx
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+foreach(target ktx ktxtools ktx2ktx2 ktx2check ktxinfo ktxsc toktx)
+  if(TARGET ${target})
+    target_compile_definitions(${target} PRIVATE FMT_USE_CONSTEVAL=0)
+  endif()
+endforeach()

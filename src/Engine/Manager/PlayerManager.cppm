@@ -39,7 +39,7 @@ namespace Vyroda
       bool _is_init { false };
       bool _moved { false };
       
-      std::string _player_name = "__VYR_NO_PLAYER";
+      std::string _player_name = "__vyr_NO_PLAYER";
       IDType _player_id = 0;
 
       glm::vec3 _position {};

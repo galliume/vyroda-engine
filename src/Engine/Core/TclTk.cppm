@@ -21,6 +21,7 @@ export module Engine.Core.TclTk;
 #undef TCL_EVAL_DIRECT
 #undef TCL_GLOBAL_ONLY
 #undef TCL_DONT_WAIT
+#undef Tcl_Eval
 
 export
 {

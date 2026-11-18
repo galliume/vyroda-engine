@@ -54,6 +54,7 @@ function(set_vyroda_compiler_flags target)
     -Wno-lifetime-safety-intra-tu-suggestions
     -Wno-lifetime-safety-cross-tu-constructor-suggestions
     -Wno-lifetime-safety-cross-tu-suggestions
-    -Wno-lifetime-safety-invalidation)
+    -Wno-lifetime-safety-invalidation
+    -Wno-unused-command-line-argument)
 
 endfunction()
