@@ -8,14 +8,9 @@ namespace Vyroda
 {
   export struct alignas(16) Light
   {
-    glm::mat4 light_space_matrix; // front
+    std::array<glm::mat4, 6> light_space_matrix;
     glm::mat4 projection;
     glm::mat4 view;
-    glm::mat4 light_space_matrix_left;
-    glm::mat4 light_space_matrix_top;
-    glm::mat4 light_space_matrix_right;
-    glm::mat4 light_space_matrix_bottom;
-    glm::mat4 light_space_matrix_back;
     glm::mat4 cascade0;
 
     glm::vec4 ads;              // xyz = ads, w = padding

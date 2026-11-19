@@ -445,7 +445,7 @@ namespace Vyroda
   {
     std::uint32_t pool_size { 1000 };
     Logger::debug("shader_name {}", shader_name);
-    bool offscreen = (shader_name == "shadow_map") ? true : false;
+    bool const offscreen { shader_name == "shadow_map" || shader_name == "csm" };
     bool need_bis{ false };
 
     PipeLineCreateInfo pipeline_create_infos{};
@@ -619,7 +619,7 @@ namespace Vyroda
     _renderer.addPipeline(shader_name, pipeline);
   }
 
-  std::vector<VkPipelineShaderStageCreateInfo> ShaderManager::getShadersInfo(std::string const & shader_name, bool)
+  std::vector<VkPipelineShaderStageCreateInfo> ShaderManager::getShadersInfo(std::string const & shader_name, bool const offscreen)
   {
     std::vector<VkPipelineShaderStageCreateInfo> shaders_infos;
 
@@ -632,12 +632,14 @@ namespace Vyroda
     vertex_info.pName = "main";
     shaders_infos.emplace_back(vertex_info);
 
-    VkPipelineShaderStageCreateInfo frag_info{};
-    frag_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    frag_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    frag_info.module = _shaders->shaders[shader_name]["frag"];
-    frag_info.pName = "main";
-    shaders_infos.emplace_back(frag_info);
+    if (!offscreen) {
+      VkPipelineShaderStageCreateInfo frag_info{};
+      frag_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      frag_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      frag_info.module = _shaders->shaders[shader_name]["frag"];
+      frag_info.pName = "main";
+      shaders_infos.emplace_back(frag_info);
+    }
 
     if (_shaders->shaders[shader_name].contains("geom")) {
       VkPipelineShaderStageCreateInfo geom_info{};

@@ -4,14 +4,9 @@
 #define NR_POINT_LIGHTS 2
 
 struct Light {
-    mat4 light_space_matrix;
+    mat4 light_space_matrix[6];
     mat4 projection;
     mat4 view;
-    mat4 light_space_matrix_left;
-    mat4 light_space_matrix_top;
-    mat4 light_space_matrix_right;
-    mat4 light_space_matrix_bottom;
-    mat4 light_space_matrix_back;
     mat4 cascade0;
 
     vec4 ads;

@@ -34,8 +34,6 @@ namespace Vyroda
 
     if (!mesh.isDirty()) return;
 
-    auto cmd_pool { renderer.getAPI().createCommandPool() };
-
     if (mesh.getUniformBuffers().empty()) {
       Buffer uniformBuffer { renderer.getAPI().createUniformBuffers(1, renderer.getCurrentFrameIndex()) };
       mesh.getUniformBuffers().emplace_back(std::move(uniformBuffer));
@@ -53,12 +51,9 @@ namespace Vyroda
     if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {
       // Logger::debug("create vertex buffer: {}", "basic");
       data->_vertex_buffer = renderer.getAPI().createVertexBuffer(data->_vertices, renderer.getCurrentFrameIndex());
-    } else {
-      //suppose we have to update data
-      {
-        data->_is_dirty = true;
-        renderer.updateVertexBuffer(data, renderer.getCurrentFrameIndex());
-      }
+    } else if (!data->_bones.empty()) {
+      data->_is_dirty = true;
+      renderer.updateVertexBuffer(data, renderer.getCurrentFrameIndex());
     }
 
     if (!data->_indices.empty() && data->_indices_buffer.buffer == VK_NULL_HANDLE) {
@@ -137,16 +132,9 @@ namespace Vyroda
           *mesh.getObjectBuffer(),
           i);
       }
-    } else {
-      auto& desc_buffers { renderer.getAPI().getDescSetBuffers(mesh.getName(), renderer.getCurrentFrameIndex()) };
-      renderer.getAPI().updateStorageBuffer<ObjectBuffer>(
-        desc_buffers.storage,
-        *mesh.getObjectBuffer(),
-        renderer.getCurrentFrameIndex());
     }
     
     mesh.setIsDirty(false);
-    vkDestroyCommandPool(renderer.getDevice(), cmd_pool, nullptr);
   }
 
   void Basic::createDescriptorSet(
@@ -179,7 +167,7 @@ namespace Vyroda
       texture_bump.setSampler(renderer.getAPI().createKTXSampler(
       TextureWrapMode::WRAP,
       TextureWrapMode::WRAP,
-      1));
+      texture_bump.getMipLevels()));
 
     if (texture_bump.getWidth() == 0) {
       texture_bump = render_context.textures->at(VYR_EMPTY);

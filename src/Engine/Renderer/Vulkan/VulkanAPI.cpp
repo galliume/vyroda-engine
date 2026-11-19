@@ -310,8 +310,9 @@ void VulkanAPI::loadRequiredExtensions()
 
   std::vector<char const*> extensions(glfw_ext, glfw_ext + glfw_ext_count);
 
+  extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
+
   if (_enable_validation_layers) {
-      extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
       extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
       //extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME); deprecated
       //extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME); deprecated
@@ -2937,8 +2938,9 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     float const b,
     float const a)
   {
-    //unused in Release
-    [[maybe_unused]] VkDebugUtilsLabelEXT label;
+    if (!_enable_validation_layers || !vkCmdBeginDebugUtilsLabelEXT) return;
+
+    VkDebugUtilsLabelEXT label{};
     label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
     label.pLabelName = name.c_str();
     label.pNext = VK_NULL_HANDLE;
@@ -2952,6 +2954,8 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
 
   void VulkanAPI::endMarker([[maybe_unused]] VkCommandBuffer buffer)
   {
+    if (!_enable_validation_layers || !vkCmdEndDebugUtilsLabelEXT) return;
+
     vkCmdEndDebugUtilsLabelEXT(buffer);
   }
 

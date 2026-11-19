@@ -10,9 +10,4 @@ namespace Vyroda
   {
     return _parallel_manager.get();
   }
-
-  void ParallelManagerLocator::init()
-  {
-    _parallel_manager = std::make_unique<ParallelManager>();
-  }
 }

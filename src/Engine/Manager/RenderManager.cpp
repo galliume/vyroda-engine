@@ -200,7 +200,7 @@ namespace Vyroda
     
       _renderer->start();
       updateBuffers();
-      _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
+      //_renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
       
       drawShadowmap(frame_context);
       drawEntities(frame_context);
@@ -243,113 +243,42 @@ namespace Vyroda
       }
     }
 
-    _all_ids.clear();
-    _all_ids.reserve(
-      3
-      + frame_context.visible_ids.size()
-      + frame_context.transparent_ids.size()
-      + frame_context.texts.size());
+    // ParallelManagerLocator::get()->forEach(
+    //   {
+    //     frame_context.skybox_entity->getID(),
+    //     frame_context.terrain_entity->getID(),
+    //     frame_context.water_entity->getID()
+    //   }, [this, delta_time](auto const id) {
+    //     renderEntity(id, delta_time);
+    //   });
 
-    if (frame_context.skybox_entity) {
-      _all_ids.push_back(frame_context.skybox_entity->getID());
-     }
+    ParallelManagerLocator::get()->forEach(frame_context.visible_ids, [this, delta_time](auto const id) {
+      renderEntity(id, delta_time);
+    });
     
-    if (frame_context.terrain_entity) {
-       _all_ids.push_back(frame_context.terrain_entity->getID());
-     }
+    ParallelManagerLocator::get()->forEach(frame_context.transparent_ids, [this, delta_time](auto const id) {
+      renderEntity(id, delta_time);
+    });
 
-    if (frame_context.water_entity) {
-      _all_ids.push_back(frame_context.water_entity->getID());
-    }
-    
-    for (auto id : frame_context.visible_ids) {
-      _all_ids.push_back(id);
-    }
-    for (auto id : frame_context.transparent_ids) {
-      _all_ids.push_back(id);
-    }
-    for (auto const& e : frame_context.texts) {
-      _all_ids.push_back(e->getID());
-    }
-
-    if (_all_ids.empty()) {
-      return;
-    }
-
-    auto const count { ParallelManagerLocator::get()->size() };
-    auto const chunk_size { _all_ids.size() / count };
-    auto const remainder  { _all_ids.size() % count };
-
-    std::vector<std::function<void()>> tasks;
-    tasks.reserve(count);
-
-    std::size_t offset { 0 };
-    for (std::size_t t { 0 }; t < count; ++t) {
-      auto const n { chunk_size + (t < remainder ? 1 : 0) };
-      auto const ids { std::span{ _all_ids.data() + offset, n } };
-      tasks.emplace_back([ids, delta_time, this]() {
-        for (auto const id : ids) {
-          renderEntity(id, delta_time);
-        }
-      });
-      offset += n;
-    }
-    ParallelManagerLocator::get()->execute(tasks);
+    // ParallelManagerLocator::get()->forEach(frame_context.texts, [this, delta_time](auto const& e) {
+    //   renderEntity(e->getID(), delta_time);
+    // });
   }
 
   void RenderManager::drawShadowmap(FrameContext const& frame_context)
   {
-    // auto const count { ParallelManagerLocator::get()->size() };
-    // auto const chunk_size { frame_context.visible_ids.size() / count };
-    // auto const remainder  { frame_context.visible_ids.size() % count };
+    static constexpr std::array shadow_types { SHADOW_TYPE::CSM, SHADOW_TYPE::SPOT_LIGHT };
 
-    std::vector<std::function<void()>> tasks;
-    //tasks_csm.reserve(count); 
-
-    //std::vector<std::function<void()>> tasks_spot_light;
-    //tasks_spot_light.reserve(count);
-
-    //@todo to make it work, each chunk needs its own pool and cmd buffer
-    // std::size_t offset { 0 };
-    // for (std::size_t t { 0 }; t < count; ++t) {
-    //   auto const n { chunk_size + (t < remainder ? 1 : 0) };
-    //   auto const ids { std::span{frame_context.visible_ids.data() + offset, n } };
-    //   tasks_csm.emplace_back([ids, frame_context, this]() {
-    //     for (auto const id : ids) {
-    //       drawShadowMap(id, SHADOW_TYPE::CSM, frame_context.camera_view_matrix);
-    //     }
-    //   });
-    //   tasks_spot_light.emplace_back([ids, frame_context, this]() {
-    //     for (auto const id : ids) {
-    //       drawShadowMap(id, SHADOW_TYPE::SPOT_LIGHT, frame_context.camera_view_matrix);
-    //     }
-    //   });
-    //   offset += n;
-    // }
-    
-    tasks.emplace_back([&frame_context, this]() {
-      _renderer->startShadowMap(SHADOW_TYPE::CSM);
+    ParallelManagerLocator::get()->forEach(shadow_types, [this, &frame_context](SHADOW_TYPE const type) {
+      _renderer->startShadowMap(type);
       for (auto const id : frame_context.not_clipped_visible_ids) {
-        drawShadowMap(id, SHADOW_TYPE::CSM, frame_context.camera_view_matrix);
+        drawShadowMap(id, type, frame_context.camera_view_matrix);
       }
       for (auto const id : frame_context.not_clipped_transparent_ids) {
-        drawShadowMap(id, SHADOW_TYPE::CSM, frame_context.camera_view_matrix);
+        drawShadowMap(id, type, frame_context.camera_view_matrix);
       }
-      _renderer->endShadowMap(SHADOW_TYPE::CSM);
+      _renderer->endShadowMap(type);
     });
-    
-    tasks.emplace_back([&frame_context, this]() {
-      _renderer->startShadowMap(SHADOW_TYPE::SPOT_LIGHT);
-      for (auto const id : frame_context.not_clipped_visible_ids) {
-        drawShadowMap(id, SHADOW_TYPE::SPOT_LIGHT, frame_context.camera_view_matrix);
-      }
-      for (auto const id : frame_context.not_clipped_transparent_ids) {
-        drawShadowMap(id, SHADOW_TYPE::SPOT_LIGHT, frame_context.camera_view_matrix);
-      }
-      _renderer->endShadowMap(SHADOW_TYPE::SPOT_LIGHT);
-    });
-
-    ParallelManagerLocator::get()->execute(tasks);
   }
 
   void RenderManager::drawEntities(FrameContext const& frame_context)
@@ -364,11 +293,11 @@ namespace Vyroda
       drawEntity(frame_context.terrain_entity->getID(), frame_context.camera_view_matrix);
     }
 
-    std::ranges::for_each(frame_context.not_clipped_visible_ids, [&](const auto& entity) {
+    ParallelManagerLocator::get()->forEach(frame_context.not_clipped_visible_ids, [&](const auto& entity) {
       drawEntity(entity, frame_context.camera_view_matrix, false);
     });
 
-    std::ranges::for_each(frame_context.not_clipped_transparent_ids, [&](const auto& entity) {
+    ParallelManagerLocator::get()->forEach(frame_context.not_clipped_transparent_ids, [&](const auto& entity) {
       drawEntity(entity, frame_context.camera_view_matrix, true);
     });
 
@@ -376,7 +305,7 @@ namespace Vyroda
       drawEntity(frame_context.water_entity->getID(), frame_context.camera_view_matrix);
     }
 
-    std::ranges::for_each(frame_context.texts, [&](auto const& text_entity) {
+    ParallelManagerLocator::get()->forEach(frame_context.texts, [&](auto const& text_entity) {
       drawEntity(text_entity->getID(), frame_context.camera_view_matrix, true);
     });
 

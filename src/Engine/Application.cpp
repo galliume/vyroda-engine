@@ -22,15 +22,12 @@ import Engine.Managers.UIManager;
 
 import Engine.Managers.ConfigManagerLocator;
 import Engine.Managers.InputManagerLocator;
-import Engine.Managers.ParallelManagerLocator;
 
 namespace Vyroda
 {
   void Application::init(bool const editor_mode)
   {
     _start_run = std::chrono::steady_clock::now();
-
-    ParallelManagerLocator::init();
     
     //CommandQueueManagerLocator::init();
     //@todo ugly fix

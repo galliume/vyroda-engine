@@ -39,14 +39,14 @@ namespace Vyroda
     auto const vUp { glm::vec3(0.0f, -1.0f, 0.0f) };
     auto const light_pos { glm::vec3(light.position) };
 
-    light.light_space_matrix_right = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3( 1.0f, 0.0f, 0.0f), vUp);
-    light.light_space_matrix_left = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3(-1.0f, 0.0f, 0.0f), vUp);
-    light.light_space_matrix_top = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3( 0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    light.light_space_matrix_bottom = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-    light.light_space_matrix = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3(0.0f, 0.0f, 1.0f), vUp);
-    light.light_space_matrix_back = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3(0.0f, 0.0f, -1.0f), vUp);
+    light.light_space_matrix[0] = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3( 1.0f, 0.0f, 0.0f), vUp);
+    light.light_space_matrix[1] = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3(-1.0f, 0.0f, 0.0f), vUp);
+    light.light_space_matrix[2] = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3( 0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    light.light_space_matrix[3] = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+    light.light_space_matrix[4] = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3(0.0f, 0.0f, 1.0f), vUp);
+    light.light_space_matrix[5] = light.projection * glm::lookAt(light_pos, light_pos + glm::vec3(0.0f, 0.0f, -1.0f), vUp);
 
-    light.view = light.light_space_matrix;
+    light.view = light.light_space_matrix[4];
 
     Light light2;
     light2.color = glm::vec4(247.f / 255.f, 240.f / 255.f, 157.f / 255.f, 1.0f);
@@ -75,7 +75,7 @@ namespace Vyroda
 
     light3.projection = glm::perspective(glm::radians(45.0f), app_width / app_height, 1.f, 100.f);
     //light3.projection[1][1] *= -1;
-    light3.light_space_matrix = light3.view * light3.projection;
+    light3.light_space_matrix[0] = light3.view * light3.projection;
 
     _spots.emplace_back(light3);
   }
@@ -259,12 +259,12 @@ namespace Vyroda
     _sun.cascade_offset2 = csms.at(2).offset;
     _sun.cascade_offset3 = csms.at(3).offset;
     
-    _sun.light_space_matrix = csms.at(0).render;
-    _sun.light_space_matrix_left = csms.at(1).render;
-    _sun.light_space_matrix_top = csms.at(2).render;
-    _sun.light_space_matrix_right = csms.at(3).render;
-    _sun.light_space_matrix_bottom = _sun.light_space_matrix;//unused
-    _sun.light_space_matrix_back = _sun.light_space_matrix;//unused
+    _sun.light_space_matrix[0] = csms.at(0).render;
+    _sun.light_space_matrix[1] = csms.at(1).render;
+    _sun.light_space_matrix[2] = csms.at(2).render;
+    _sun.light_space_matrix[3] = csms.at(3).render;
+    _sun.light_space_matrix[4] = _sun.light_space_matrix[0];//unused
+    _sun.light_space_matrix[5] = _sun.light_space_matrix[0];//unused
   }
 
   void LightManager::animateAmbientLight(double const delta_time)
@@ -297,37 +297,37 @@ namespace Vyroda
 
     auto const light_position { glm::vec3(light1.position) };
 
-    light1.light_space_matrix_right = light1.projection * glm::lookAt(
+    light1.light_space_matrix[0] = light1.projection * glm::lookAt(
       light_position,
       light_position + glm::vec3(1.0f, 0.0f, 0.0f),
       glm::vec3(0.0f, -1.0f, 0.0f));
 
-    light1.light_space_matrix_left = light1.projection * glm::lookAt(
+    light1.light_space_matrix[1] = light1.projection * glm::lookAt(
       light_position,
       light_position + glm::vec3(-1.0f, 0.0f, 0.0f),
       glm::vec3(0.0f, -1.0f, 0.0f));
 
-    light1.light_space_matrix_top = light1.projection * glm::lookAt(
+    light1.light_space_matrix[2] = light1.projection * glm::lookAt(
       light_position,
       light_position + glm::vec3(0.0f, 1.0f, 0.0f),
       glm::vec3(0.0f, 0.0f, 1.0f));
 
-    light1.light_space_matrix_bottom = light1.projection * glm::lookAt(
+    light1.light_space_matrix[3] = light1.projection * glm::lookAt(
       light_position,
       light_position + glm::vec3(0.0f, -1.0f, 0.0f),
       glm::vec3(0.0f, 0.0f, -1.0f));
 
-    light1.light_space_matrix = light1.projection * glm::lookAt(
+    light1.light_space_matrix[4] = light1.projection * glm::lookAt(
       light_position,
       light_position + glm::vec3(0.0f, 0.0f, 1.0f),
       glm::vec3(0.0f, -1.0f, 0.0f)); //used as light_space_matrix_front
 
-    light1.light_space_matrix_back = light1.projection * glm::lookAt(
+    light1.light_space_matrix[5] = light1.projection * glm::lookAt(
       light_position,
       light_position + glm::vec3(0.0f, 0.0f, -1.0f),
       glm::vec3(0.0f, -1.0f, 0.0f));
 
-    light1.view = light1.light_space_matrix;
+    light1.view = light1.light_space_matrix[4];
   }
 
   glm::vec3 LightManager::hsv2rgb(float h, float s, float v)
@@ -362,6 +362,6 @@ namespace Vyroda
     float near_plane = 1.f, far_plane = 7.5f;
     _sun.projection = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, near_plane, far_plane);
 
-    _sun.light_space_matrix = _sun.projection * _sun.view;
+    _sun.light_space_matrix[0] = _sun.projection * _sun.view;
   }
 }

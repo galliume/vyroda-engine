@@ -68,18 +68,28 @@ namespace Vyroda
         auto const& root_bone { _data->_bones[_data->_root_bone_name] };
         updateBoneTransforms(anim, root_bone.name, glm::mat4(1.0f), duration, elapsed_time);
 
-        auto skinned_vertices { std::views::zip(_data->_vertices, _data->_vertices_bones) };
+        auto* const __restrict vertices { _data->_vertices.data() };
+        auto const* const __restrict vertices_bones { _data->_vertices_bones.data() };
+        auto const* const __restrict bone_matrices { _bone_matrices.data() };
+        auto const vertex_count { std::min(_data->_vertices.size(), _data->_vertices_bones.size()) };
+        auto const indices { std::views::iota(std::size_t{ 0 }, vertex_count) };
 
-        for(auto&& [vertex, bone_data] : skinned_vertices) {
-            glm::vec4 result { glm::vec4(0.0f) };
-            for (std::size_t i { 0 }; i < 4; ++i) {
-              auto const w { bone_data.bone_weights[i] };
-              auto const bone_id { static_cast<std::size_t>(bone_data.bone_ids[i]) };
-              result += _bone_matrices[bone_id] * glm::vec4(bone_data.original_pos, 1.0f) * w;
-            }
-            vertex.pos = result;
-            //vertex_cache.emplace_back(result);
-        }
+        std::for_each(
+          std::execution::par_unseq,
+          indices.begin(),
+          indices.end(),
+          [vertices, vertices_bones, bone_matrices](std::size_t const idx) {
+            auto const& bone_data { vertices_bones[idx] };
+            glm::vec4 const orig_pos { bone_data.original_pos, 1.0f };
+
+            glm::mat4 const skin_matrix =
+                bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[0])] * bone_data.bone_weights[0]
+              + bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[1])] * bone_data.bone_weights[1]
+              + bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[2])] * bone_data.bone_weights[2]
+              + bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[3])] * bone_data.bone_weights[3];
+
+            vertices[idx].pos = skin_matrix * orig_pos;
+          });
 
       if (!animation_info.looping && duration < elapsed_time + 10) {
         _done = true;

@@ -1,90 +1,66 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : enable
-//#extension GL_ARB_shader_viewport_index_layer : enable
+// #extension GL_ARB_shader_viewport_index_layer : enable
 #extension GL_NV_viewport_array2 : enable
 
-struct UBO
-{
+struct UBO {
   mat4 model;
   mat4 projection;
 };
 
-layout(set = 0, binding = 0) readonly uniform UniformBufferObject {
-  UBO ubo;
-};
+layout(set = 0, binding = 0) readonly uniform UniformBufferObject { UBO ubo; };
 
 struct Light {
-    mat4 light_space_matrix;
-    mat4 projection;
-    mat4 view;
-    mat4 light_space_matrix_left;
-    mat4 light_space_matrix_top;
-    mat4 light_space_matrix_right;
-    mat4 light_space_matrix_bottom;
-    mat4 light_space_matrix_back;
-    mat4 cascade0;
+  mat4 light_space_matrix[6];
+  mat4 projection;
+  mat4 view;
+  mat4 cascade0;
 
-    vec4 ads;
-    vec4 clq;
-    vec4 coB;
-    vec4 color;
-    vec4 direction;
-    vec4 position;
+  vec4 ads;
+  vec4 clq;
+  vec4 coB;
+  vec4 color;
+  vec4 direction;
+  vec4 position;
 
-    vec4 cascade_scale1;
-    vec4 cascade_scale2;
-    vec4 cascade_scale3;
-    vec4 cascade_offset1;
-    vec4 cascade_offset2;
-    vec4 cascade_offset3;
+  vec4 cascade_scale1;
+  vec4 cascade_scale2;
+  vec4 cascade_scale3;
+  vec4 cascade_offset1;
+  vec4 cascade_offset2;
+  vec4 cascade_offset3;
 
-    vec4 cascade_min_splits;
-    vec4 cascade_max_splits;
-    vec4 cascade_texel_sizes;
+  vec4 cascade_min_splits;
+  vec4 cascade_max_splits;
+  vec4 cascade_texel_sizes;
 };
 
 #define NR_POINT_LIGHTS 2
 
-layout(std430, binding = 1) readonly buffer LightBuffer {
-    Light lights[];
-} lightData;
+layout(std430, binding = 1) readonly buffer LightBuffer { Light lights[]; }
+lightData;
 
 layout(location = 0) in vec4 tangent;
 layout(location = 1) in vec4 color;
 layout(location = 2) in vec4 position;
 layout(location = 3) in vec4 normal;
 layout(location = 4) in vec2 texture_coord;
-//layout(location = 6) in ivec4 bone_ids;
-//layout(location = 7) in vec4 bone_weights;
-//layout(location = 8) in float total_weight;
-// layout(location = 2) in vec2 texture_coord;
-// layout(location = 3) in vec4 tangent;
-// layout(location = 4) in vec4 color;
+// layout(location = 6) in ivec4 bone_ids;
+// layout(location = 7) in vec4 bone_weights;
+// layout(location = 8) in float total_weight;
+//  layout(location = 2) in vec2 texture_coord;
+//  layout(location = 3) in vec4 tangent;
+//  layout(location = 4) in vec4 color;
 
-layout(location = 0) out float out_length;
+// layout(location = 0) out float out_length;
 
-layout(push_constant) uniform shadowMapConstants
-{
-  mat4 model;
-} pc;
+layout(push_constant) uniform shadowMapConstants { mat4 model; }
+pc;
 
-void main()
-{
+void main() {
   int face = gl_InstanceIndex;
   gl_Layer = face;
 
-  vec4 world_pos = pc.model * position;
-  out_length = length(world_pos - lightData.lights[1].position) * (1.0f / 500.0f);
-
-  mat4 light_matrix;
-  switch (face) {
-    case 0:  light_matrix = lightData.lights[1].light_space_matrix_right;  break;
-    case 1:  light_matrix = lightData.lights[1].light_space_matrix_left;   break;
-    case 2:  light_matrix = lightData.lights[1].light_space_matrix_top;    break;
-    case 3:  light_matrix = lightData.lights[1].light_space_matrix_bottom; break;
-    case 4:  light_matrix = lightData.lights[1].light_space_matrix;        break;
-    default: light_matrix = lightData.lights[1].light_space_matrix_back;   break;
-  }
-
-  gl_Position = light_matrix * world_pos;
-} 
+  gl_Position =
+      lightData.lights[1].light_space_matrix[face] * (pc.model * position);
+}

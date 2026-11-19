@@ -34,6 +34,7 @@ function(set_vyroda_compiler_flags target)
     $<$<CONFIG:DEBUG>:${DEBUG_OPTIONS}>
     $<$<CONFIG:RELEASE>:${RELEASE_OPTIONS}>
     $<$<CONFIG:RELWITHDEBINFO>:${RELWITHDEBINFO_OPTIONS}>
+    $<$<COMPILE_LANGUAGE:CXX>:-fexperimental-library>
     -Weverything
     -fno-strict-aliasing
     -Wno-c++98-compat
@@ -54,6 +55,7 @@ function(set_vyroda_compiler_flags target)
     -Wno-lifetime-safety-intra-tu-suggestions
     -Wno-lifetime-safety-cross-tu-constructor-suggestions
     -Wno-lifetime-safety-cross-tu-suggestions
-    -Wno-lifetime-safety-invalidation)
+    -Wno-lifetime-safety-invalidation
+    -Wno-pass-failed)
 
 endfunction()

@@ -350,7 +350,5 @@ namespace Vyroda
     std::vector<Buffer> _light_buffers;
 
     RendererContext _rendering_context;
-
-    std::vector<IDType> _all_ids{};
   };
 }

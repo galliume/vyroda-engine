@@ -127,9 +127,8 @@ namespace Vyroda
       oetf = "linear";
     }
     if (!std::filesystem::exists(path)) {
-      //--generate-mipmap
       std::string cmd{
-        "ktx create --generate-mipmap --format " + ktx_format + " --convert-oetf " + oetf \
+        "ktx create --generate-mipmap --format " + ktx_format \
         + " --cubemap " + files + " " + path
       };
       Logger::debug("{}", cmd);
@@ -307,11 +306,11 @@ namespace Vyroda
     }
 
     options.append(" --uastc-quality " + std::to_string(quality));
-    //    options.append(" --assign-oetf " + oetf);
+    options.append(" --assign-tf " + oetf);
 
     if (!std::filesystem::exists(file_name_ktx)) {
       std::string cmd{
-        "ktx create  --format " + ktx_format \
+        "ktx create --generate-mipmap --format " + ktx_format \
         + options + " \"" + file_name.string() + "\" \"" + file_name_ktx.string() + "\" "
       };
       Logger::debug("{}", cmd);
