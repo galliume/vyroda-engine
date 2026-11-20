@@ -590,7 +590,7 @@ namespace Vyroda
 
         Vertex vertex{};
 
-        mesh_data.positions.emplace_back(vertices.x, vertices.y, vertices.z, 1.0f);
+        mesh_data.positions.emplace_back(vertices.x, vertices.y, vertices.z);
         //if (flip_Y) vertex.pos.y *= -1.0f;
 
         if (mesh->HasNormals()) {

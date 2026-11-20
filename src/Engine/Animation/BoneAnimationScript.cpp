@@ -88,7 +88,7 @@ namespace Vyroda
               + bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[2])] * bone_data.bone_weights[2]
               + bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[3])] * bone_data.bone_weights[3];
 
-            positions[idx] = skin_matrix * orig_pos;
+            positions[idx] = glm::vec3(skin_matrix * orig_pos);
           });
 
       if (!animation_info.looping && duration < elapsed_time + 10) {

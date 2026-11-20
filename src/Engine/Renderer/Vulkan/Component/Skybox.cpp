@@ -27,25 +27,25 @@ namespace Vyroda
     stage_flag_bits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     if (!mesh.isDirty()) return;
-    std::vector<glm::vec4> const positions {
+    std::vector<glm::vec3> const positions {
         // Back face
-        {-1.f, 1.f,-1.f, 0.0f}, {-1.f,-1.f,-1.f, 0.0f}, { 1.f,-1.f,-1.f, 0.0f},
-        { 1.f,-1.f,-1.f, 0.0f}, { 1.f, 1.f,-1.f, 0.0f}, {-1.f, 1.f,-1.f, 0.0f},
+        {-1.f, 1.f,-1.f}, {-1.f,-1.f,-1.f}, { 1.f,-1.f,-1.f},
+        { 1.f,-1.f,-1.f}, { 1.f, 1.f,-1.f}, {-1.f, 1.f,-1.f},
         // Left face
-        {-1.f,-1.f, 1.f, 0.0f}, {-1.f,-1.f,-1.f, 0.0f}, {-1.f, 1.f,-1.f, 0.0f},
-        {-1.f, 1.f,-1.f, 0.0f}, {-1.f, 1.f, 1.f, 0.0f}, {-1.f,-1.f, 1.f, 0.0f},
+        {-1.f,-1.f, 1.f}, {-1.f,-1.f,-1.f}, {-1.f, 1.f,-1.f},
+        {-1.f, 1.f,-1.f}, {-1.f, 1.f, 1.f}, {-1.f,-1.f, 1.f},
         // Right face
-        { 1.f,-1.f,-1.f, 0.0f}, { 1.f,-1.f, 1.f, 0.0f}, { 1.f, 1.f, 1.f, 0.0f},
-        { 1.f, 1.f, 1.f, 0.0f}, { 1.f, 1.f,-1.f, 0.0f}, { 1.f,-1.f,-1.f, 0.0f},
+        { 1.f,-1.f,-1.f}, { 1.f,-1.f, 1.f}, { 1.f, 1.f, 1.f},
+        { 1.f, 1.f, 1.f}, { 1.f, 1.f,-1.f}, { 1.f,-1.f,-1.f},
         // Front face
-        {-1.f,-1.f, 1.f, 0.0f}, {-1.f, 1.f, 1.f, 0.0f}, { 1.f, 1.f, 1.f, 0.0f},
-        { 1.f, 1.f, 1.f, 0.0f}, { 1.f,-1.f, 1.f, 0.0f}, {-1.f,-1.f, 1.f, 0.0f},
+        {-1.f,-1.f, 1.f}, {-1.f, 1.f, 1.f}, { 1.f, 1.f, 1.f},
+        { 1.f, 1.f, 1.f}, { 1.f,-1.f, 1.f}, {-1.f,-1.f, 1.f},
         // Top face
-        {-1.f, 1.f,-1.f, 0.0f}, { 1.f, 1.f,-1.f, 0.0f}, { 1.f, 1.f, 1.f, 0.0f},
-        { 1.f, 1.f, 1.f, 0.0f}, {-1.f, 1.f, 1.f, 0.0f}, {-1.f, 1.f,-1.f, 0.0f},
+        {-1.f, 1.f,-1.f}, { 1.f, 1.f,-1.f}, { 1.f, 1.f, 1.f},
+        { 1.f, 1.f, 1.f}, {-1.f, 1.f, 1.f}, {-1.f, 1.f,-1.f},
         // Bottom face
-        {-1.f,-1.f,-1.f, 0.0f}, {-1.f,-1.f, 1.f, 0.0f}, { 1.f,-1.f,-1.f, 0.0f},
-        { 1.f,-1.f,-1.f, 0.0f}, {-1.f,-1.f, 1.f, 0.0f}, { 1.f,-1.f, 1.f, 0.0f}
+        {-1.f,-1.f,-1.f}, {-1.f,-1.f, 1.f}, { 1.f,-1.f,-1.f},
+        { 1.f,-1.f,-1.f}, {-1.f,-1.f, 1.f}, { 1.f,-1.f, 1.f}
     };
     std::vector<Vertex> const vertices(positions.size(), Vertex{{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {1.f,0.f,0.f,0.f}, {1.f,0.f}});
     auto cmd_pool = renderer.getAPI().createCommandPool();

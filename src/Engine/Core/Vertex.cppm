@@ -42,7 +42,7 @@ namespace Vyroda
     {
       VkVertexInputBindingDescription bindingDescription{};
       bindingDescription.binding = 0;
-      bindingDescription.stride = sizeof(glm::vec4);
+      bindingDescription.stride = sizeof(glm::vec3);
       bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
       return bindingDescription;
@@ -53,7 +53,7 @@ namespace Vyroda
       VkVertexInputAttributeDescription attributeDescription{};
       attributeDescription.binding = 0;
       attributeDescription.location = 2;
-      attributeDescription.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+      attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
       attributeDescription.offset = 0;
 
       return attributeDescription;
@@ -62,9 +62,9 @@ namespace Vyroda
     static std::array<VkVertexInputBindingDescription, 2> getBindingDescriptions()
     {
       std::array<VkVertexInputBindingDescription, 2> bindingDescriptions{};
-      // Binding 0: Position stream (16 bytes per vertex)
+      // Binding 0: Position stream (12 bytes per vertex)
       bindingDescriptions[0].binding = 0;
-      bindingDescriptions[0].stride = sizeof(glm::vec4);
+      bindingDescriptions[0].stride = sizeof(glm::vec3);
       bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
       // Binding 1: Shading attribute stream (64 bytes per vertex)
@@ -89,10 +89,10 @@ namespace Vyroda
       attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
       attributeDescriptions[1].offset = offsetof(Vertex, color);
 
-      // Location 2: Position (vec4, Binding 0)
+      // Location 2: Position (vec3, Binding 0)
       attributeDescriptions[2].binding = 0;
       attributeDescriptions[2].location = 2;
-      attributeDescriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+      attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
       attributeDescriptions[2].offset = 0;
 
       // Location 3: Normal (vec4)

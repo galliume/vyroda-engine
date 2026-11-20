@@ -107,7 +107,7 @@ namespace Vyroda
 
   export class VulkanAPI
   {
-  public:
+    public:
     VulkanAPI(GLFWwindow* window);
     ~VulkanAPI();
 
@@ -195,7 +195,7 @@ namespace Vyroda
       VkDeviceMemory& device_memory);
 
     Buffer createPositionBuffer(
-      std::vector<glm::vec4> const& positions,
+      std::vector<glm::vec3> const& positions,
       std::size_t const image_index);
 
     Buffer createVertexBuffer(

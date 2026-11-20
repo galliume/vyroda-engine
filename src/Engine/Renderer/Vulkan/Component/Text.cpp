@@ -33,7 +33,7 @@ namespace Vyroda
 
     if (!mesh.isDirty()) return;
 
-    std::vector<glm::vec4> positions;
+    std::vector<glm::vec3> positions;
     std::vector<Vertex> vertices;
     
     auto const screen_width{
@@ -80,12 +80,12 @@ namespace Vyroda
       float u1{ (ch.x_offset + ch.size.x) / width };
       float v1{ ch.y_offset / height };
 
-      positions.emplace_back(xpos, ypos+h, 0.f, 1.f);
-      positions.emplace_back(xpos, ypos, 0.f, 1.f);
-      positions.emplace_back(xpos+w, ypos, 0.f, 1.f);
-      positions.emplace_back(xpos, ypos+h, 0.f, 1.f);
-      positions.emplace_back(xpos+w, ypos, 0.f, 1.f);
-      positions.emplace_back(xpos+w, ypos+h, 0.f, 1.f);
+      positions.emplace_back(xpos, ypos+h, 0.f);
+      positions.emplace_back(xpos, ypos, 0.f);
+      positions.emplace_back(xpos+w, ypos, 0.f);
+      positions.emplace_back(xpos, ypos+h, 0.f);
+      positions.emplace_back(xpos+w, ypos, 0.f);
+      positions.emplace_back(xpos+w, ypos+h, 0.f);
 
       vertices.emplace_back(Vertex{ tangent, _color, normal, {u0, v0} });
       vertices.emplace_back(Vertex{ tangent, _color, normal, {u0, v1} });

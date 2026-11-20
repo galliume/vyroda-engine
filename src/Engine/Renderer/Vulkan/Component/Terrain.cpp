@@ -40,7 +40,7 @@ namespace Vyroda
 
     if (!mesh.isDirty()) return;
 
-    std::vector<glm::vec4> positions {};
+    std::vector<glm::vec3> positions {};
     std::vector<Vertex> vertices {};
     float const width { static_cast<float>(render_context.terrain->getWidth()) };
     float const height { static_cast<float>(render_context.terrain->getHeight()) };
@@ -58,10 +58,10 @@ namespace Vyroda
         float const fi1 { static_cast<float>(i + 1) };
         float const fj1 { static_cast<float>(j + 1) };
 
-        positions.emplace_back(-width/2.0f + width*fi/fRez,  y, -height/2.0f + height*fj/fRez,  1.0f);
-        positions.emplace_back(-width/2.0f + width*fi1/fRez, y, -height/2.0f + height*fj/fRez,  1.0f);
-        positions.emplace_back(-width/2.0f + width*fi/fRez,  y, -height/2.0f + height*fj1/fRez, 1.0f);
-        positions.emplace_back(-width/2.0f + width*fi1/fRez, y, -height/2.0f + height*fj1/fRez, 1.0f);
+        positions.emplace_back(-width/2.0f + width*fi/fRez,  y, -height/2.0f + height*fj/fRez);
+        positions.emplace_back(-width/2.0f + width*fi1/fRez, y, -height/2.0f + height*fj/fRez);
+        positions.emplace_back(-width/2.0f + width*fi/fRez,  y, -height/2.0f + height*fj1/fRez);
+        positions.emplace_back(-width/2.0f + width*fi1/fRez, y, -height/2.0f + height*fj1/fRez);
 
         vertices.push_back(Vertex{ zeroVec4, zeroVec4, defaultNormal, { fi / fRez,  fj / fRez } });
         vertices.push_back(Vertex{ zeroVec4, zeroVec4, defaultNormal, { fi1 / fRez, fj / fRez } });

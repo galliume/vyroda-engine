@@ -165,6 +165,17 @@ namespace Vyroda
       void setShadowMapResolution(std::uint32_t const resolution) { _shadow_map_resolution = resolution; }
       void setPointShadowMapResolution(std::uint32_t const resolution) { _point_shadow_map_resolution = resolution; }
 
+      bool needsPointShadowUpdate() const
+      {
+        return (_point_shadow_dirty_mask.load(std::memory_order_relaxed) & (1u << _current_frame)) != 0u;
+      }
+
+      void invalidatePointShadowMap()
+      {
+        std::uint32_t const all_frames_mask { (1u << _max_frames_in_flight) - 1u };
+        _point_shadow_dirty_mask.store(all_frames_mask, std::memory_order_relaxed);
+      }
+
   private:
     std::uint32_t _max_frames_in_flight{ 3 };
     std::uint32_t _shadow_map_resolution { 2048 };
@@ -250,6 +261,7 @@ namespace Vyroda
     std::vector<VkImageView> _depthmap_imageviews3;
     std::vector<VkSampler> _depthmap_samplers3;
     bool _update_shadow_map { true };
+    std::atomic<std::uint32_t> _point_shadow_dirty_mask { 0u };
 
     std::unordered_map<std::string, VulkanPipeline> _pipelines;
 

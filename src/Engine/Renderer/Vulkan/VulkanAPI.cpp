@@ -2045,10 +2045,10 @@ Buffer VulkanAPI::createIndexBuffer(
 }
 
 Buffer VulkanAPI::createPositionBuffer(
-  std::vector<glm::vec4> const& positions,
+  std::vector<glm::vec3> const& positions,
   std::size_t const image_index)
 {
-  VkDeviceSize const buffer_size { sizeof(glm::vec4) * positions.size() };
+  VkDeviceSize const buffer_size { sizeof(glm::vec3) * positions.size() };
   auto & staging_buffer { _staging_buffer[image_index] };
   std::size_t const current_offset { reserveStagingMemoryOffset(buffer_size, image_index) };
 

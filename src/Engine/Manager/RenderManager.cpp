@@ -267,9 +267,7 @@ namespace Vyroda
 
   void RenderManager::drawShadowmap(FrameContext const& frame_context)
   {
-    static constexpr std::array shadow_types { SHADOW_TYPE::CSM, SHADOW_TYPE::SPOT_LIGHT };
-
-    ParallelManagerLocator::get()->forEach(shadow_types, [this, &frame_context](SHADOW_TYPE const type) {
+    auto const record_shadow_pass = [this, &frame_context](SHADOW_TYPE const type) {
       _renderer->startShadowMap(type);
       for (auto const id : frame_context.not_clipped_visible_ids) {
         drawShadowMap(id, type, frame_context.camera_view_matrix);
@@ -278,7 +276,14 @@ namespace Vyroda
         drawShadowMap(id, type, frame_context.camera_view_matrix);
       }
       _renderer->endShadowMap(type);
-    });
+    };
+
+    if (_renderer->needsPointShadowUpdate()) {
+      static constexpr std::array shadow_types { SHADOW_TYPE::CSM, SHADOW_TYPE::SPOT_LIGHT };
+      ParallelManagerLocator::get()->forEach(shadow_types, record_shadow_pass);
+    } else {
+      record_shadow_pass(SHADOW_TYPE::CSM);
+    }
   }
 
   void RenderManager::drawEntities(FrameContext const& frame_context)
@@ -395,6 +400,9 @@ namespace Vyroda
       if (mesh->isDirty()) {
         (*rdr_impl)(*_renderer.get(), *mesh, getRendererContext(camera_view_matrix));
         mesh->setIsDirty(false);
+        if (mesh->hasShadow()) {
+          _renderer->invalidatePointShadowMap();
+        }
       }
       RendererContext renderer_info { getRendererContext(camera_view_matrix) };
       renderer_info.stage_flag_bits = rdr_impl->getShaderStageFlags();

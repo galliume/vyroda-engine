@@ -33,7 +33,7 @@ namespace Vyroda
     std::string _ao;
     std::string _base_color;
     std::string _transmission;
-    std::vector<glm::vec4> _positions;
+    std::vector<glm::vec3> _positions;
     std::vector<Vertex> _vertices;
     std::vector<VertexBones> _vertices_bones;
     std::vector<std::uint32_t> _indices;

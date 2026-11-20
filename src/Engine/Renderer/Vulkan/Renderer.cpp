@@ -26,6 +26,7 @@ namespace Vyroda
     _swapchain = _vulkan->createSwapChain(_images);
 
     _max_frames_in_flight = _vulkan->getImageCount();
+    invalidatePointShadowMap();
 
     auto const buffer_size { _max_frames_in_flight };
 
@@ -733,6 +734,10 @@ namespace Vyroda
     //VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
     _draw_cmds[_current_frame].insert(cmd_buffer, thread_id, false, flags);
 
+    if (shadow_type != SHADOW_TYPE::CSM) {
+      _point_shadow_dirty_mask.fetch_and(~(1u << _current_frame), std::memory_order_relaxed);
+    }
+
     _update_shadow_map = false;
   }
 
@@ -1004,7 +1009,7 @@ namespace Vyroda
     std::size_t const image_index)
   {
     std::lock_guard<std::mutex> guard(_mutex_vertices_update);
-    VkDeviceSize const buffer_size { sizeof(glm::vec4) * data->_positions.size() };
+    VkDeviceSize const buffer_size { sizeof(glm::vec3) * data->_positions.size() };
     auto const current_offset { _vulkan->reserveStagingMemoryOffset(buffer_size, image_index) };
     void* void_data { _vulkan->getStagingMemoryPtr(image_index) };
     std::memcpy(static_cast<char*>(void_data) + current_offset, data->_positions.data(), static_cast<std::size_t>(buffer_size));
