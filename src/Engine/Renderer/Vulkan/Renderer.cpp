@@ -424,7 +424,7 @@ namespace Vyroda
       frame_writes[1].dstSet = desc_set;
       frame_writes[1].dstBinding = 5;
       frame_writes[1].dstArrayElement = 0;
-      frame_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      frame_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       frame_writes[1].descriptorCount = 1;
       frame_writes[1].pBufferInfo = &light_info;
 

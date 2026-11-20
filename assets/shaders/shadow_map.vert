@@ -37,7 +37,7 @@ struct Light {
 
 #define NR_POINT_LIGHTS 2
 
-layout(std430, binding = 1) readonly buffer LightBuffer { Light lights[]; }
+layout(std140, binding = 1) uniform LightBuffer { Light lights[3]; }
 lightData;
 
 layout(location = 2) in vec3 position;
@@ -46,9 +46,10 @@ layout(push_constant) uniform shadowMapConstants { mat4 model; }
 pc;
 
 void main() {
-  gl_Layer = gl_InstanceIndex;
+  int face = gl_InstanceIndex;
+  gl_Layer = face;
   vec3 world = mat3(pc.model) * position + pc.model[3].xyz;
-  mat4 light_vp = lightData.lights[1].light_space_matrix[gl_Layer];
+  mat4 light_vp = lightData.lights[1].light_space_matrix[face];
 
   gl_Position = light_vp[0] * world.x + light_vp[1] * world.y +
                 light_vp[2] * world.z + light_vp[3];

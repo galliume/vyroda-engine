@@ -288,6 +288,64 @@ namespace Vyroda
 
     void initMemoryPool();
 
+    template <typename T>
+    Buffer createUniformBuffer(
+      T const& uniform_data,
+      std::size_t const image_index)
+    {
+      std::lock_guard<std::recursive_mutex> guard(_mutex_staging_buffer);
+      VkDeviceSize const buffer_size { sizeof(T) };
+
+      auto & staging_buffer { _staging_buffer.at(image_index) };
+      std::size_t const current_offset { reserveStagingMemoryOffset(buffer_size, image_index) };
+
+      std::memcpy(static_cast<char*>(_staging_data_ptr.at(image_index)) + current_offset, &uniform_data, static_cast<std::size_t>(buffer_size));
+
+      auto const flags { VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT };
+      VkBuffer buffer { createBuffer(buffer_size, flags) };
+      VkMemoryRequirements mem_requirements;
+      vkGetBufferMemoryRequirements(_device, buffer, &mem_requirements);
+
+      auto const memory_type { findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) };
+      VkDeviceSize const size { mem_requirements.size };
+
+      auto device_memory { _device_memory_pool->get(
+        _device,
+        size,
+        memory_type,
+        flags,
+        mem_requirements.alignment,
+        DeviceMemoryPool::DeviceBufferType::UNIFORM) };
+
+      auto const index { device_memory->bindBufferToMemory(buffer, size, mem_requirements.alignment) };
+      auto const offset { device_memory->getOffset(index) };
+
+      addCopyBufferRequest(staging_buffer, buffer, buffer_size, image_index, current_offset);
+
+      return Buffer {
+        .buffer = std::move(buffer),
+        .memory = static_cast<void*>(device_memory),
+        .offset = offset,
+        .size = size,
+        .index = index };
+    }
+
+    template <typename T>
+    void updateUniformBuffer(Buffer& buffer, T const& uniform_data, std::size_t const image_index)
+    {
+      VkDeviceSize const buffer_size { sizeof(T) };
+      std::size_t const current_offset { reserveStagingMemoryOffset(buffer_size, image_index) };
+
+      std::memcpy(static_cast<char*>(_staging_data_ptr[image_index]) + current_offset, &uniform_data, static_cast<std::size_t>(buffer_size));
+
+      addCopyBufferRequest(
+        _staging_buffer[image_index],
+        buffer.buffer,
+        buffer_size,
+        image_index,
+        current_offset);
+    }
+
     template <IsObjectBufferOrLightBuffer T>
     Buffer createStorageBuffers(
       T const& storage_buffer,

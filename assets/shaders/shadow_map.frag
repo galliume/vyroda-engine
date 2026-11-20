@@ -29,7 +29,7 @@ struct Light {
 
 #define NR_POINT_LIGHTS 2
 
-layout(std430, binding = 1) readonly buffer LightBuffer { Light lights[]; }
+layout(std140, binding = 1) uniform LightBuffer { Light lights[3]; }
 lightData;
 
 layout(push_constant) uniform shadowMapConstants { mat4 model; }

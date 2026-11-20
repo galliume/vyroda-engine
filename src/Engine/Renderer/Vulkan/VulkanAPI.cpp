@@ -1762,7 +1762,7 @@ void VulkanAPI::updateDescriptorSets(
     desc_writes[5].dstSet = descset;
     desc_writes[5].dstBinding = 5;
     desc_writes[5].dstArrayElement = 0;
-    desc_writes[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    desc_writes[5].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     desc_writes[5].descriptorCount = static_cast<std::uint32_t>(light_buffer_infos.size());
     desc_writes[5].pBufferInfo = light_buffer_infos.data();
 

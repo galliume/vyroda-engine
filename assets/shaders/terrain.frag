@@ -66,7 +66,7 @@ layout(location = 9) in vec4 in_cascade_coord;
 layout(location = 13) in vec3 in_blend;
 
 layout(binding = 1) uniform sampler2D tex_sampler[7];
-layout(std430, binding = 5) readonly buffer LightBuffer { Light lights[]; }
+layout(std140, binding = 5) uniform LightBuffer { Light lights[3]; }
 lightData;
 layout(binding = 4) uniform samplerCube env_sampler[1];
 layout(binding = 6) uniform sampler2DArrayShadow csm;

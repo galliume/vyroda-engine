@@ -51,8 +51,8 @@ layout(push_constant) uniform constants
 
 layout(binding = 1) uniform sampler2D tex_sampler[5];
 
-layout(std430, binding = 5) readonly buffer LightBuffer {
-    Light lights[];
+layout(std140, binding = 5) uniform LightBuffer {
+    Light lights[3];
 } lightData;
 
 layout(location = 0) in vec2 in_texture_coord[];

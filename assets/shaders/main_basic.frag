@@ -120,7 +120,7 @@ layout(binding = 3) uniform samplerCubeShadow tex_shadow_sampler;
 
 layout(binding = 4) uniform samplerCube env_sampler[];
 
-layout(std430, binding = 5) readonly buffer LightBuffer { Light lights[]; }
+layout(std140, binding = 5) uniform LightBuffer { Light lights[3]; }
 lightData;
 
 layout(binding = 6) uniform sampler2DArrayShadow csm;

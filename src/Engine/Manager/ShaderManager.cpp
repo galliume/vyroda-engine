@@ -149,7 +149,7 @@ namespace Vyroda
       VkDescriptorSetLayoutBinding light_storage_binding{};
       light_storage_binding.binding = 5;
       light_storage_binding.descriptorCount = 1;
-      light_storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      light_storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       light_storage_binding.pImmutableSamplers = nullptr;
       light_storage_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
@@ -208,7 +208,7 @@ namespace Vyroda
       VkDescriptorSetLayoutBinding light_storage_binding{};
       light_storage_binding.binding = 5;
       light_storage_binding.descriptorCount = 1;
-      light_storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      light_storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       light_storage_binding.pImmutableSamplers = nullptr;
       light_storage_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
@@ -271,7 +271,7 @@ namespace Vyroda
       VkDescriptorSetLayoutBinding storage_binding{};
       storage_binding.binding = 1;
       storage_binding.descriptorCount = 1;
-      storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       storage_binding.pImmutableSamplers = nullptr;
       storage_binding.stageFlags =
         VK_SHADER_STAGE_VERTEX_BIT
@@ -326,7 +326,7 @@ namespace Vyroda
       VkDescriptorSetLayoutBinding light_storage_binding{};
       light_storage_binding.binding = 5;
       light_storage_binding.descriptorCount = 1;
-      light_storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      light_storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       light_storage_binding.pImmutableSamplers = nullptr;
       light_storage_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
         | VK_SHADER_STAGE_FRAGMENT_BIT
@@ -396,7 +396,7 @@ namespace Vyroda
       VkDescriptorSetLayoutBinding light_storage_binding{};
       light_storage_binding.binding = 5;
       light_storage_binding.descriptorCount = 1;
-      light_storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      light_storage_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       light_storage_binding.pImmutableSamplers = nullptr;
       light_storage_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
         | VK_SHADER_STAGE_FRAGMENT_BIT
@@ -462,7 +462,7 @@ namespace Vyroda
     std::vector<VkDescriptorPoolSize> poolSizes{};
     VkDescriptorPoolSize dpsUbo;
     dpsUbo.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    dpsUbo.descriptorCount = pool_size;
+    dpsUbo.descriptorCount = pool_size * 2;
 
     VkDescriptorPoolSize dpsIS;
     dpsIS.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;

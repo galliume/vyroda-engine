@@ -98,7 +98,7 @@ layout(set = 0, binding = 2) readonly buffer ObjectBuffer {
   Material material;
 };
 
-layout(std430, binding = 5) readonly buffer LightBuffer { Light lights[]; }
+layout(std140, binding = 5) uniform LightBuffer { Light lights[3]; }
 lightData;
 
 void main() {

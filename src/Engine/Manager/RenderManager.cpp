@@ -78,7 +78,7 @@ namespace Vyroda
     
     for (std::size_t i { 0 }; i < _light_buffers.size(); ++i) {
       LightObjectBuffer light_object_buffer{};
-      _light_buffers[i] = _renderer->getAPI().createStorageBuffers(light_object_buffer, _renderer->getCurrentFrameIndex());
+      _light_buffers[i] = _renderer->getAPI().createUniformBuffer(light_object_buffer, _renderer->getCurrentFrameIndex());
     }
     _renderer->getAPI().commitCopyBuffer(_renderer->getCurrentFrameIndex());
 
@@ -446,7 +446,7 @@ namespace Vyroda
 
     auto const frame_index { _renderer->getCurrentFrameIndex() };
 
-    _renderer->getAPI().updateStorageBuffer<LightObjectBuffer>(
+    _renderer->getAPI().updateUniformBuffer<LightObjectBuffer>(
       _light_buffers.at(frame_index), light_object_buffer, frame_index);
 
     VkDescriptorBufferInfo const light_buffer_info {
@@ -481,7 +481,7 @@ namespace Vyroda
       writes[1].dstSet = descset;
       writes[1].dstBinding = 1;
       writes[1].dstArrayElement = 0;
-      writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      writes[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       writes[1].descriptorCount = 1;
       writes[1].pBufferInfo = &light_buffer_info;
 
