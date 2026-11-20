@@ -24,6 +24,7 @@ target_sources(Core
         MaterialTypes.cppm
         GLM.cppm
         ktx.cppm
+        MeshOptimizer.cppm
         MeshTypes.cppm
         MiniAudio.cppm
         PlpTypedef.cppm
@@ -55,6 +56,7 @@ target_link_libraries(
     glfw
     ktx
     lua
+    meshoptimizer
     miniaudio
     nlohmann_json
     stb

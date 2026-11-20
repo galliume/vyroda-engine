@@ -11,6 +11,7 @@ module Engine.Core.AssimpLoader;
 import std;
 
 import Engine.Core.GLM;
+import Engine.Core.MeshOptimizer;
 
 namespace Vyroda
 {
@@ -650,15 +651,15 @@ namespace Vyroda
         mesh_data.vertices.emplace_back(std::move(vertex));
       }
 
+      mesh_data.indices.reserve(static_cast<std::size_t>(mesh->mNumFaces) * 3u);
+      mesh_data.material_ID = mesh->mMaterialIndex;
+
       for (std::uint32_t f{ 0 }; f < mesh->mNumFaces; f++) {
         aiFace const* face = &mesh->mFaces[f];
-
-        mesh_data.indices.reserve(face->mNumIndices);
 
         for (std::uint32_t j{ 0 }; j < face->mNumIndices; j++) {
           mesh_data.indices.push_back(face->mIndices[j]);
         }
-        mesh_data.material_ID = mesh->mMaterialIndex;
       }
 
       if (mesh->HasBones()) {
@@ -751,7 +752,72 @@ namespace Vyroda
           mesh_data.vertices_bones[vertex_id] = std::move(vertex_bones);
         }
       }
-      data.emplace_back(mesh_data);
+      if (!mesh_data.indices.empty() && !mesh_data.positions.empty()
+          && (mesh_data.indices.size() % 3u == 0u)) {
+        std::size_t const index_count { mesh_data.indices.size() };
+        std::size_t const vertex_count { mesh_data.positions.size() };
+
+        meshopt_optimizeVertexCache(
+          mesh_data.indices.data(),
+          mesh_data.indices.data(),
+          index_count,
+          vertex_count);
+
+        meshopt_optimizeOverdraw(
+          mesh_data.indices.data(),
+          mesh_data.indices.data(),
+          index_count,
+          &mesh_data.positions[0].x,
+          vertex_count,
+          sizeof(glm::vec3),
+          1.05f);
+
+        std::vector<std::uint32_t> remap(vertex_count);
+        std::size_t const unique_vertices {
+          meshopt_optimizeVertexFetchRemap(
+            remap.data(),
+            mesh_data.indices.data(),
+            index_count,
+            vertex_count)
+        };
+
+        meshopt_remapIndexBuffer(
+          mesh_data.indices.data(),
+          mesh_data.indices.data(),
+          index_count,
+          remap.data());
+
+        std::vector<glm::vec3> remapped_positions(unique_vertices);
+        meshopt_remapVertexBuffer(
+          remapped_positions.data(),
+          mesh_data.positions.data(),
+          vertex_count,
+          sizeof(glm::vec3),
+          remap.data());
+        mesh_data.positions = std::move(remapped_positions);
+
+        std::vector<Vertex> remapped_vertices(unique_vertices);
+        meshopt_remapVertexBuffer(
+          remapped_vertices.data(),
+          mesh_data.vertices.data(),
+          vertex_count,
+          sizeof(Vertex),
+          remap.data());
+        mesh_data.vertices = std::move(remapped_vertices);
+
+        if (!mesh_data.vertices_bones.empty()) {
+          std::vector<VertexBones> remapped_bones(unique_vertices);
+          meshopt_remapVertexBuffer(
+            remapped_bones.data(),
+            mesh_data.vertices_bones.data(),
+            vertex_count,
+            sizeof(VertexBones),
+            remap.data());
+          mesh_data.vertices_bones = std::move(remapped_bones);
+        }
+      }
+
+      data.emplace_back(std::move(mesh_data));
     }
 
     for (std::uint32_t i{ 0 }; i < node->mNumChildren; i++) {

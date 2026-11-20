@@ -9,6 +9,7 @@ set(GLFW_TAG 3.5.1) #https://github.com/glfw/glfw/tags
 set(GLM_TAG 1.0.3) #https://github.com/g-truc/glm/tags
 set(KTX_TAG v4.4.2) #https://github.com/KhronosGroup/KTX-Software/tags
 set(LUA_TAG v5.5.1) #https://github.com/lua/lua/tags
+set(MESHOPTIMIZER_TAG v1.3) #https://github.com/zeux/meshoptimizer/tags
 set(MINIAUDIO_TAG  0.11.26) #https://github.com/mackron/miniaudio/tags
 set(NH_JSON_TAG v3.12.0) #https://github.com/nlohmann/json/tags
 set(STB_TAG master) #https://github.com/nothings/stb
@@ -28,6 +29,7 @@ include(deps/FetchGLM)
 include(deps/FetchFMT)
 include(deps/FetchKTX)
 include(deps/FetchLua)
+include(deps/FetchMeshOptimizer)
 include(deps/FetchMiniAudio)
 include(deps/FetchNlohmannJson)
 include(deps/FetchSTB)
