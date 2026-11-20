@@ -24,6 +24,14 @@ namespace Vyroda
     HEIGHT
   };
 
+  export struct TextureLoadRequest
+  {
+    std::string name{};
+    std::string file_path{};
+    VkImageAspectFlags aspect_flags{ VK_IMAGE_ASPECT_COLOR_BIT };
+    TEXTURE_TYPE texture_type{ TEXTURE_TYPE::DIFFUSE };
+  };
+
   export class TextureManager
   {
   public:
@@ -62,6 +70,10 @@ namespace Vyroda
       std::string const& file_path,
       VkImageAspectFlags const aspect_flags,
       TEXTURE_TYPE texture_type,
+      Renderer const& renderer);
+
+    void addBatch(
+      std::span<TextureLoadRequest const> requests,
       Renderer const& renderer);
 
     void addMaterial(material_t material) { _materials.push_back(std::move(material)); }

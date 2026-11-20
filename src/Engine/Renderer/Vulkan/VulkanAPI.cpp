@@ -3124,7 +3124,7 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
 
     void* data;
     vkMapMemory(_device, staging_device_memory, 0, size, 0, &data);
-    std::memcpy(data, ktx_texture->pData, static_cast<std::size_t>(size));
+    std::memcpy(data, ktx_texture->pData, static_cast<std::size_t>(ktx_texture->dataSize));
     vkUnmapMemory(_device, staging_device_memory);
 
     VkFormat const format = (VkFormat) ktx_texture->vkFormat;
@@ -3268,6 +3268,227 @@ VkImageView VulkanAPI::createDepthResources(VkCommandBuffer cmd_buffer)
     addToGarbage(transfer_fence, cmd_buffer, cmd_pool, buffer, staging_device_memory);
 
     return image;
+  }
+
+  std::vector<VkImage> VulkanAPI::createKTXImagesBatch(
+    std::span<ktxTexture2* const> ktx_textures,
+    VkCommandPool& cmd_pool)
+  {
+    std::vector<VkImage> images(ktx_textures.size(), VK_NULL_HANDLE);
+    if (ktx_textures.empty()) {
+      return images;
+    }
+
+    constexpr std::size_t kMaxBatchCount { 32u };
+    constexpr VkDeviceSize kMaxBatchBytes { 128ull * 1024ull * 1024ull };
+
+    std::size_t start { 0 };
+    while (start < ktx_textures.size()) {
+      std::size_t end { start };
+      VkDeviceSize total_staging_size { 0 };
+      std::vector<VkDeviceSize> staging_offsets{};
+      staging_offsets.reserve(kMaxBatchCount);
+
+      while (end < ktx_textures.size() && (end - start) < kMaxBatchCount) {
+        ktxTexture2 const* const tex { ktx_textures[end] };
+        VkDeviceSize const aligned_offset { align_to(total_staging_size, 16ull) };
+        VkDeviceSize const tex_bytes { static_cast<VkDeviceSize>(tex->dataSize) };
+        if (end > start && (aligned_offset + tex_bytes) > kMaxBatchBytes) {
+          break;
+        }
+        staging_offsets.push_back(aligned_offset);
+        total_staging_size = aligned_offset + tex_bytes;
+        ++end;
+      }
+
+      std::size_t const chunk_count { end - start };
+
+      VkDeviceMemory staging_memory { VK_NULL_HANDLE };
+      VkBuffer const staging_buffer { createBuffer(
+        total_staging_size,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        staging_memory) };
+
+      VkMemoryRequirements staging_reqs{};
+      vkGetBufferMemoryRequirements(_device, staging_buffer, &staging_reqs);
+
+      void* mapped { nullptr };
+      vkMapMemory(_device, staging_memory, 0, staging_reqs.size, 0, &mapped);
+      auto* mapped_bytes { static_cast<std::byte*>(mapped) };
+      for (std::size_t k { 0 }; k < chunk_count; ++k) {
+        ktxTexture2 const* const tex { ktx_textures[start + k] };
+        std::memcpy(mapped_bytes + staging_offsets[k], tex->pData, tex->dataSize);
+      }
+      vkUnmapMemory(_device, staging_memory);
+
+      std::vector<VkImageMemoryBarrier> to_dst_barriers{};
+      std::vector<VkImageMemoryBarrier> to_general_barriers{};
+      to_dst_barriers.reserve(chunk_count);
+      to_general_barriers.reserve(chunk_count);
+
+      for (std::size_t k { 0 }; k < chunk_count; ++k) {
+        ktxTexture2* const tex { ktx_textures[start + k] };
+        auto const format { static_cast<VkFormat>(tex->vkFormat) };
+        auto const width { static_cast<std::uint32_t>(tex->baseWidth) };
+        auto const height { static_cast<std::uint32_t>(tex->baseHeight) };
+        auto const mip_lvl { tex->numLevels };
+
+        VkImageType image_type { VK_IMAGE_TYPE_1D };
+        if (tex->numDimensions == 2) {
+          image_type = VK_IMAGE_TYPE_2D;
+        } else if (tex->numDimensions == 3) {
+          image_type = VK_IMAGE_TYPE_3D;
+        }
+
+        VkImageCreateInfo image_info{};
+        image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        image_info.imageType = image_type;
+        image_info.extent.width = width;
+        image_info.extent.height = height;
+        image_info.extent.depth = 1;
+        image_info.mipLevels = mip_lvl;
+        image_info.arrayLayers = tex->isCubemap ? 6u : 1u;
+        image_info.format = format;
+        image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+        image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        image_info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+        image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        if (tex->isCubemap) {
+          image_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+        }
+
+        VkImage image { VK_NULL_HANDLE };
+        if (vkCreateImage(_device, &image_info, nullptr, &image) != VK_SUCCESS) {
+          throw std::runtime_error("failed to create image!");
+        }
+
+        VkMemoryRequirements image_mem_requirements{};
+        vkGetImageMemoryRequirements(_device, image, &image_mem_requirements);
+        auto const memory_type {
+          findMemoryType(image_mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+        };
+        auto* device_memory { _device_memory_pool->get(
+          _device,
+          image_mem_requirements.size,
+          memory_type,
+          image_info.usage,
+          image_mem_requirements.alignment,
+          DeviceMemoryPool::DeviceBufferType::STAGING) };
+        device_memory->bindImageToMemory(image, image_mem_requirements.size, image_mem_requirements.alignment);
+
+        images[start + k] = image;
+
+        auto to_dst { setupImageMemoryBarrier(
+          image, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
+          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) };
+        to_dst.subresourceRange.layerCount = tex->isCubemap ? 6u : 1u;
+        to_dst.subresourceRange.baseMipLevel = 0;
+        to_dst.subresourceRange.levelCount = mip_lvl;
+        to_dst.subresourceRange.baseArrayLayer = 0;
+        to_dst_barriers.emplace_back(to_dst);
+
+        auto to_general { setupImageMemoryBarrier(
+          image, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL) };
+        to_general.subresourceRange.layerCount = tex->isCubemap ? 6u : 1u;
+        to_general.subresourceRange.baseMipLevel = 0;
+        to_general.subresourceRange.levelCount = mip_lvl;
+        to_general.subresourceRange.baseArrayLayer = 0;
+        to_general_barriers.emplace_back(to_general);
+      }
+
+      VkCommandBuffer const cmd_buffer { allocateCommandBuffers(cmd_pool, 1, false)[0] };
+
+      VkCommandBufferBeginInfo begin_info{};
+      begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+      begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+      if (vkBeginCommandBuffer(cmd_buffer, &begin_info) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin batch ktx command buffer");
+      }
+
+      addPipelineBarriers(
+        cmd_buffer,
+        to_dst_barriers,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT);
+
+      std::vector<VkBufferImageCopy> copy_regions{};
+      for (std::size_t k { 0 }; k < chunk_count; ++k) {
+        ktxTexture2* const tex { ktx_textures[start + k] };
+        copy_regions.clear();
+        copy_regions.reserve(static_cast<std::size_t>(tex->numLevels) * static_cast<std::size_t>(tex->numFaces));
+
+        for (std::uint32_t mip { 0 }; mip < tex->numLevels; ++mip) {
+          for (std::uint32_t face { 0 }; face < tex->numFaces; ++face) {
+            ktx_size_t offset { 0 };
+            ktxTexture2_GetImageOffset(tex, mip, 0, face, &offset);
+
+            VkBufferImageCopy region{};
+            region.bufferOffset = staging_offsets[k] + offset;
+            region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.imageSubresource.mipLevel = mip;
+            region.imageSubresource.baseArrayLayer = face;
+            region.imageSubresource.layerCount = 1;
+            region.imageExtent.width = std::max(1u, tex->baseWidth >> mip);
+            region.imageExtent.height = std::max(1u, tex->baseHeight >> mip);
+            region.imageExtent.depth = 1;
+
+            copy_regions.emplace_back(region);
+          }
+        }
+
+        vkCmdCopyBufferToImage(
+          cmd_buffer,
+          staging_buffer,
+          images[start + k],
+          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+          static_cast<std::uint32_t>(copy_regions.size()),
+          copy_regions.data());
+      }
+
+      addPipelineBarriers(
+        cmd_buffer,
+        to_general_barriers,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT);
+
+      endCommandBuffer(cmd_buffer);
+
+      VkSubmitInfo submit_info{};
+      submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+      submit_info.commandBufferCount = 1;
+      submit_info.pCommandBuffers = &cmd_buffer;
+
+      VkFence transfer_fence { VK_NULL_HANDLE };
+      VkFenceCreateInfo fence_info{};
+      fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+      vkCreateFence(_device, &fence_info, nullptr, &transfer_fence);
+
+      VkResult result { VK_SUCCESS };
+      {
+        std::lock_guard<std::mutex> guard(_mutex_queue_submit);
+        result = vkQueueSubmit(_transfer_queues[_queue_index], 1, &submit_info, transfer_fence);
+        vkWaitForFences(_device, 1, &transfer_fence, VK_TRUE, UINT64_MAX);
+      }
+
+      if (result != VK_SUCCESS) {
+        Logger::error("Can't transfer batch ktx images.");
+      }
+
+      vkDestroyFence(_device, transfer_fence, nullptr);
+      vkFreeCommandBuffers(_device, cmd_pool, 1, &cmd_buffer);
+      vkDestroyBuffer(_device, staging_buffer, nullptr);
+      vkFreeMemory(_device, staging_memory, nullptr);
+
+      start = end;
+    }
+
+    return images;
   }
 
   VkImageView VulkanAPI::createKTXImageView(

@@ -16,7 +16,8 @@ set(ENGINE_SUBDIRS
   Engine/Renderer/Vulkan
   Engine/Utils
   Editor
-  Editor/Manager)
+  Editor/Manager
+  Tools/Cooker)
 
 foreach(subdir ${ENGINE_SUBDIRS})
   add_subdirectory(${PROJECT_SOURCE_DIR}/src/${subdir})

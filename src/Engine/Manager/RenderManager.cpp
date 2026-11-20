@@ -173,6 +173,8 @@ namespace Vyroda
         InputManagerLocator::get()->setCamera(&getCamera());
       }
 
+      //_light_manager->animateSunLight(delta_time);
+
       auto const frame_context { buildFrameContext(
         config_manager->rootPath(),
         _current_camera,
@@ -299,11 +301,19 @@ namespace Vyroda
     }
 
     ParallelManagerLocator::get()->forEach(frame_context.not_clipped_visible_ids, [&](const auto& entity) {
-      drawEntity(entity, frame_context.camera_view_matrix, false);
+      drawEntity(entity, frame_context.camera_view_matrix, false, false);
     });
 
     ParallelManagerLocator::get()->forEach(frame_context.not_clipped_transparent_ids, [&](const auto& entity) {
-      drawEntity(entity, frame_context.camera_view_matrix, true);
+      drawEntity(entity, frame_context.camera_view_matrix, true, false);
+    });
+
+    ParallelManagerLocator::get()->forEach(frame_context.not_clipped_visible_ids, [&](const auto& entity) {
+      drawEntity(entity, frame_context.camera_view_matrix, false, true);
+    });
+
+    ParallelManagerLocator::get()->forEach(frame_context.not_clipped_transparent_ids, [&](const auto& entity) {
+      drawEntity(entity, frame_context.camera_view_matrix, true, true);
     });
 
     if (frame_context.water_entity != nullptr) {
@@ -340,7 +350,7 @@ namespace Vyroda
 
         if (glm::dot(K_local, glm::vec4(pos_side, 1.0f)) < 0) {
           //          Logger::debug("clipped: {}", mesh->getName());
-          return true;
+          return false;
         }
       }
     }
@@ -390,7 +400,8 @@ namespace Vyroda
   void RenderManager::drawEntity(
     IDType const entity_id,
     glm::mat4 const& camera_view_matrix,
-    bool const has_alpha_blend)
+    bool const has_alpha_blend,
+    bool const transmissive_pass)
   {
     auto* mesh_component { _component_manager->get<MeshComponent>(entity_id) };
     auto mesh { mesh_component->template has<Mesh>() };
@@ -404,15 +415,21 @@ namespace Vyroda
           _renderer->invalidatePointShadowMap();
         }
       }
-      RendererContext renderer_info { getRendererContext(camera_view_matrix) };
-      renderer_info.stage_flag_bits = rdr_impl->getShaderStageFlags();
-      renderer_info.has_alpha_blend = has_alpha_blend;
-      //Logger::warn("mesh {}", mesh->getName());
-      _renderer->draw(*mesh, renderer_info);
+      bool const is_transmissive {
+        !mesh->getMaterials().empty()
+        && mesh->getMaterials().at(mesh->getData()->_material_id).transmission_strength > 0.0f
+      };
+      if (is_transmissive == transmissive_pass) {
+        RendererContext renderer_info { getRendererContext(camera_view_matrix) };
+        renderer_info.stage_flag_bits = rdr_impl->getShaderStageFlags();
+        renderer_info.has_alpha_blend = has_alpha_blend;
+        //Logger::warn("mesh {}", mesh->getName());
+        _renderer->draw(*mesh, renderer_info);
+      }
     }
 
     for (auto child : mesh->getChildren()) {
-      drawEntity(child, camera_view_matrix, has_alpha_blend);
+      drawEntity(child, camera_view_matrix, has_alpha_blend, transmissive_pass);
     }
   }
 
@@ -432,11 +449,17 @@ namespace Vyroda
     auto rdr_impl { _component_manager->get<RendererComponent>(entity_id) };
     
     if (mesh && rdr_impl) {
-      RendererContext renderer_context { getRendererContext(camera_view_matrix) };
-      renderer_context.stage_flag_bits = rdr_impl->getShaderStageFlags();
-      renderer_context.has_alpha_blend = has_alpha_blend;
-    
-      _renderer->drawShadowMap(*mesh, renderer_context, shadow_type);
+      bool const is_transmissive {
+        !mesh->getMaterials().empty()
+        && mesh->getMaterials().at(mesh->getData()->_material_id).transmission_strength > 0.5f
+      };
+      if (!is_transmissive) {
+        RendererContext renderer_context { getRendererContext(camera_view_matrix) };
+        renderer_context.stage_flag_bits = rdr_impl->getShaderStageFlags();
+        renderer_context.has_alpha_blend = has_alpha_blend;
+      
+        _renderer->drawShadowMap(*mesh, renderer_context, shadow_type);
+      }
     }
     
     for (auto child : mesh->getChildren()) {

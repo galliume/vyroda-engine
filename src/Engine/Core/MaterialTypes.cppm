@@ -134,9 +134,9 @@ namespace Vyroda
     glm::vec3 transmission_scale{ 1.0 };
     glm::vec2 transmission_rotation{ 0.0 };
 
-    float normal_strength{ 1.0 };
-    float occlusion_strength{ 1.0 };
-    float transmission_strength{ 1.0 };
+    float normal_strength{ 1.0f };
+    float occlusion_strength{ 1.0f };
+    float transmission_strength{ 0.0f };
 
     glm::vec4 emissive_color {0.0};
   };

@@ -27,4 +27,11 @@ export
   using ::KTX_TTF_BC4_R;
   using ::KTX_TTF_BC5_RG;
   using ::KTX_TTF_BC7_RGBA;
+
+  inline void destroyKtxTexture(ktxTexture2* tex) noexcept
+  {
+    if (tex != nullptr) {
+      ktxTexture_Destroy(reinterpret_cast<ktxTexture*>(tex));
+    }
+  }
 }

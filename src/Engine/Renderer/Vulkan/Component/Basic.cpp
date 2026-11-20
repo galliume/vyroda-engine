@@ -105,7 +105,7 @@ namespace Vyroda
       material.mr_scale = mat.mr_scale;
       material.mr_rotation = { mat.mr_rotation.x, mat.mr_rotation.y, 1.0 };
 
-      material.strength = { mat.normal_strength, mat.occlusion_strength, 0.0 };//x normal strength, y occlusion strength
+      material.strength = { mat.normal_strength, mat.occlusion_strength, mat.transmission_strength }; // x: normal, y: occlusion, z: transmission
 
       //Logger::debug("ambient {}",  material.ambient.r);
       //Logger::debug("diffuse {}",  material.diffuse.r);

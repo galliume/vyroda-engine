@@ -86,6 +86,28 @@ To build and run the Vyroda Engine, you need recent and specific tooling:
 | **Editor** | `build/windows-release/VyrodaEngine.exe -E` | Windows only for the moment. |
 | **IDE** | Open the project with a CMake-compatible IDE (VS 2022, VS Code, etc.). | |
 
+### Asset Cooking (`.vmesh` & `.ktx2`)
+
+Vyroda includes an offline CLI cooker (`vyroda-cooker`) that pre-bakes `meshoptimizer`-optimized binary meshes (`./cache/<mesh>/<name>.vmesh`) and parallel-compressed `.ktx2` textures.
+
+```bash
+# Build and cook all levels via CMake (could be very long)
+cmake --build --preset windows-release --target cook_assets
+
+# Or invoke vyroda-cooker directly for a specific level or mesh
+build/windows-release/src/Tools/Cooker/vyroda-cooker.exe --root . --level bistro
+build/windows-release/src/Tools/Cooker/vyroda-cooker.exe --root . --level rungholt --force
+build/windows-release/src/Tools/Cooker/vyroda-cooker.exe --root . --mesh assets/mesh/Sponza/glTF/Sponza.gltf --jobs 8
+```
+
+| Flag | Description |
+| :--- | :--- |
+| `--root <dir>` | Project root directory (defaults to current working directory). |
+| `--level <name>` | Cook only a single level from `config/levels/<name>.json` (default: all levels). |
+| `--mesh <path>` | Cook a single mesh and its referenced textures. |
+| `--jobs <N>` | Number of parallel worker threads for `.ktx2` cooking (default: hardware concurrency). |
+| `--force` | Re-cook existing `.vmesh` and `.ktx2` files even if up to date. |
+
 ---
 
 ## 🎨 Content & Configuration

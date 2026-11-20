@@ -12,9 +12,9 @@ namespace Vyroda
 {
   LightManager::LightManager()
   {
-    _sun.color = glm::vec4(0.5f, 0.7f, 1.0f, 1.0f);//moonish color ?
+    _sun.color = glm::vec4(glm::vec3(1.0f, 0.96f, 0.88f) * 6.0f, 1.0f); // 14:00 summer daylight (5600K)
     _sun.position = glm::vec4(0.f, 500.f, 0.f, 1.0f);
-    _sun.direction = glm::vec4(glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f)), 0.0f);
+    _sun.direction = glm::vec4(glm::normalize(glm::vec3(0.55f, 1.25f, 0.45f)), 0.0f); // ~60 deg summer elevation
     //ambient diffuse specular
     _sun.ads = glm::vec4(10.f, 0.5f, 1.f, 1.0f);
     _sun.clq = glm::vec4(0.0f);

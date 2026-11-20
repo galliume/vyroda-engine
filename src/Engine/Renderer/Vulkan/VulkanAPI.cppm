@@ -615,6 +615,10 @@ namespace Vyroda
       ktxTexture2* ktx_texture,
       VkCommandPool& cmd_pool) __attribute__((no_thread_safety_analysis));
 
+    std::vector<VkImage> createKTXImagesBatch(
+      std::span<ktxTexture2* const> ktx_textures,
+      VkCommandPool& cmd_pool) __attribute__((no_thread_safety_analysis));
+
     VkImageView createKTXImageView(
       ktxTexture2* ktx_texture,
       VkImage image,

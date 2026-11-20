@@ -13,6 +13,8 @@ export
   using ::meshopt_remapIndexBuffer;
   using ::meshopt_remapVertexBuffer;
   using ::meshopt_generateVertexRemap;
+  using ::meshopt_generateVertexRemapMulti;
+  using ::meshopt_Stream;
   using ::meshopt_simplify;
   using ::meshopt_buildMeshlets;
   using ::meshopt_buildMeshletsBound;

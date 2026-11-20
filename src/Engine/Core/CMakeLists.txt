@@ -34,6 +34,7 @@ target_sources(Core
         ThreadSafeQueue.cppm
         Tools.cppm
         Vertex.cppm
+        VMeshCache.cppm
         Volk.cppm
         VulkanTypes.cppm
   PRIVATE
@@ -42,7 +43,8 @@ target_sources(Core
     Command.cpp
     CommandQueue.cpp
     CommandQueueLocator.cpp
-    Tools.cpp)
+    Tools.cpp
+    VMeshCache.cpp)
 
 target_link_libraries(
   Core

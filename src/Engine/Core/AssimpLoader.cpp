@@ -12,6 +12,7 @@ import std;
 
 import Engine.Core.GLM;
 import Engine.Core.MeshOptimizer;
+import Engine.Core.VMeshCache;
 
 namespace Vyroda
 {
@@ -38,17 +39,423 @@ namespace Vyroda
   }
   //
 
+  static void countNodeInstances(
+    aiNode const* node,
+    std::size_t& total_instances)
+  {
+    total_instances += node->mNumMeshes;
+    for (std::uint32_t i{ 0 }; i < node->mNumChildren; ++i) {
+      countNodeInstances(node->mChildren[i], total_instances);
+    }
+  }
+
+  static VMeshGeometry extractAiMesh(
+    aiMesh const* mesh,
+    aiScene const* scene,
+    bool const flip_Y,
+    std::unordered_map<std::string, Bone>* bones_map,
+    std::uint32_t* global_bone_count)
+  {
+    VMeshGeometry out{};
+    out.base_name = mesh->mName.C_Str();
+    out.material_ID = mesh->mMaterialIndex;
+    out.bbox_min = glm::vec3(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
+    out.bbox_max = glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
+
+    out.positions.reserve(mesh->mNumVertices);
+    out.vertices.reserve(mesh->mNumVertices);
+
+    bool const has_normals { mesh->HasNormals() };
+    bool const has_tangents_and_bitangents { mesh->HasTangentsAndBitangents() };
+    bool const has_tangents_only { !has_tangents_and_bitangents && mesh->mTangents != nullptr };
+    bool const has_uvs { mesh->mNumUVComponents[0] > 0 };
+
+    std::uint32_t color_set_count { 0 };
+    std::array<std::uint32_t, AI_MAX_NUMBER_OF_COLOR_SETS> active_color_sets{};
+    for (std::uint32_t x{ 0 }; x < AI_MAX_NUMBER_OF_COLOR_SETS; ++x) {
+      if (mesh->HasVertexColors(x)) {
+        active_color_sets[color_set_count++] = x;
+      }
+    }
+
+    for (std::uint32_t v{ 0 }; v < mesh->mNumVertices; ++v) {
+      aiVector3D const& pos { mesh->mVertices[v] };
+      out.positions.emplace_back(pos.x, pos.y, pos.z);
+
+      Vertex vertex{};
+      if (has_normals) {
+        aiVector3D const& normal { mesh->mNormals[v] };
+        vertex.normal = { normal.x, normal.y, normal.z, 1.0f };
+      } else {
+        vertex.normal = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+      }
+
+      if (has_tangents_and_bitangents) {
+        glm::vec3 const nn { vertex.normal };
+        glm::vec3 const tt { mesh->mTangents[v].x, mesh->mTangents[v].y, mesh->mTangents[v].z };
+        glm::vec3 const bb { mesh->mBitangents[v].x, mesh->mBitangents[v].y, mesh->mBitangents[v].z };
+        float const ww { (glm::dot(glm::cross(nn, tt), bb) < 0.0f) ? -1.0f : 1.0f };
+        vertex.tangent = glm::vec4(tt, ww);
+      } else if (has_tangents_only) {
+        vertex.tangent = glm::vec4(mesh->mTangents[v].x, mesh->mTangents[v].y, mesh->mTangents[v].z, 1.0f);
+      } else {
+        vertex.tangent = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+      }
+
+      if (has_uvs) {
+        aiVector3D const& texture_coord { mesh->mTextureCoords[0][v] };
+        vertex.texture_coord = { texture_coord.x, flip_Y ? -texture_coord.y : texture_coord.y };
+      }
+
+      if (color_set_count == 0) {
+        vertex.color = glm::vec4(1.0f);
+      } else {
+        glm::vec4 color{ 0.0f };
+        for (std::uint32_t c{ 0 }; c < color_set_count; ++c) {
+          auto const& v_color { mesh->mColors[active_color_sets[c]][v] };
+          color += glm::vec4(v_color.r, v_color.g, v_color.b, v_color.a);
+        }
+        vertex.color = color / static_cast<float>(color_set_count);
+      }
+
+      out.vertices.emplace_back(vertex);
+    }
+
+    out.indices.reserve(static_cast<std::size_t>(mesh->mNumFaces) * 3u);
+    for (std::uint32_t f{ 0 }; f < mesh->mNumFaces; ++f) {
+      aiFace const& face { mesh->mFaces[f] };
+      for (std::uint32_t j{ 0 }; j < face.mNumIndices; ++j) {
+        out.indices.push_back(face.mIndices[j]);
+      }
+    }
+
+    if (mesh->HasBones() && bones_map != nullptr && global_bone_count != nullptr) {
+      out.vertices_bones.resize(mesh->mNumVertices, {});
+      std::unordered_map<std::uint32_t, std::vector<std::pair<std::uint32_t, float>>> vertex_weight_map{};
+
+      for (std::uint32_t b{ 0 }; b < mesh->mNumBones; ++b) {
+        auto const bone_id { (*global_bone_count)++ };
+        aiBone const* bone { mesh->mBones[b] };
+        std::string const bone_name { bone->mName.C_Str() };
+        aiNode const* bone_node { scene->mRootNode->FindNode(bone_name.c_str()) };
+
+        Bone bone_data{};
+        bone_data.id = bone_id;
+        bone_data.transform = ConvertMatrixToGLMFormat(bone_node->mTransformation);
+        bone_data.offset_matrix = ConvertMatrixToGLMFormat(bone->mOffsetMatrix);
+        bone_data.name = bone_node->mName.C_Str();
+        bone_data.parent_name = bone_node->mParent->mName.C_Str();
+        bone_data.weights.reserve(bone->mNumWeights);
+
+        glm::vec3 skew;
+        glm::vec4 perspective;
+        glm::decompose(
+          bone_data.transform,
+          bone_data.t_pose_scale,
+          bone_data.t_pose_rotation,
+          bone_data.t_pose_position,
+          skew,
+          perspective);
+
+        for (std::uint32_t w{ 0 }; w < bone->mNumWeights; ++w) {
+          aiVertexWeight const& aiWeight { bone->mWeights[w] };
+          bone_data.weights.emplace_back(aiWeight.mVertexId, aiWeight.mWeight);
+          vertex_weight_map[aiWeight.mVertexId].emplace_back(bone_id, aiWeight.mWeight);
+        }
+
+        for (std::size_t z{ 0 }; z < bone_node->mNumChildren; ++z) {
+          aiNode* child { bone_node->mChildren[z] };
+          if (child) {
+            bone_data.children.emplace_back(child->mName.C_Str());
+          }
+        }
+
+        glm::mat4 t_pose { 1.0f };
+        aiNode const* current { bone_node };
+        while (current) {
+          t_pose = ConvertMatrixToGLMFormat(current->mTransformation) * t_pose;
+          current = current->mParent;
+        }
+        bone_data.t_pose = t_pose;
+        (*bones_map)[bone_node->mName.C_Str()] = std::move(bone_data);
+      }
+
+      for (auto& [vertex_id, data_vertex] : vertex_weight_map) {
+        auto const& pos { out.positions.at(vertex_id) };
+        VertexBones vertex_bones{};
+        vertex_bones.original_pos = pos;
+
+        std::sort(data_vertex.begin(), data_vertex.end(),
+          [](auto const& a, auto const& b) { return a.second > b.second; });
+
+        float total_weight{ 0.0f };
+        for (std::size_t y{ 0 }; y < 4 && y < data_vertex.size(); ++y) {
+          vertex_bones.bone_ids[y] = static_cast<std::int32_t>(data_vertex[y].first);
+          vertex_bones.bone_weights[y] = data_vertex[y].second;
+          total_weight += data_vertex[y].second;
+        }
+
+        if (total_weight > 0.0f) {
+          for (std::size_t y{ 0 }; y < 4; ++y) {
+            vertex_bones.bone_weights[y] /= total_weight;
+            vertex_bones.total_weight += vertex_bones.bone_weights[y];
+          }
+        }
+        out.vertices_bones[vertex_id] = std::move(vertex_bones);
+      }
+    }
+
+    if (!out.indices.empty() && !out.positions.empty() && (out.indices.size() % 3u == 0u)) {
+      std::size_t const index_count { out.indices.size() };
+      std::size_t vertex_count { out.positions.size() };
+
+      // Weld identical vertices across split streams (replaces Assimp's slow JoinIdenticalVertices)
+      constexpr std::size_t kVertexActiveSize { sizeof(glm::vec4) * 3u + sizeof(glm::vec2) };
+      std::array<meshopt_Stream, 3> const streams {{
+        { out.positions.data(), sizeof(glm::vec3), sizeof(glm::vec3) },
+        { out.vertices.data(), kVertexActiveSize, sizeof(Vertex) },
+        { out.vertices_bones.data(), sizeof(VertexBones), sizeof(VertexBones) }
+      }};
+      std::size_t const stream_count { out.vertices_bones.empty() ? 2u : 3u };
+
+      std::vector<std::uint32_t> weld_remap(vertex_count);
+      std::size_t const welded_vertices {
+        meshopt_generateVertexRemapMulti(
+          weld_remap.data(),
+          out.indices.data(),
+          index_count,
+          vertex_count,
+          streams.data(),
+          stream_count)
+      };
+
+      if (welded_vertices < vertex_count) {
+        meshopt_remapIndexBuffer(
+          out.indices.data(),
+          out.indices.data(),
+          index_count,
+          weld_remap.data());
+
+        std::vector<glm::vec3> welded_positions(welded_vertices);
+        meshopt_remapVertexBuffer(
+          welded_positions.data(),
+          out.positions.data(),
+          vertex_count,
+          sizeof(glm::vec3),
+          weld_remap.data());
+        out.positions = std::move(welded_positions);
+
+        std::vector<Vertex> welded_vertices_buf(welded_vertices);
+        meshopt_remapVertexBuffer(
+          welded_vertices_buf.data(),
+          out.vertices.data(),
+          vertex_count,
+          sizeof(Vertex),
+          weld_remap.data());
+        out.vertices = std::move(welded_vertices_buf);
+
+        if (!out.vertices_bones.empty()) {
+          std::vector<VertexBones> welded_bones(welded_vertices);
+          meshopt_remapVertexBuffer(
+            welded_bones.data(),
+            out.vertices_bones.data(),
+            vertex_count,
+            sizeof(VertexBones),
+            weld_remap.data());
+          out.vertices_bones = std::move(welded_bones);
+        }
+
+        vertex_count = welded_vertices;
+      }
+
+      meshopt_optimizeVertexCache(
+        out.indices.data(),
+        out.indices.data(),
+        index_count,
+        vertex_count);
+
+      meshopt_optimizeOverdraw(
+        out.indices.data(),
+        out.indices.data(),
+        index_count,
+        &out.positions[0].x,
+        vertex_count,
+        sizeof(glm::vec3),
+        1.05f);
+
+      std::vector<std::uint32_t> remap(vertex_count);
+      std::size_t const unique_vertices {
+        meshopt_optimizeVertexFetchRemap(
+          remap.data(),
+          out.indices.data(),
+          index_count,
+          vertex_count)
+      };
+
+      meshopt_remapIndexBuffer(
+        out.indices.data(),
+        out.indices.data(),
+        index_count,
+        remap.data());
+
+      std::vector<glm::vec3> remapped_positions(unique_vertices);
+      meshopt_remapVertexBuffer(
+        remapped_positions.data(),
+        out.positions.data(),
+        vertex_count,
+        sizeof(glm::vec3),
+        remap.data());
+      out.positions = std::move(remapped_positions);
+
+      std::vector<Vertex> remapped_vertices(unique_vertices);
+      meshopt_remapVertexBuffer(
+        remapped_vertices.data(),
+        out.vertices.data(),
+        vertex_count,
+        sizeof(Vertex),
+        remap.data());
+      out.vertices = std::move(remapped_vertices);
+
+      if (!out.vertices_bones.empty()) {
+        std::vector<VertexBones> remapped_bones(unique_vertices);
+        meshopt_remapVertexBuffer(
+          remapped_bones.data(),
+          out.vertices_bones.data(),
+          vertex_count,
+          sizeof(VertexBones),
+          remap.data());
+        out.vertices_bones = std::move(remapped_bones);
+      }
+    }
+
+    return out;
+  }
+
+  static void collectNodeInstances(
+    aiNode const* node,
+    std::vector<VMeshGeometry> const& geometries,
+    std::vector<VMeshInstance>& out_instances,
+    glm::mat4 const& global_transform,
+    glm::mat4 const& inverse_global_transform)
+  {
+    auto const local_transform { ConvertMatrixToGLMFormat(node->mTransformation) };
+    auto const transform_matrix { global_transform * local_transform };
+
+    for (std::uint32_t i{ 0 }; i < node->mNumMeshes; ++i) {
+      std::uint32_t const mesh_idx { node->mMeshes[i] };
+      out_instances.emplace_back(VMeshInstance{
+        .geometry_idx = mesh_idx,
+        .name = geometries[mesh_idx].base_name + std::to_string(i),
+        .transform_matrix = transform_matrix,
+        .local_transform = local_transform,
+        .inverse_transform_matrix = inverse_global_transform
+      });
+    }
+
+    for (std::uint32_t i{ 0 }; i < node->mNumChildren; ++i) {
+      collectNodeInstances(
+        node->mChildren[i],
+        geometries,
+        out_instances,
+        transform_matrix,
+        inverse_global_transform);
+    }
+  }
+
+  template <typename CallbackT>
+  static void dispatchVMeshAsset(
+    VMeshAsset& asset,
+    std::string const& texture_prefix,
+    CallbackT& callback)
+  {
+    std::vector<std::uint32_t> remaining_refs(asset.geometries.size(), 0u);
+    for (auto const& inst : asset.instances) {
+      ++remaining_refs[inst.geometry_idx];
+    }
+
+    std::uint64_t id { asset.instances.size() };
+    for (auto& inst : asset.instances) {
+      --id;
+      auto& geom { asset.geometries[inst.geometry_idx] };
+      bool const move_last { --remaining_refs[inst.geometry_idx] == 0u };
+
+      PlpMeshData mesh_data{};
+      mesh_data.id = id;
+      mesh_data.name = std::move(inst.name);
+      mesh_data.texture_prefix = texture_prefix;
+      mesh_data.material_ID = geom.material_ID;
+      mesh_data.bbox_min = geom.bbox_min;
+      mesh_data.bbox_max = geom.bbox_max;
+      mesh_data.transform_matrix = inst.transform_matrix;
+      mesh_data.local_transform = inst.local_transform;
+      mesh_data.inverse_transform_matrix = inst.inverse_transform_matrix;
+
+      if (move_last) {
+        mesh_data.positions = std::move(geom.positions);
+        mesh_data.vertices = std::move(geom.vertices);
+        mesh_data.vertices_bones = std::move(geom.vertices_bones);
+        mesh_data.indices = std::move(geom.indices);
+      } else {
+        mesh_data.positions = geom.positions;
+        mesh_data.vertices = geom.vertices;
+        mesh_data.vertices_bones = geom.vertices_bones;
+        mesh_data.indices = geom.indices;
+      }
+
+      if (!asset.bones_map.empty()) {
+        mesh_data.bones = asset.bones_map;
+        mesh_data.root_bone_name = asset.root_bone_name;
+      }
+
+      callback(
+        std::move(mesh_data),
+        asset.materials,
+        asset.animations,
+        asset.positions,
+        asset.rotations,
+        asset.scales);
+    }
+  }
+
   void AssimpLoader::loadData(
         std::string const & path,
         bool const flip_Y,
         std::function<void(
-          PlpMeshData const _data,
-          std::vector<material_t> const materials,
-          std::vector<Animation> const animations,
-          std::unordered_map<std::string, std::vector<std::vector<Position>>> const positions,
-          std::unordered_map<std::string, std::vector<std::vector<Rotation>>> const rotations,
-          std::unordered_map<std::string, std::vector<std::vector<Scale>>> const scales)> callback)
+          PlpMeshData&& _data,
+          std::vector<material_t> const& materials,
+          std::vector<Animation> const& animations,
+          std::unordered_map<std::string, std::vector<std::vector<Position>>> const& positions,
+          std::unordered_map<std::string, std::vector<std::vector<Rotation>>> const& rotations,
+          std::unordered_map<std::string, std::vector<std::vector<Scale>>> const& scales)> callback)
   {
+    using Clock = std::chrono::steady_clock;
+    auto const ms_since = [](Clock::time_point const a, Clock::time_point const b) {
+      return std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count();
+    };
+    auto const t_start { Clock::now() };
+
+    std::filesystem::path const file_name{ path };
+    auto const texture_prefix { file_name.stem().string() + "_" };
+    auto const root_path { file_name.parent_path().string() + "/" };
+
+    VMeshAsset cached_asset{};
+    if (VMeshCache::tryLoad(file_name, root_path, flip_Y, cached_asset)) {
+      auto const t_cache { Clock::now() };
+      auto const geom_count { cached_asset.geometries.size() };
+      auto const inst_count { cached_asset.instances.size() };
+      dispatchVMeshAsset(cached_asset, texture_prefix, callback);
+      auto const t_done { Clock::now() };
+      Logger::info(
+        "VMeshCache HIT [{}] ({} meshes / {} instances): Load={}ms, Callbacks+Tex={}ms, Total={}ms",
+        file_name.filename().string(),
+        geom_count,
+        inst_count,
+        ms_since(t_start, t_cache),
+        ms_since(t_cache, t_done),
+        ms_since(t_start, t_done));
+      return;
+    }
+
     Assimp::Importer importer;
 
     auto flags {
@@ -58,10 +465,10 @@ namespace Vyroda
       | aiProcess_FlipWindingOrder
       | aiProcess_FlipUVs
       | aiProcess_GenBoundingBoxes
-      | aiProcess_JoinIdenticalVertices
     };
 
     const aiScene* scene = importer.ReadFile(path, flags);
+    auto const t_read { Clock::now() };
 
     if (nullptr == scene) {
       Logger::error("Error while importing file {}: {}", path, importer.GetErrorString());
@@ -70,10 +477,6 @@ namespace Vyroda
 
     std::vector<material_t> materials{};
     materials.reserve(scene->mNumMaterials);
-
-    std::filesystem::path file_name{ path };
-    auto const& texture_prefix{ file_name.stem().string() + "_"};
-    auto const& root_path { file_name.parent_path().string() + "/" };
 
     if (scene->HasMaterials()) {
 
@@ -148,7 +551,7 @@ namespace Vyroda
         if (mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, r) == aiReturn_SUCCESS) {
           material.mre_factor.y = r;
         }
-        float transmission_strength{ 1.0 };
+        float transmission_strength{ 0.0f };
         if (mat->Get(AI_MATKEY_TRANSMISSION_FACTOR, transmission_strength) == aiReturn_SUCCESS) {
           material.transmission_strength = transmission_strength;
         }
@@ -303,6 +706,10 @@ namespace Vyroda
           if (mat->GetTexture(aiTextureType_OPACITY, 0, &texture_path) == aiReturn_SUCCESS) {
               material.name_texture_alpha = AssimpLoader::cleanName(texture_path.C_Str(), texture_prefix);
               material.name_texture_alpha_path = root_path + texture_path.C_Str();
+              if (material.alpha_mode < 0.5f) {
+                material.alpha_mode = 1.0f;
+                material.alpha_cut_off = 0.5f;
+              }
           }
           if (mat->Get(AI_MATKEY_MAPPINGMODE_U(aiTextureType_OPACITY, 0), wrap_mode_u) == aiReturn_SUCCESS) {
             material.texture_alpha_wrap_mode_u = getTextureWrapMode(wrap_mode_u);
@@ -426,6 +833,21 @@ namespace Vyroda
         if (mat->Get(AI_MATKEY_TWOSIDED, isDoubleSided) == aiReturn_SUCCESS) {
           material.double_sided = (isDoubleSided == 1) ? true : false;
         }
+        float glossiness_factor { 0.0f };
+        if (mat->Get(AI_MATKEY_GLOSSINESS_FACTOR, glossiness_factor) == aiReturn_SUCCESS) {
+          material.base_color = material.diffuse;
+          bool const has_spec_tex { !material.name_texture_specular.empty() };
+          if (has_spec_tex) {
+            material.mre_factor.x = 0.0f;
+            material.mre_factor.y = std::clamp(1.0f - glossiness_factor * 0.35f, 0.45f, 0.95f);
+          } else {
+            float const max_spec { std::max({ material.specular.r, material.specular.g, material.specular.b }) };
+            material.mre_factor.x = (max_spec > 0.25f)
+              ? std::clamp((max_spec - 0.04f) / 0.96f, 0.0f, 1.0f)
+              : 0.0f;
+            material.mre_factor.y = std::clamp(1.0f - glossiness_factor, 0.04f, 1.0f);
+          }
+        }
         materials.emplace_back(material);
       }
     }
@@ -503,38 +925,124 @@ namespace Vyroda
     glm::mat4 const global_transform { ConvertMatrixToGLMFormat(scene->mRootNode->mTransformation) };
     auto const inverse_global_transform { glm::inverse(global_transform) };
 
-    std::unordered_set<std::string> bone_names{};
-    getBoneHierarchy(scene->mRootNode, bone_names);
-    
-    auto const& root_bone { AssimpLoader::FindRootBone(scene, scene->mRootNode, bone_names) };
-    std::unordered_map<std::string, Bone> bones_map{};
+    bool has_any_bones { false };
+    for (std::uint32_t m{ 0 }; m < scene->mNumMeshes; ++m) {
+      if (scene->mMeshes[m]->HasBones()) {
+        has_any_bones = true;
+        break;
+      }
+    }
+    bool const has_skeleton { scene->HasAnimations() || has_any_bones };
 
-    std::vector<PlpMeshData> mesh_data{};
+    std::string root_bone_name{};
+    std::unordered_map<std::string, Bone> bones_map{};
     std::uint32_t global_bone_count { 0 };
 
-    process(
-      root_bone->mName.C_Str(),
-      scene->mRootNode,
-      scene,
-      mesh_data,
-      global_transform,
-      inverse_global_transform,
-      texture_prefix,
-      flip_Y,
-      bones_map,
-      global_bone_count);
-
-    addWeightlessBones(scene->mRootNode, bones_map, global_bone_count);
-
-    std::uint64_t id{ mesh_data.size() };
-    for (auto& data : mesh_data) {
-      --id;
-      data.id = id;
-      data.bones = bones_map;
-      data.root_bone_name = root_bone->mName.C_Str();
-
-      callback(data, materials, animations, positions, rotations, scales);
+    if (has_skeleton) {
+      std::unordered_set<std::string> bone_names{};
+      getBoneHierarchy(scene->mRootNode, bone_names);
+      auto const* root_bone { AssimpLoader::FindRootBone(scene, scene->mRootNode, bone_names) };
+      if (root_bone != nullptr) {
+        root_bone_name = root_bone->mName.C_Str();
+      }
     }
+
+    auto const t_meta { Clock::now() };
+
+    // Extract and meshopt-optimize each unique aiMesh ONCE (in parallel for static scenes)
+    std::vector<VMeshGeometry> processed_meshes(scene->mNumMeshes);
+    if (scene->mNumMeshes > 0) {
+      unsigned int const hw_threads { std::max(1u, std::thread::hardware_concurrency()) };
+      bool const run_parallel { !has_any_bones && scene->mNumMeshes >= 4u && hw_threads > 1u };
+      if (run_parallel) {
+        unsigned int const worker_count { std::min<unsigned int>(hw_threads, scene->mNumMeshes) };
+        std::atomic<std::uint32_t> next_mesh{ 0 };
+        std::vector<std::thread> workers{};
+        workers.reserve(worker_count);
+        for (unsigned int t{ 0 }; t < worker_count; ++t) {
+          workers.emplace_back([&]() {
+            while (true) {
+              std::uint32_t const idx { next_mesh.fetch_add(1u, std::memory_order_relaxed) };
+              if (idx >= scene->mNumMeshes) {
+                break;
+              }
+              processed_meshes[idx] = extractAiMesh(scene->mMeshes[idx], scene, flip_Y, nullptr, nullptr);
+            }
+          });
+        }
+        for (auto& worker : workers) {
+          worker.join();
+        }
+      } else {
+        for (std::uint32_t m{ 0 }; m < scene->mNumMeshes; ++m) {
+          processed_meshes[m] = extractAiMesh(scene->mMeshes[m], scene, flip_Y, &bones_map, &global_bone_count);
+        }
+      }
+    }
+
+    if (has_skeleton) {
+      addWeightlessBones(scene->mRootNode, bones_map, global_bone_count);
+    }
+    auto const t_extract { Clock::now() };
+
+    std::size_t total_instances { 0 };
+    countNodeInstances(scene->mRootNode, total_instances);
+
+    std::vector<VMeshInstance> instances{};
+    instances.reserve(total_instances);
+    collectNodeInstances(
+      scene->mRootNode,
+      processed_meshes,
+      instances,
+      global_transform,
+      inverse_global_transform);
+
+    std::unordered_set<std::string> used_mesh_names{};
+    used_mesh_names.reserve(instances.size());
+
+    std::uint64_t id{ instances.size() };
+    for (auto& inst : instances) {
+      --id;
+      if (!used_mesh_names.insert(inst.name).second) {
+        std::string unique_name { inst.name + "#" + std::to_string(id) };
+        while (!used_mesh_names.insert(unique_name).second) {
+          unique_name += "_";
+        }
+        inst.name = std::move(unique_name);
+      }
+    }
+    auto const t_collect { Clock::now() };
+
+    VMeshAsset asset{
+      .materials = std::move(materials),
+      .animations = std::move(animations),
+      .positions = std::move(positions),
+      .rotations = std::move(rotations),
+      .scales = std::move(scales),
+      .bones_map = std::move(bones_map),
+      .root_bone_name = std::move(root_bone_name),
+      .geometries = std::move(processed_meshes),
+      .instances = std::move(instances)
+    };
+
+    VMeshCache::save(file_name, root_path, flip_Y, asset);
+    auto const t_save { Clock::now() };
+
+    dispatchVMeshAsset(asset, texture_prefix, callback);
+    auto const t_done { Clock::now() };
+
+    Logger::info(
+      "AssimpLoader [{}] ({} meshes / {} instances): ReadFile={}ms, Meta={}ms, Extract+meshopt={}ms, Collect={}ms, SaveVMesh={}ms, Callbacks+Tex={}ms, Total={}ms",
+      file_name.filename().string(),
+      scene->mNumMeshes,
+      total_instances,
+      ms_since(t_start, t_read),
+      ms_since(t_read, t_meta),
+      ms_since(t_meta, t_extract),
+      ms_since(t_extract, t_collect),
+      ms_since(t_collect, t_save),
+      ms_since(t_save, t_done),
+      ms_since(t_start, t_done));
   }
 
   std::string const AssimpLoader::cleanName(std::string const & name, std::string const& prefix)
@@ -552,277 +1060,6 @@ namespace Vyroda
     //Logger::debug("asset: {} -> {}", name, cleaned);
 
     return prefix + cleaned;
-  }
-
-  void AssimpLoader::process(
-    std::string const& root_bone,
-    aiNode* node,
-    const aiScene *scene,
-    std::vector<PlpMeshData>& data,
-    glm::mat4 const& global_transform,
-    glm::mat4 const& inverse_global_transform,
-    std::string const& texture_prefix,
-    bool const flip_Y,
-    std::unordered_map<std::string, Bone> & bones_map,
-    std::uint32_t global_bone_count)
-  {
-    auto const local_transform { ConvertMatrixToGLMFormat(node->mTransformation) };
-    auto const transform_matrix { global_transform * local_transform };
-
-    for (std::uint32_t i{ 0 }; i < node->mNumMeshes; i++) {
-      PlpMeshData mesh_data{};
-      mesh_data.transform_matrix = transform_matrix;
-      mesh_data.inverse_transform_matrix = inverse_global_transform;
-      mesh_data.local_transform = local_transform;
-
-      aiMesh const* mesh = scene->mMeshes[node->mMeshes[i]];
-      mesh_data.name = mesh->mName.C_Str() + std::to_string(i);
-      mesh_data.texture_prefix = texture_prefix;
-
-      mesh_data.bbox_min = glm::vec3(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
-      mesh_data.bbox_max = glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
-
-      mesh_data.positions.reserve(mesh->mNumVertices);
-      mesh_data.vertices.reserve(mesh->mNumVertices);
-
-      for (std::uint32_t v{ 0 }; v < mesh->mNumVertices; v++) {
-
-        aiVector3D const& vertices { mesh->mVertices[v] };
-
-        Vertex vertex{};
-
-        mesh_data.positions.emplace_back(vertices.x, vertices.y, vertices.z);
-        //if (flip_Y) vertex.pos.y *= -1.0f;
-
-        if (mesh->HasNormals()) {
-          aiVector3D const& normal = mesh->mNormals[v];
-          vertex.normal = { normal.x, normal.y, normal.z, 1.0f };
-          //if (flip_Y) vertex.normal.y = 1.0f - vertex.normal.y;
-        } else {
-          vertex.normal = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-        }
-
-        glm::vec4 tangent(1.0f, 0.0f, 0.0f, 1.0f);
-        //glm::vec4 bitangent(0.f);
-
-        if (mesh->HasTangentsAndBitangents()) {
-          glm::vec3 const nn { vertex.normal };
-          glm::vec3 const tt { glm::vec3(mesh->mTangents[v].x, mesh->mTangents[v].y, mesh->mTangents[v].z) };
-          glm::vec3 const bb { glm::vec3(mesh->mBitangents[v].x, mesh->mBitangents[v].y, mesh->mBitangents[v].z) };
-
-          float ww = (glm::dot(glm::cross(nn, tt), bb) < 0.0f) ? -1.0f : 1.0f;
-
-          tangent = glm::vec4(tt, ww);
-        } else if (mesh->mTangents != nullptr) {
-          tangent = glm::vec4(mesh->mTangents[v].x, mesh->mTangents[v].y, mesh->mTangents[v].z, 1.0f);
-          Logger::debug("nullptr");
-        }
-        vertex.tangent = tangent;
-
-        if (mesh->mNumUVComponents[0] > 0) {
-          aiVector3D texture_coord = mesh->mTextureCoords[0][v];
-          vertex.texture_coord = { texture_coord.x, texture_coord.y };
-          if (flip_Y) vertex.texture_coord.y *= -1.0f;
-        }
-
-        glm::vec4 color{ 0.0f };
-
-        auto nb_colors{ 0 };
-        for (std::uint32_t x{ 0 }; x < AI_MAX_NUMBER_OF_COLOR_SETS; x++) {
-          if (mesh->HasVertexColors(x)) {
-            auto const& v_color = mesh->mColors[x][v];
-              color += glm::vec4(
-                v_color.r,
-                v_color.g,
-                v_color.b,
-                v_color.a);
-              nb_colors += 1;
-          }
-        }
-
-        if (nb_colors == 0) {
-          color = glm::vec4(1.0f);
-        } else {
-          color /= static_cast<float>(nb_colors);
-        }
-
-        vertex.color = color;
-
-        mesh_data.vertices.emplace_back(std::move(vertex));
-      }
-
-      mesh_data.indices.reserve(static_cast<std::size_t>(mesh->mNumFaces) * 3u);
-      mesh_data.material_ID = mesh->mMaterialIndex;
-
-      for (std::uint32_t f{ 0 }; f < mesh->mNumFaces; f++) {
-        aiFace const* face = &mesh->mFaces[f];
-
-        for (std::uint32_t j{ 0 }; j < face->mNumIndices; j++) {
-          mesh_data.indices.push_back(face->mIndices[j]);
-        }
-      }
-
-      if (mesh->HasBones()) {
-        mesh_data.vertices_bones.resize(mesh->mNumVertices, {});
-        std::unordered_map<std::uint32_t, std::vector<std::pair<std::uint32_t, float>>> vertex_weight_map{};
-
-        for (std::uint32_t b{ 0 }; b < mesh->mNumBones; b++) {
-          auto bone_id{ global_bone_count };
-          global_bone_count += 1;
-
-          aiBone const* bone = mesh->mBones[b];
-
-          std::string const& bone_name{ bone->mName.C_Str() };
-
-          aiNode const* bone_node = scene->mRootNode->FindNode(bone_name.c_str());
-
-          Bone bone_data{};
-          bone_data.id = bone_id;
-          bone_data.transform = ConvertMatrixToGLMFormat(bone_node->mTransformation);
-          bone_data.offset_matrix = ConvertMatrixToGLMFormat(bone->mOffsetMatrix);
-          bone_data.name = bone_node->mName.C_Str();
-          bone_data.parent_name = bone_node->mParent->mName.C_Str();
-          bone_data.weights.resize(bone->mNumWeights);
-
-          glm::vec3 skew;
-          glm::vec4 perspective;
-
-          glm::decompose(
-            bone_data.transform,
-            bone_data.t_pose_scale,
-            bone_data.t_pose_rotation,
-            bone_data.t_pose_position,
-            skew,
-            perspective);
-
-          for (std::uint32_t w{ 0 }; w < bone->mNumWeights; w++) {
-            aiVertexWeight const& aiWeight = bone->mWeights[w];
-            bone_data.weights.emplace_back(aiWeight.mVertexId, aiWeight.mWeight);
-
-            auto& data_weight = vertex_weight_map[aiWeight.mVertexId];
-            data_weight.emplace_back(bone_id, aiWeight.mWeight);
-          }
-
-          //Logger::debug("bone {} bone_node->mNumChildren: {}", bone->mName.C_Str(), bone_node->mNumChildren);
-          for (std::size_t z{ 0 }; z < bone_node->mNumChildren; z++) {
-            aiNode* child = bone_node->mChildren[z];
-            if (child) {
-              std::string const& child_name{ child->mName.C_Str() };
-              bone_data.children.emplace_back(child_name);
-            } else {
-              Logger::debug("no child");
-            }
-          }
-
-          glm::mat4 t_pose = glm::mat4(1.0f);
-          aiNode const* current = bone_node;
-
-          while (current) {
-            t_pose = ConvertMatrixToGLMFormat(current->mTransformation) * t_pose;
-            current = current->mParent;
-          }
-          bone_data.t_pose = t_pose;
-
-          bones_map[bone_node->mName.C_Str()] = std::move(bone_data);
-        }
-        for (auto& vertex_map : vertex_weight_map) {
-          std::uint32_t const vertex_id { vertex_map.first };
-          auto const& pos { mesh_data.positions.at(vertex_id) };
-          VertexBones vertex_bones { };
-          auto& data_vertex { vertex_map.second };
-          vertex_bones.original_pos = glm::vec3(pos);
-          
-          std::sort(data_vertex.begin(), data_vertex.end(),
-            [](auto const& a, auto const& b) { return a.second > b.second; });
-
-          float total_weight{ 0.0f };
-
-          for (std::size_t y{ 0 }; y < 4 && y < data_vertex.size(); ++y) {
-            vertex_bones.bone_ids[y] = static_cast<std::int32_t>(data_vertex[y].first);
-            vertex_bones.bone_weights[y] = data_vertex[y].second;
-            total_weight += data_vertex[y].second;
-          }
-
-          if (total_weight > 0.0f) {
-            for (std::size_t y{ 0 }; y < 4; ++y) {
-              vertex_bones.bone_weights[y] /= total_weight;
-              vertex_bones.total_weight += vertex_bones.bone_weights[y]; 
-            }
-          }
-          mesh_data.vertices_bones[vertex_id] = std::move(vertex_bones);
-        }
-      }
-      if (!mesh_data.indices.empty() && !mesh_data.positions.empty()
-          && (mesh_data.indices.size() % 3u == 0u)) {
-        std::size_t const index_count { mesh_data.indices.size() };
-        std::size_t const vertex_count { mesh_data.positions.size() };
-
-        meshopt_optimizeVertexCache(
-          mesh_data.indices.data(),
-          mesh_data.indices.data(),
-          index_count,
-          vertex_count);
-
-        meshopt_optimizeOverdraw(
-          mesh_data.indices.data(),
-          mesh_data.indices.data(),
-          index_count,
-          &mesh_data.positions[0].x,
-          vertex_count,
-          sizeof(glm::vec3),
-          1.05f);
-
-        std::vector<std::uint32_t> remap(vertex_count);
-        std::size_t const unique_vertices {
-          meshopt_optimizeVertexFetchRemap(
-            remap.data(),
-            mesh_data.indices.data(),
-            index_count,
-            vertex_count)
-        };
-
-        meshopt_remapIndexBuffer(
-          mesh_data.indices.data(),
-          mesh_data.indices.data(),
-          index_count,
-          remap.data());
-
-        std::vector<glm::vec3> remapped_positions(unique_vertices);
-        meshopt_remapVertexBuffer(
-          remapped_positions.data(),
-          mesh_data.positions.data(),
-          vertex_count,
-          sizeof(glm::vec3),
-          remap.data());
-        mesh_data.positions = std::move(remapped_positions);
-
-        std::vector<Vertex> remapped_vertices(unique_vertices);
-        meshopt_remapVertexBuffer(
-          remapped_vertices.data(),
-          mesh_data.vertices.data(),
-          vertex_count,
-          sizeof(Vertex),
-          remap.data());
-        mesh_data.vertices = std::move(remapped_vertices);
-
-        if (!mesh_data.vertices_bones.empty()) {
-          std::vector<VertexBones> remapped_bones(unique_vertices);
-          meshopt_remapVertexBuffer(
-            remapped_bones.data(),
-            mesh_data.vertices_bones.data(),
-            vertex_count,
-            sizeof(VertexBones),
-            remap.data());
-          mesh_data.vertices_bones = std::move(remapped_bones);
-        }
-      }
-
-      data.emplace_back(std::move(mesh_data));
-    }
-
-    for (std::uint32_t i{ 0 }; i < node->mNumChildren; i++) {
-      process(root_bone, node->mChildren[i], scene, data, transform_matrix, inverse_global_transform, texture_prefix, flip_Y, bones_map, global_bone_count);
-    }
   }
 
   TextureWrapMode AssimpLoader::getTextureWrapMode(aiTextureMapMode const wrap_mode)

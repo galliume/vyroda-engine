@@ -473,8 +473,9 @@ namespace Vyroda
     auto const& data { mesh.getData() };
     auto const& material { mesh.getMaterials().at(data->_material_id) };
 
+    bool const is_transmissive { material.transmission_strength > 0.0f };
     VkBool32 const blend_enable =
-      (material.alpha_mode == 2.0f || (renderer_context.has_alpha_blend && material.alpha_mode >= 1.0f)) ? VK_TRUE : VK_FALSE;
+      (is_transmissive || material.alpha_mode == 2.0f || (renderer_context.has_alpha_blend && material.alpha_mode >= 1.0f)) ? VK_TRUE : VK_FALSE;
 
     vkCmdSetColorBlendEnableEXT(cmd_buffer, 0, 1, &blend_enable);
 

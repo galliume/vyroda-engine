@@ -103,64 +103,18 @@ namespace Vyroda
     auto const flip_Y { raw_data.value("flipY", false) };
     
     bool has_alpha_blend{ false };
-
-    auto callback = [this, &root_path, &root_mesh_entity_node, &raw_data, &renderer, &has_alpha_blend](
-      PlpMeshData _data,
-      std::vector<material_t> const materials,
-      std::vector<Animation> const animations,
-      std::unordered_map<std::string, std::vector<std::vector<Position>>> const positions,
-      std::unordered_map<std::string, std::vector<std::vector<Rotation>>> const rotations,
-      std::unordered_map<std::string, std::vector<std::vector<Scale>>> const scales) {
+    bool textures_preloaded{ false };
 
     auto const& p { raw_data["positions"].at(0) };
-    glm::vec3 position{ p["x"].get<float>(), p["y"].get<float>(), p["z"].get<float>() };
+    glm::vec3 const position{ p["x"].get<float>(), p["y"].get<float>(), p["z"].get<float>() };
     
     auto const& s { raw_data["scales"].at(0) };
-    glm::vec3 scale{ s["x"].get<float>(), s["y"].get<float>(), s["z"].get<float>() };
+    glm::vec3 const scale{ s["x"].get<float>(), s["y"].get<float>(), s["z"].get<float>() };
 
     auto const& r { raw_data["rotations"].at(0) };
-    glm::quat rotation { glm::quat(glm::vec3(glm::radians(r["x"].get<float>()),
+    glm::quat const rotation { glm::quat(glm::vec3(glm::radians(r["x"].get<float>()),
                                   glm::radians(r["y"].get<float>()),
                                   glm::radians(r["z"].get<float>()))) };
-
-    std::vector<std::string> textures{};
-
-    //@todo could candidate for reflection to read the json struct
-    if (raw_data.contains("textures")) {
-      textures.append_range(
-        raw_data["textures"].items() 
-        | std::views::transform([](auto&& item) { return item.key(); }));
-    }
-
-    if (raw_data.contains("normal")) {
-      textures.append_range(
-        raw_data["normal"].items() 
-        | std::views::transform([](auto&& item) { return item.key(); }));
-    }
-
-    if (raw_data.contains("mr")) {
-      textures.append_range(
-        raw_data["mr"].items() 
-        | std::views::transform([](auto&& item) { return item.key(); }));
-    }
-
-    if (raw_data.contains("emissive")) {
-      textures.append_range(
-        raw_data["emissive"].items() 
-        | std::views::transform([](auto&& item) { return item.key(); }));
-    }
-
-    if (raw_data.contains("ao")) {
-      textures.append_range(
-        raw_data["ao"].items() 
-        | std::views::transform([](auto&& item) { return item.key(); }));
-    }
-
-    if (raw_data.contains("transmission")) {
-      textures.append_range(
-        raw_data["transmission"].items() 
-        | std::views::transform([](auto&& item) { return item.key(); }));
-    }
 
     std::vector<std::string> animation_scripts{};
     animation_scripts.reserve(raw_data["animationScripts"].size());
@@ -168,9 +122,9 @@ namespace Vyroda
       animation_scripts.emplace_back(path_anim);
     }
 
-    auto const& shader { raw_data.value("shader", "") };
+    auto const shader { raw_data.value("shader", "") };
 
-    EntityOptions entity_opts {
+    EntityOptions const entity_opts {
       shader, position, scale, rotation,
       raw_data.value("hasBbox", false),
       raw_data.value("hasAnimation", false),
@@ -183,6 +137,56 @@ namespace Vyroda
       raw_data.value("defaultAnim", 0u)
     };
 
+    auto const S { glm::scale(glm::mat4(1.0f), entity_opts.scale) };
+    auto const R { glm::mat4_cast(entity_opts.rotation) };
+    auto const T { glm::translate(glm::mat4(1.0f), entity_opts.pos) };
+    auto const transform { T * R * S };
+
+    auto callback = [this, &root_path, &root_mesh_entity_node, &renderer, &has_alpha_blend, &textures_preloaded, &entity_opts, &transform](
+      PlpMeshData&& _data,
+      std::vector<material_t> const& materials,
+      std::vector<Animation> const& animations,
+      std::unordered_map<std::string, std::vector<std::vector<Position>>> const& positions,
+      std::unordered_map<std::string, std::vector<std::vector<Rotation>>> const& rotations,
+      std::unordered_map<std::string, std::vector<std::vector<Scale>>> const& scales) {
+
+      if (!textures_preloaded && !materials.empty()) {
+        textures_preloaded = true;
+        std::vector<TextureLoadRequest> batch{};
+        batch.reserve(materials.size() * 4u);
+        for (auto const& m : materials) {
+          if (!m.name_texture_diffuse.empty()) {
+            batch.emplace_back(m.name_texture_diffuse, m.name_texture_diffuse_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::DIFFUSE);
+          } else if (!m.name_texture_ambient.empty()) {
+            batch.emplace_back(m.name_texture_ambient, m.name_texture_ambient_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::DIFFUSE);
+          }
+          if (!m.name_texture_specular.empty()) {
+            batch.emplace_back(m.name_texture_specular, m.name_texture_specular_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::AO);
+          }
+          if (!m.name_texture_bump.empty()) {
+            batch.emplace_back(m.name_texture_bump, m.name_texture_bump_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::NORMAL);
+          }
+          if (!m.name_texture_alpha.empty()) {
+            batch.emplace_back(m.name_texture_alpha, m.name_texture_alpha_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::AO);
+          }
+          if (!m.name_texture_metal_roughness.empty()) {
+            batch.emplace_back(m.name_texture_metal_roughness, m.name_texture_metal_roughness_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::MR);
+          }
+          if (!m.name_texture_emissive.empty()) {
+            batch.emplace_back(m.name_texture_emissive, m.name_texture_emissive_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::EMISSIVE);
+          }
+          if (!m.name_texture_ao.empty()) {
+            batch.emplace_back(m.name_texture_ao, m.name_texture_ao_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::AO);
+          }
+          if (!m.name_texture_base_color.empty()) {
+            batch.emplace_back(m.name_texture_base_color, m.name_texture_base_color_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::DIFFUSE);
+          }
+          if (!m.name_texture_transmission.empty()) {
+            batch.emplace_back(m.name_texture_transmission, m.name_texture_transmission_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::EMISSIVE);
+          }
+        }
+        _texture_manager.addBatch(batch, renderer);
+      }
 
       std::unique_ptr<Mesh>mesh { std::make_unique<Mesh>() };
       mesh->setName(_data.name);
@@ -272,35 +276,33 @@ namespace Vyroda
           options |= VYR_MESH_OPTIONS::HAS_TRANSMISSION;
           _texture_manager.add(name_texture_transmission, mat.name_texture_transmission_path, VK_IMAGE_ASPECT_COLOR_BIT, TEXTURE_TYPE::EMISSIVE, renderer);
         }
-        for (auto& material : materials) {
-          mesh->addMaterial(material);
-        }
+        mesh->addMaterial(mat);
       }
 
       Data data{};
-      data._name = _data.name;
-      data._texture_prefix = _data.texture_prefix;
-      data._textures.emplace_back(name_texture);
-      data._specular_map = name_specular_map;
-      data._bump_map = name_bump_map;
-      data._alpha = name_alpha_map;
-      data._metal_roughness = name_texture_metal_roughness;
-      data._emissive = name_texture_emissive;
-      data._ao = name_texture_ao;
-      data._base_color = name_texture_base_color;
-      data._transmission = name_texture_transmission;
+      data._name = std::move(_data.name);
+      data._texture_prefix = std::move(_data.texture_prefix);
+      data._textures.emplace_back(std::move(name_texture));
+      data._specular_map = std::move(name_specular_map);
+      data._bump_map = std::move(name_bump_map);
+      data._alpha = std::move(name_alpha_map);
+      data._metal_roughness = std::move(name_texture_metal_roughness);
+      data._emissive = std::move(name_texture_emissive);
+      data._ao = std::move(name_texture_ao);
+      data._base_color = std::move(name_texture_base_color);
+      data._transmission = std::move(name_texture_transmission);
       data._positions = std::move(_data.positions);
       data._vertices = std::move(_data.vertices);
       data._vertices_bones = std::move(_data.vertices_bones);
-      data._indices = _data.indices;
+      data._indices = std::move(_data.indices);
       data._origin_pos = entity_opts.pos;
       data._current_pos = entity_opts.pos;
       data._origin_scale = entity_opts.scale;
       data._current_scale = entity_opts.scale;
       data._origin_rotation = entity_opts.rotation;
       data._current_rotation = entity_opts.rotation;
-      data._bones = _data.bones;
-      data._root_bone_name = _data.root_bone_name;
+      data._bones = std::move(_data.bones);
+      data._root_bone_name = std::move(_data.root_bone_name);
       data._local_transform = _data.local_transform;
       data._default_anim = entity_opts.default_anim;
       data._bbox_min = _data.bbox_min;
@@ -321,13 +323,8 @@ namespace Vyroda
       mesh_root->getData()->_bbox_max.y = std::max(_data.bbox_max.y, mesh_root->getData()->_bbox_max.y);
       mesh_root->getData()->_bbox_max.z = std::max(_data.bbox_max.z, mesh_root->getData()->_bbox_max.z);
       
-      data._material_id = _data.material_ID;
+      data._material_id = 0u;
 
-      auto const S { glm::scale(glm::mat4(1.0f), entity_opts.scale) };
-      auto const R { glm::mat4_cast(entity_opts.rotation) };
-      auto const T { glm::translate(glm::mat4(1.0f), entity_opts.pos) };
-      auto const transform  { T * R * S };
-      
       std::vector<std::vector<UniformBufferObject>> ubos{};
       UniformBufferObject ubo{};
       ubo.model = transform * _data.inverse_transform_matrix * _data.transform_matrix;
@@ -349,7 +346,7 @@ namespace Vyroda
       //}
 
       data._transform_matrix = _data.transform_matrix;
-      data._ubos = ubos;
+      data._ubos = std::move(ubos);
       data._original_ubo = ubo;
 
       mesh->bbox(true);
@@ -357,17 +354,20 @@ namespace Vyroda
       bool const is_last{ (_data.id == 0) ? true : false };
       
       auto entity { std::make_shared<Entity>() };
-      entity->setName(_data.name);
+      entity->setName(data._name);
       mesh_root->addChild(entity->getID());
       mesh->setParent(root_mesh_entity_node->getEntity()->getID());        
 
-      data._id = entity->getID();
-      mesh->setData(data);
+      auto const entity_id { entity->getID() };
+      data._id = entity_id;
+      mesh->setData(std::move(data));
 
-      _animations[data._id] = animations;
-      _rotations [data._id] = rotations;
-      _positions[data._id] = positions;
-      _scales[data._id] = scales;
+      if (!animations.empty()) {
+        _animations[entity_id] = animations;
+        _rotations[entity_id] = rotations;
+        _positions[entity_id] = positions;
+        _scales[entity_id] = scales;
+      }
 
       auto basicRdrImpl { RendererComponentFactory::create<Basic>() };
 

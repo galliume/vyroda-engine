@@ -277,7 +277,8 @@ namespace Vyroda
   void drawEntity(
     IDType const entity_id,
     glm::mat4 const& camera_view_matrix,
-    bool const has_alpha_blend = false);
+    bool const has_alpha_blend = false,
+    bool const transmissive_pass = false);
 
   void drawShadowMap(
     IDType const entity_id,

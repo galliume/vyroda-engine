@@ -28,28 +28,17 @@ namespace Vyroda
       std::string const & path,
       bool const flip_Y,
       std::function<void(
-        PlpMeshData const _data,
-        std::vector<material_t> const materials,
-        std::vector<Animation> const animations,
-        std::unordered_map<std::string, std::vector<std::vector<Position>>> const positions,
-        std::unordered_map<std::string, std::vector<std::vector<Rotation>>> const rotations,
-        std::unordered_map<std::string, std::vector<std::vector<Scale>>> const scales)> callback);
+        PlpMeshData&& _data,
+        std::vector<material_t> const& materials,
+        std::vector<Animation> const& animations,
+        std::unordered_map<std::string, std::vector<std::vector<Position>>> const& positions,
+        std::unordered_map<std::string, std::vector<std::vector<Rotation>>> const& rotations,
+        std::unordered_map<std::string, std::vector<std::vector<Scale>>> const& scales)> callback);
 
   private:
       static void getBoneHierarchy(aiNode* node, std::unordered_set<std::string>& bone_names);
       static std::string const cleanName(std::string const& name, std::string const& prefix);
       static void addWeightlessBones(aiNode const * node, std::unordered_map<std::string, Bone>& bones_map, std::uint32_t global_bone_count);
-      static void process(
-        std::string const& root_bone,
-        aiNode* node,
-        const aiScene *scene,
-        std::vector<PlpMeshData>& mesh_data,
-        glm::mat4 const& global_transform,
-        glm::mat4 const& inverse_global_transform,
-        std::string const& texture_prefix,
-        bool const flip_Y,
-        std::unordered_map<std::string, Bone> & bones_map,
-        std::uint32_t global_bone_count);
     static TextureWrapMode getTextureWrapMode(aiTextureMapMode const wrap_mode);
     static AnimInterpolation getInterpolation(aiAnimInterpolation const assimp_interpolation);
     static aiNode const* FindRootBone(

@@ -22,10 +22,10 @@
       "z": -3.0
     }
   },
-  "hasFog" : false,
+  "hasFog": false,
   "player": "",
   "entities": {
-  "bistro": {
+    "bistro": {
       "mesh": "assets/mesh/bistro/bistro.gltf",
       "shader": "main_basic",
       "positions": [

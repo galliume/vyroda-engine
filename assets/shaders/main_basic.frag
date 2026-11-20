@@ -315,6 +315,16 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
   return F;
 }
 
+// UE4 analytic split-sum BRDF approximation (Karis 2014)
+vec3 EnvBRDFApprox(vec3 F0, float roughness, float NdV) {
+  const vec4 c0 = vec4(-1.0, -0.0275, -0.572, 0.022);
+  const vec4 c1 = vec4(1.0, 0.0425, 1.04, -0.04);
+  vec4 r = roughness * c0 + c1;
+  float a004 = min(r.x * r.x, exp2(-9.28 * NdV)) * r.x + r.y;
+  vec2 AB = vec2(-1.04, 1.04) * a004 + r.zw;
+  return F0 * AB.x + AB.y;
+}
+
 float ReflectionBounce(vec3 F0) {
   return length((20.0 / 21.0) * F0 + (1.0 / 21.0));
 }
@@ -345,16 +355,45 @@ float SmithGeometryGGXIBL(float roughness, float theta) {
   return theta / (theta * (1.0 - k) + k);
 }
 
-vec3 linear_to_hdr10(vec3 color, float white_point) {
-  // Convert Rec.709 to Rec.2020 color space to broaden the palette
-  const mat3 from709to2020 =
-      mat3(0.6274040, 0.3292820, 0.0433136, 0.0690970, 0.9195400, 0.0113612,
-           0.0163916, 0.0880132, 0.8955950);
-  // color = from709to2020 * color;
+// Gran Turismo / Uchimura (CEDEC 2017) HDR tone mapping
+// http://cdn2.gran-turismo.com/data/www/pdi_publications/PracticalHDRandWCGinGTS_20181222.pdf
+vec3 uchimura_tonemap(vec3 x, float P, float a, float m, float l, float c,
+                      float b) {
+  float l0 = ((P - m) * l) / a;
+  float S0 = m + l0;
+  float S1 = m + a * l0;
+  float C2 = (a * P) / (P - S1);
+  float CP = -C2 / P;
 
-  // Normalize HDR scene values ([0..>1] to [0..1]) for ST.2084 curve
+  vec3 x_pos = max(x, vec3(0.0));
+  vec3 w0 = 1.0 - smoothstep(vec3(0.0), vec3(m), x_pos);
+  vec3 w2 = step(vec3(m + l0), x_pos);
+  vec3 w1 = 1.0 - w0 - w2;
+
+  vec3 T = m * pow(max(x_pos, vec3(1e-6)) / m, vec3(c)) + b;
+  vec3 S = P - (P - S1) * exp(CP * (x_pos - S0));
+  vec3 L = m + a * (x_pos - m);
+
+  return T * w0 + L * w1 + S * w2;
+}
+
+vec3 linear_to_hdr10(vec3 color, float white_point) {
+  // ITU-R BT.2408 HDR10 reference diffuse white (203 nits), peak = white_point
+  // nits
+  const float paper_white = 203.0;
+  float P = max(white_point / paper_white, 1.0);
+  color = uchimura_tonemap(color, P, 1.0, 0.22, 0.4, 1.33, 0.0);
+
+  // Convert linear Rec.709 to linear Rec.2020 (GLSL mat3 is column-major)
+  const mat3 from709to2020 =
+      mat3(0.6274040, 0.0690970, 0.0163916, 0.3292820, 0.9195400, 0.0880132,
+           0.0433136, 0.0113612, 0.8955950);
+  color = max(from709to2020 * color, vec3(0.0));
+
+  // Scale paper-white units ([0..P]) to ST.2084 normalized nits
+  // ([0..white_point/10000])
   const float st2084_max = 10000.0;
-  color *= white_point / st2084_max;
+  color *= paper_white / st2084_max;
 
   // Apply ST.2084 (PQ curve) for HDR10 standard
   const float m1 = 2610.0 / 4096.0 / 4.0;
@@ -362,7 +401,7 @@ vec3 linear_to_hdr10(vec3 color, float white_point) {
   const float c1 = 3424.0 / 4096.0;
   const float c2 = 2413.0 / 4096.0 * 32.0;
   const float c3 = 2392.0 / 4096.0 * 32.0;
-  vec3 cp = pow(abs(color), vec3(m1));
+  vec3 cp = pow(max(color, vec3(0.0)), vec3(m1));
   color = pow((c1 + c2 * cp) / (1.0 + c3 * cp), vec3(m2));
 
   return color;
@@ -454,24 +493,39 @@ void main() {
   vec3 diff_irradiance = vec3(0.0);
   vec3 spec_irradiance = vec3(0.0);
 
-  vec3 normal = var.norm;
+  float transmission = clamp(material.strength.z, 0.0, 1.0);
+  if (bool((pc.options >> HAS_TRANSMISSION) & 1u)) {
+    transmission *=
+        texture(tex_sampler[TRANSMISSION_INDEX], var.texture_coord).r;
+  }
+
+  vec3 normal = normalize(var.norm);
   if (bool((pc.options >> HAS_NORMAL) & 1u)) {
     vec2 xy = raw_normal * 2.0 - 1.0;
     // xy.y = -xy.y;
     float z = sqrt(max(0.0, 1.0 - dot(xy, xy)));
     normal = normalize(var.TBN * vec3(xy, z));
   }
-
-  if (bool((pc.env_options >> HAS_IRRADIANCE) & 1u)) {
-    const float lod = 9.0;
-    vec3 r = reflect(-V, normal);
-    diff_irradiance =
-        textureLod(env_sampler[ENVIRONMENT_MAP_INDEX], normal, lod).rgb;
-    spec_irradiance =
-        textureLod(env_sampler[ENVIRONMENT_MAP_INDEX], r, roughness * lod).rgb;
+  if (transmission > 0.01 && dot(normal, V) < 0.0) {
+    normal = -normal;
   }
 
-  vec3 F0 = mix(vec3(0.04), C_diffuse.xyz, metallic);
+  if (bool((pc.env_options >> HAS_IRRADIANCE) & 1u)) {
+    float max_lod =
+        float(textureQueryLevels(env_sampler[ENVIRONMENT_MAP_INDEX]) - 1);
+    vec3 r = reflect(-V, normal);
+    diff_irradiance = textureLod(env_sampler[ENVIRONMENT_MAP_INDEX], normal,
+                                 max(max_lod - 1.0, 0.0))
+                          .rgb;
+    spec_irradiance = textureLod(env_sampler[ENVIRONMENT_MAP_INDEX], r,
+                                 sqrt(roughness) * max_lod)
+                          .rgb;
+  }
+
+  float ior = (material.shi_ior_diss.y > 1.0) ? material.shi_ior_diss.y : 1.5;
+  float f0_dielectric = (ior - 1.0) / (ior + 1.0);
+  vec3 F0 = mix(vec3(f0_dielectric * f0_dielectric), C_diffuse.xyz, metallic);
+  float diffuse_weight = 1.0 - transmission;
 
   vec3 out_lights = vec3(0.0);
 
@@ -494,7 +548,7 @@ void main() {
     float denominator = 4.0 * NdV * NdL + 0.0001;
     vec3 specular = numerator / denominator;
 
-    vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);
+    vec3 kD = (vec3(1.0) - F) * (1.0 - metallic) * diffuse_weight;
 
     vec3 csm_coords = var.cascade_coord.xyz / var.cascade_coord.w;
     float csm_shadow = CalculateInfiniteShadow(csm_coords, var.blend);
@@ -504,7 +558,7 @@ void main() {
   }
 
   vec3 kS_amb = FresnelSchlickRoughness(NdV, F0, roughness);
-  vec3 kD_amb = (1.0 - kS_amb) * (1.0 - metallic);
+  vec3 kD_amb = (1.0 - kS_amb) * (1.0 - metallic) * diffuse_weight;
 
   for (int i = 1; i < NR_POINT_LIGHTS; ++i) {
 
@@ -512,7 +566,7 @@ void main() {
     vec3 l = light_pos - var.frag_pos;
 
     float attenuation = InverseSquareAttenuation(l);
-    vec3 C_light = lightData.lights[i].color.rgb * attenuation;
+    vec3 C_light = lightData.lights[i].color.rgb * attenuation * 50;
 
     vec3 L = normalize(l);
     vec3 H = normalize(L + V);
@@ -528,7 +582,7 @@ void main() {
     float denominator = 4.0 * NdV * NdL + 0.0001;
     vec3 specular = numerator / denominator;
 
-    vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);
+    vec3 kD = (vec3(1.0) - F) * (1.0 - metallic) * diffuse_weight;
 
     vec3 curr = (kD * (C_diffuse.rgb / PI) + specular) * C_light * NdL;
 
@@ -538,11 +592,21 @@ void main() {
     out_lights += curr;
   }
 
-  vec3 C_ambient = ((kD_amb * (C_diffuse.rgb / PI) * diff_irradiance) +
-                    (kS_amb * spec_irradiance)) *
-                   ao * 0.01;
+  vec3 spec_brdf = EnvBRDFApprox(F0, roughness, NdV);
+  vec3 C_ambient = ((kD_amb * C_diffuse.rgb * diff_irradiance) +
+                    (spec_brdf * spec_irradiance)) *
+                   ao;
 
   vec4 color = vec4(C_ambient + C_sun + out_lights + emissive.rgb, color_alpha);
+
+  if (transmission > 0.01) {
+    float F_glass = FresnelSchlick(NdV, F0).r;
+    float spec_peak = max(C_sun.r, max(C_sun.g, C_sun.b));
+    color_alpha = clamp(
+        (1.0 - transmission) + F_glass + min(spec_peak * 0.2, 0.5), 0.08, 1.0);
+    color.rgb /= max(color_alpha, 0.35);
+    color.a = color_alpha;
+  }
 
   if (bool((pc.env_options >> HAS_FOG) & 1u)) {
     color.rgb = ApplyFog(color.rgb, var.view_pos, var.frag_pos.y);

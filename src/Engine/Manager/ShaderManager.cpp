@@ -443,7 +443,11 @@ namespace Vyroda
 
   void ShaderManager::createGraphicPipeline(std::string const & shader_name)
   {
-    std::uint32_t pool_size { 1000 };
+    bool const small_pool {
+      shader_name == "text" || shader_name == "skybox"
+      || shader_name == "terrain" || shader_name == "water"
+    };
+    std::uint32_t const pool_size { small_pool ? 256u : 16384u };
     Logger::debug("shader_name {}", shader_name);
     bool const offscreen { shader_name == "shadow_map" || shader_name == "csm" };
     bool need_bis{ false };
@@ -466,7 +470,7 @@ namespace Vyroda
 
     VkDescriptorPoolSize dpsIS;
     dpsIS.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    dpsIS.descriptorCount = pool_size;
+    dpsIS.descriptorCount = pool_size * 11;
 
     poolSizes.emplace_back(dpsUbo);
 
@@ -569,7 +573,7 @@ namespace Vyroda
     } else if (shader_name == "normal_debug") { 
       VkDescriptorPoolSize dpsSB;
       dpsSB.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-      dpsSB.descriptorCount = pool_size;
+      dpsSB.descriptorCount = pool_size * 2;
 
       poolSizes.emplace_back(dpsSB);
 
@@ -582,7 +586,7 @@ namespace Vyroda
     } else {
       VkDescriptorPoolSize dpsSB;
       dpsSB.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-      dpsSB.descriptorCount = pool_size;
+      dpsSB.descriptorCount = pool_size * 2;
 
       poolSizes.emplace_back(dpsSB);
 
