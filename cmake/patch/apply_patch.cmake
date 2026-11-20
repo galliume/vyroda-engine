@@ -3,7 +3,7 @@ if(NOT DEFINED PATCH_FILE)
 endif()
 
 execute_process(
-  COMMAND git apply --reverse --check "${PATCH_FILE}"
+  COMMAND git apply --ignore-whitespace --reverse --check "${PATCH_FILE}"
   RESULT_VARIABLE already_applied
   OUTPUT_QUIET
   ERROR_QUIET
@@ -12,7 +12,7 @@ execute_process(
 if(NOT already_applied EQUAL 0)
   message(STATUS "Applying patch: ${PATCH_FILE}")
   execute_process(
-    COMMAND git apply "${PATCH_FILE}"
+    COMMAND git apply --ignore-whitespace "${PATCH_FILE}"
     RESULT_VARIABLE res
   )
   if(NOT res EQUAL 0)

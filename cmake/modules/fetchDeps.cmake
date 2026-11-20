@@ -18,7 +18,6 @@ set(VOLK_TAG vulkan-sdk-1.4.363.0) #https://github.com/zeux/volk/tags
 set(FETCH_GIT_SHALLOW TRUE)
 set(FETCH_GIT_PROGRESS TRUE)
 set(FETCH_UPDATE_DISCONNECTED TRUE)
-set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "" FORCE)
 
 include(FetchContent)
 

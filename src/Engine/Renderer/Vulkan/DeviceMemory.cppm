@@ -75,6 +75,6 @@ namespace Vyroda
     std::vector<VkBuffer> _buffer;
     VkDevice _device;
     std::unique_ptr<VkDeviceMemory> _memory;
-    std::mutex _mutex_memory;
+    mutable std::mutex _mutex_memory;
   };
 }

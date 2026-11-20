@@ -72,6 +72,7 @@ namespace Vyroda
     std::uint32_t material_ID{ 0 };
     std::vector<std::uint32_t> face_material_ID{};
     std::vector<std::uint32_t> indices{};
+    std::vector<glm::vec4> positions{};
     std::vector<Vertex> vertices{};
     std::vector<VertexBones> vertices_bones{};
     glm::mat4 transform_matrix{};

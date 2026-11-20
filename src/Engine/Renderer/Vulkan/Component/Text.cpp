@@ -33,6 +33,7 @@ namespace Vyroda
 
     if (!mesh.isDirty()) return;
 
+    std::vector<glm::vec4> positions;
     std::vector<Vertex> vertices;
     
     auto const screen_width{
@@ -46,6 +47,7 @@ namespace Vyroda
     auto const utf16_text{ fmt::detail::utf8_to_utf16(_text).str() };
     float const width{ static_cast<float>(render_context.atlas_width) };
     float const height{ static_cast<float>(render_context.atlas_height) };
+    positions.reserve(utf16_text.size() * 6);
     vertices.reserve(utf16_text.size() * 6);
 
     glm::vec4 const tangent { 1.0f, 0.0f, 0.0f, 1.0f };
@@ -78,45 +80,19 @@ namespace Vyroda
       float u1{ (ch.x_offset + ch.size.x) / width };
       float v1{ ch.y_offset / height };
 
-      Vertex vertex_1{
-          tangent,           // tangent
-          _color,             // color (vec4)
-          {xpos, ypos+h, 0.f, 1.f},// pos (vec3)
-          normal,           // normal
-          {u0, v0}           // texture_coord (vec2)
-      };
+      positions.emplace_back(xpos, ypos+h, 0.f, 1.f);
+      positions.emplace_back(xpos, ypos, 0.f, 1.f);
+      positions.emplace_back(xpos+w, ypos, 0.f, 1.f);
+      positions.emplace_back(xpos, ypos+h, 0.f, 1.f);
+      positions.emplace_back(xpos+w, ypos, 0.f, 1.f);
+      positions.emplace_back(xpos+w, ypos+h, 0.f, 1.f);
 
-      Vertex vertex_2{
-          tangent, _color, {xpos, ypos, 0.f, 1.f},
-          normal, {u0, v1}
-      };
-
-      Vertex vertex_3{
-          tangent, _color, {xpos+w, ypos, 0.f, 1.f},
-          normal, {u1, v1}
-      };
-
-      Vertex vertex_4{
-          tangent, _color, {xpos, ypos+h, 0.f, 1.f},
-          normal, {u0, v0}
-      };
-
-      Vertex vertex_5{
-          tangent, _color, {xpos+w, ypos, 0.f, 1.f},
-          normal, {u1, v1}
-      };
-
-      Vertex vertex_6{
-          tangent, _color, {xpos+w, ypos+h, 0.f, 1.f},
-          normal, {u1, v0},
-      };
-
-      vertices.emplace_back(vertex_1);
-      vertices.emplace_back(vertex_2);
-      vertices.emplace_back(vertex_3);
-      vertices.emplace_back(vertex_4);
-      vertices.emplace_back(vertex_5);
-      vertices.emplace_back(vertex_6);
+      vertices.emplace_back(Vertex{ tangent, _color, normal, {u0, v0} });
+      vertices.emplace_back(Vertex{ tangent, _color, normal, {u0, v1} });
+      vertices.emplace_back(Vertex{ tangent, _color, normal, {u1, v1} });
+      vertices.emplace_back(Vertex{ tangent, _color, normal, {u0, v0} });
+      vertices.emplace_back(Vertex{ tangent, _color, normal, {u1, v1} });
+      vertices.emplace_back(Vertex{ tangent, _color, normal, {u1, v0} });
 
       x += static_cast<float>((ch.advance >> 6)) * _scale;
     }
@@ -150,10 +126,12 @@ namespace Vyroda
     
     auto const& data = mesh.getData();
 
+    data->_positions = positions;
     data->_vertices = vertices;
     data->_texture_index = 0;
 
     if (data->_ubos.empty()) {
+      data->_position_buffer = renderer.getAPI().createPositionBuffer(positions, renderer.getCurrentFrameIndex());
       data->_vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());
 
       std::vector<UniformBufferObject> ubos{};

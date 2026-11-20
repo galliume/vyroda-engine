@@ -581,6 +581,7 @@ namespace Vyroda
       mesh_data.bbox_min = glm::vec3(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
       mesh_data.bbox_max = glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
 
+      mesh_data.positions.reserve(mesh->mNumVertices);
       mesh_data.vertices.reserve(mesh->mNumVertices);
 
       for (std::uint32_t v{ 0 }; v < mesh->mNumVertices; v++) {
@@ -589,7 +590,7 @@ namespace Vyroda
 
         Vertex vertex{};
 
-        vertex.pos = { vertices.x, vertices.y, vertices.z, 1.0f };
+        mesh_data.positions.emplace_back(vertices.x, vertices.y, vertices.z, 1.0f);
         //if (flip_Y) vertex.pos.y *= -1.0f;
 
         if (mesh->HasNormals()) {
@@ -725,10 +726,10 @@ namespace Vyroda
         }
         for (auto& vertex_map : vertex_weight_map) {
           std::uint32_t const vertex_id { vertex_map.first };
-          auto& vertex { mesh_data.vertices.at(vertex_id) };
+          auto const& pos { mesh_data.positions.at(vertex_id) };
           VertexBones vertex_bones { };
           auto& data_vertex { vertex_map.second };
-          vertex_bones.original_pos = vertex.pos;
+          vertex_bones.original_pos = glm::vec3(pos);
           
           std::sort(data_vertex.begin(), data_vertex.end(),
             [](auto const& a, auto const& b) { return a.second > b.second; });

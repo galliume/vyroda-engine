@@ -40,9 +40,10 @@ void Water::operator()(
 
     if (!mesh.isDirty()) return;
 
+    std::vector<glm::vec4> positions;
     std::vector<Vertex> vertices;
-    int const width{ static_cast<int>(render_context.terrain->getWidth()) };
-    int const height{ static_cast<int>(render_context.terrain->getHeight()) };
+    float const width{ static_cast<float>(render_context.terrain->getWidth()) };
+    float const height{ static_cast<float>(render_context.terrain->getHeight()) };
 
     int const rez{ 50 };
     int index{ 0 };
@@ -56,47 +57,21 @@ void Water::operator()(
 
         index = i + j;
         float const y{ 0.0f };
+        float const fi { static_cast<float>(i) };
+        float const fj { static_cast<float>(j) };
+        float const fi1 { static_cast<float>(i + 1) };
+        float const fj1 { static_cast<float>(j + 1) };
+        glm::vec4 const col{ static_cast<float>(index), 0.0f, 0.0f, 0.0f };
 
-        // Vertex v1
-        Vertex v{
-            tangentDefault,                      // tangent (vec4 - 16 bytes)
-            { (float)index, 0.0f, 0.0f, 0.0f },  // color (vec4 - 16 bytes)
-            { -width/2.0f + width*i/fRez, y, -height/2.0f + height*j/fRez, 1.0f }, // pos (vec3)
-            normalDefault,                       // normal (vec3)
-            { i / fRez, j / fRez }              // texture_coord (vec2)
-        };
+        positions.emplace_back(-width/2.0f + width*fi/fRez,  y, -height/2.0f + height*fj/fRez,  1.0f);
+        positions.emplace_back(-width/2.0f + width*fi1/fRez, y, -height/2.0f + height*fj/fRez,  1.0f);
+        positions.emplace_back(-width/2.0f + width*fi/fRez,  y, -height/2.0f + height*fj1/fRez, 1.0f);
+        positions.emplace_back(-width/2.0f + width*fi1/fRez, y, -height/2.0f + height*fj1/fRez, 1.0f);
 
-        // Vertex v2
-        Vertex v2{
-            tangentDefault,
-            { (float)index, 0.0f, 0.0f, 0.0f },
-            { -width/2.0f + width*(i+1)/fRez, y, -height/2.0f + height*j/fRez, 1.0f },
-            normalDefault,
-            { (i+1) / fRez, j / fRez }
-        };
-
-        // Vertex v3
-        Vertex v3{
-            tangentDefault,
-            { (float)index, 0.0f, 0.0f, 0.0f },
-            { -width/2.0f + width*i/fRez, y, -height/2.0f + height*(j+1)/fRez, 1.0f },
-            normalDefault,
-            { i / fRez, (j+1) / fRez }
-        };
-
-        // Vertex v4
-        Vertex v4{
-            tangentDefault,
-            { (float)index, 0.0f, 0.0f, 0.0f },
-            { -width/2.0f + width*(i+1)/fRez, y, -height/2.0f + height*(j+1)/fRez, 1.0f },
-            normalDefault,
-            { (i+1) / fRez, (j+1) / fRez }
-        };
-
-        vertices.push_back(v);
-        vertices.push_back(v2);
-        vertices.push_back(v3);
-        vertices.push_back(v4);
+        vertices.push_back(Vertex{ tangentDefault, col, normalDefault, { fi / fRez,  fj / fRez } });
+        vertices.push_back(Vertex{ tangentDefault, col, normalDefault, { fi1 / fRez, fj / fRez } });
+        vertices.push_back(Vertex{ tangentDefault, col, normalDefault, { fi / fRez,  fj1 / fRez } });
+        vertices.push_back(Vertex{ tangentDefault, col, normalDefault, { fi1 / fRez, fj1 / fRez } });
       }
     }
     mesh.setName("__water__");
@@ -110,7 +85,11 @@ void Water::operator()(
     ubos.push_back(ubo);
 
     data->_ubos.push_back(ubos);
+    data->_positions = positions;
     data->_vertices = vertices;
+    if (data->_position_buffer.buffer == VK_NULL_HANDLE) {
+      data->_position_buffer = renderer.getAPI().createPositionBuffer(positions, renderer.getCurrentFrameIndex());
+    }
     if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {
       //Logger::debug("create vertex buffer: {}", "water");      
       data->_vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());

@@ -14,6 +14,7 @@ import std;
 import Engine.Core.Constants;
 import Engine.Core.FontTypes;
 import Engine.Core.GLFW;
+import Engine.Core.GLM;
 import Engine.Core.KTX;
 import Engine.Core.LightTypes;
 import Engine.Core.Logger;
@@ -192,6 +193,10 @@ namespace Vyroda
       VkBufferUsageFlags const usage,
       VkMemoryPropertyFlags const properties,
       VkDeviceMemory& device_memory);
+
+    Buffer createPositionBuffer(
+      std::vector<glm::vec4> const& positions,
+      std::size_t const image_index);
 
     Buffer createVertexBuffer(
       std::vector<Vertex> const& vertices,
@@ -398,7 +403,8 @@ namespace Vyroda
       Data const * data,
       bool const is_indexed = true,
       std::uint32_t const index = 0,
-      std::uint32_t const instance_coun = 1);
+      std::uint32_t const instance_coun = 1,
+      bool const only_position = false);
 
     VkResult queueSubmit(
       VkCommandBuffer cmd_buffer,
@@ -507,13 +513,15 @@ namespace Vyroda
     VkImage createDepthMapImage(
       std::uint32_t const shadow_resolution,
       bool const is_cube_map = false,
-      std::size_t const array_size = 0);
+      std::size_t const array_size = 0,
+      std::optional<VkFormat> const format = std::nullopt);
 
     VkImageView createDepthMapImageView(
       VkImage image,
       bool const is_cube_map = false,
       bool const is_sampling = true,
-      std::size_t const array_size = 0);
+      std::size_t const array_size = 0,
+      std::optional<VkFormat> const format = std::nullopt);
 
     VkSampler createDepthMapSampler();
 
@@ -604,7 +612,8 @@ namespace Vyroda
     VkFormat VYR_VK_FORMAT_SURFACE { VK_FORMAT_A2B10G10R10_UNORM_PACK32 };
     VkFormat VYR_VK_FORMAT_COLOR { VK_FORMAT_A2B10G10R10_UNORM_PACK32 };
     //VK_FORMAT_D16_UNORM, VK_FORMAT_D32_SFLOAT
-    VkFormat VYR_VK_FORMAT_DEPTH { VK_FORMAT_D32_SFLOAT }; //VK_FORMAT_D16_UNORM
+    VkFormat VYR_VK_FORMAT_DEPTH { VK_FORMAT_D32_SFLOAT };
+    VkFormat VYR_VK_FORMAT_CSM_DEPTH { VK_FORMAT_D16_UNORM };
     //VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT
     VkFormat VYR_VK_FORMAT_DEPTH_STENCIL { VK_FORMAT_D32_SFLOAT_S8_UINT };
     VkFormat VYR_VK_FORMAT_FONT{ VK_FORMAT_R8_UNORM };

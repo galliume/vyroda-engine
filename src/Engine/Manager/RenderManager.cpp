@@ -335,7 +335,7 @@ namespace Vyroda
 
         if (glm::dot(K_local, glm::vec4(pos_side, 1.0f)) < 0) {
           //          Logger::debug("clipped: {}", mesh->getName());
-          return false;
+          return true;
         }
       }
     }

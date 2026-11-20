@@ -152,17 +152,17 @@ namespace Vyroda
     _cmd_buffer_shadowmap = _vulkan->allocateCommandBuffers(_cmd_pool_shadowmap, _imageviews.size(), false);
 
     for (std::size_t i { 0 }; i < buffer_size; ++i) {
-      VkImage image{_vulkan->createDepthMapImage(_shadow_map_resolution, true) };
+      VkImage image { _vulkan->createDepthMapImage(_point_shadow_map_resolution, true) };
       _depthmap_images.emplace_back(image);
-      _depthmap_imageviews.emplace_back(_vulkan->createDepthMapImageView(image, _shadow_map_resolution, true));
-      _depthmap_imageviews_rendering.emplace_back(_vulkan->createDepthMapImageView(image, _shadow_map_resolution, true, false));
+      _depthmap_imageviews.emplace_back(_vulkan->createDepthMapImageView(image, true, true));
+      _depthmap_imageviews_rendering.emplace_back(_vulkan->createDepthMapImageView(image, true, true, 0));
       _depthmap_samplers.emplace_back(_vulkan->createDepthMapSampler());
     }
     for (std::size_t i { 0 }; i < buffer_size; ++i) {
-      VkImage image { _vulkan->createDepthMapImage(_shadow_map_resolution, false, 4) };
+      VkImage image { _vulkan->createDepthMapImage(_shadow_map_resolution, false, 4, _vulkan->VYR_VK_FORMAT_CSM_DEPTH) };
       _csm_images.emplace_back(image);
-      _csm_imageviews.emplace_back(_vulkan->createDepthMapImageView(image, false, false, 4));
-      _csm_imageviews_rendering.emplace_back(_vulkan->createDepthMapImageView(image, false, false, 4));
+      _csm_imageviews.emplace_back(_vulkan->createDepthMapImageView(image, false, false, 4, _vulkan->VYR_VK_FORMAT_CSM_DEPTH));
+      _csm_imageviews_rendering.emplace_back(_vulkan->createDepthMapImageView(image, false, false, 4, _vulkan->VYR_VK_FORMAT_CSM_DEPTH));
       _csm_samplers.emplace_back(_vulkan->createDepthMapSampler());
     }
 
@@ -584,7 +584,9 @@ namespace Vyroda
     depth_attachment_info.clearValue.depthStencil = depth_stencil;
     depth_attachment_info.clearValue.color = color_clear;
 
-    auto const width { _shadow_map_resolution };
+    auto const width {
+      (shadow_type == SHADOW_TYPE::CSM) ? _shadow_map_resolution : _point_shadow_map_resolution
+    };
 
     VkRenderingInfo  rendering_info{ };
     rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -692,7 +694,8 @@ namespace Vyroda
       mesh.getData(),
       mesh.is_indexed(),
       0,
-      instance_count);
+      instance_count,
+      true);
   }
 
   void Renderer::endShadowMap(SHADOW_TYPE const shadow_type)
@@ -996,10 +999,30 @@ namespace Vyroda
     vkEndCommandBuffer(_cmd_buffer_entities4[_current_frame]);
   }
 
+  void Renderer::updatePositionBuffer(
+    Data * data,
+    std::size_t const image_index)
+  {
+    std::lock_guard<std::mutex> guard(_mutex_vertices_update);
+    VkDeviceSize const buffer_size { sizeof(glm::vec4) * data->_positions.size() };
+    auto const current_offset { _vulkan->reserveStagingMemoryOffset(buffer_size, image_index) };
+    void* void_data { _vulkan->getStagingMemoryPtr(image_index) };
+    std::memcpy(static_cast<char*>(void_data) + current_offset, data->_positions.data(), static_cast<std::size_t>(buffer_size));
+
+    _vulkan->addCopyBufferRequest(
+      _vulkan->getStagingBuffer(image_index),
+      data->_position_buffer.buffer,
+      buffer_size,
+      image_index,
+      current_offset);
+  }
+
   void Renderer::updateVertexBuffer(
     Data * data,
     std::size_t const image_index)
   {
+    updatePositionBuffer(data, image_index);
+
     std::lock_guard<std::mutex> guard(_mutex_vertices_update);
     VkDeviceSize const buffer_size { sizeof(Vertex) * data->_vertices.size() };
     auto const current_offset { _vulkan->reserveStagingMemoryOffset(buffer_size, image_index) };

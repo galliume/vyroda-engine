@@ -43,19 +43,13 @@ lightData;
 layout(push_constant) uniform shadowMapConstants { mat4 model; }
 pc;
 
-layout(location = 0) in vec4 tangent;
-layout(location = 1) in vec4 color;
-layout(location = 2) in vec4 position;
-layout(location = 3) in vec4 normal;
-layout(location = 4) in vec2 texture_coord;
-// layout(location = 6) in ivec4 bone_ids;
-// layout(location = 7) in vec4 bone_weights;
-// layout(location = 8) in float total_weight;
+layout(location = 2) in vec3 position;
 
 void main() {
-  int face = gl_InstanceIndex;
-  gl_Layer = face;
+  gl_Layer = gl_InstanceIndex;
+  vec3 world = mat3(pc.model) * position + pc.model[3].xyz;
+  mat4 light_vp = lightData.lights[0].light_space_matrix[gl_Layer];
+  vec3 clip = mat3(light_vp) * world + light_vp[3].xyz;
 
-  gl_Position =
-      lightData.lights[0].light_space_matrix[face] * (pc.model * position);
+  gl_Position = vec4(clip, 1.0);
 }

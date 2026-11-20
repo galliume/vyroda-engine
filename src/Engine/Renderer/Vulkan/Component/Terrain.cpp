@@ -40,9 +40,10 @@ namespace Vyroda
 
     if (!mesh.isDirty()) return;
 
+    std::vector<glm::vec4> positions {};
     std::vector<Vertex> vertices {};
-    std::int32_t const width { static_cast<std::int32_t>( render_context.terrain->getWidth()) };
-    std::int32_t const height { static_cast<std::int32_t>( render_context.terrain->getHeight()) };
+    float const width { static_cast<float>(render_context.terrain->getWidth()) };
+    float const height { static_cast<float>(render_context.terrain->getHeight()) };
     std::int32_t const rez { 20 };
     float const fRez { static_cast<float>(rez) };
     glm::vec4 const zeroVec4 { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -52,47 +53,20 @@ namespace Vyroda
       for(std::int32_t j { 0 }; j < rez - 1; j++) {
 
         float const y { 0.0f };
+        float const fi { static_cast<float>(i) };
+        float const fj { static_cast<float>(j) };
+        float const fi1 { static_cast<float>(i + 1) };
+        float const fj1 { static_cast<float>(j + 1) };
 
-        // Vertex v1
-        Vertex v{
-            zeroVec4, // tangent
-            zeroVec4, // color
-            { -width/2.0f + width*i/fRez, y, -height/2.0f + height*j/fRez, 1.0f }, // pos
-            defaultNormal, // normal
-            { i / fRez, j / fRez } // texture_coord
-        };
+        positions.emplace_back(-width/2.0f + width*fi/fRez,  y, -height/2.0f + height*fj/fRez,  1.0f);
+        positions.emplace_back(-width/2.0f + width*fi1/fRez, y, -height/2.0f + height*fj/fRez,  1.0f);
+        positions.emplace_back(-width/2.0f + width*fi/fRez,  y, -height/2.0f + height*fj1/fRez, 1.0f);
+        positions.emplace_back(-width/2.0f + width*fi1/fRez, y, -height/2.0f + height*fj1/fRez, 1.0f);
 
-        // Vertex v2
-        Vertex v2{
-            zeroVec4,
-            zeroVec4,
-            { -width/2.0f + width*(i+1)/fRez, y, -height/2.0f + height*j/fRez, 1.0f },
-            defaultNormal,
-            { (i+1) / fRez, j / fRez }
-        };
-
-        // Vertex v3
-        Vertex v3{
-            zeroVec4,
-            zeroVec4,
-            { -width/2.0f + width*i/fRez, y, -height/2.0f + height*(j+1)/fRez, 1.0f },
-            defaultNormal,
-            { i / fRez, (j+1) / fRez }
-        };
-
-        // Vertex v4
-        Vertex v4{
-            zeroVec4,
-            zeroVec4,
-            { -width/2.0f + width*(i+1)/fRez, y, -height/2.0f + height*(j+1)/fRez, 1.0f },
-            defaultNormal,
-            { (i+1) / fRez, (j+1) / fRez }
-        };
-
-        vertices.push_back(v);
-        vertices.push_back(v2);
-        vertices.push_back(v3);
-        vertices.push_back(v4);
+        vertices.push_back(Vertex{ zeroVec4, zeroVec4, defaultNormal, { fi / fRez,  fj / fRez } });
+        vertices.push_back(Vertex{ zeroVec4, zeroVec4, defaultNormal, { fi1 / fRez, fj / fRez } });
+        vertices.push_back(Vertex{ zeroVec4, zeroVec4, defaultNormal, { fi / fRez,  fj1 / fRez } });
+        vertices.push_back(Vertex{ zeroVec4, zeroVec4, defaultNormal, { fi1 / fRez, fj1 / fRez } });
       }
     }
     mesh.setName("__terrain__");
@@ -106,7 +80,11 @@ namespace Vyroda
     ubo.projection = renderer.getPerspective();
     ubos.push_back(ubo);
 
+    data->_positions = positions;
     data->_vertices = vertices;
+    if (data->_position_buffer.buffer == VK_NULL_HANDLE) {
+      data->_position_buffer = renderer.getAPI().createPositionBuffer(positions, renderer.getCurrentFrameIndex());
+    }
     if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {
       //Logger::debug("create vertex buffer: {}", "terrain");
       data->_vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());

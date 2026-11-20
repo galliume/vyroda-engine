@@ -37,110 +37,74 @@ namespace Vyroda
     DeviceBufferType const buffer_type,
     bool forceNew)
   {
-    if (_memory_allocation_count > _device_props.properties.limits.maxMemoryAllocationCount) {
-      Logger::error("Max number of active allocations reached");
-    }
-
-    VkDeviceSize buffer_size { 0 };
-    VkDeviceSize const max_buffer_size { _memory_props.memoryHeaps[_memory_props.memoryTypes[memory_type].heapIndex].size };
-    std::string buffer_type_debug;
+    constexpr VkDeviceSize MiB { 1024ull * 1024ull };
+    VkDeviceSize min_block_size { 16ull * MiB };
 
     switch (buffer_type) {
       case DeviceBufferType::VERTEX:
-        buffer_size = size;
-        buffer_type_debug = "VERTEX";
-      break;
+        min_block_size = 16ull * MiB;
+        break;
       case DeviceBufferType::UNIFORM:
-        buffer_size = size;        
-
-      //if (buffer_size < _device_props.properties.limits.maxUniformBufferRange) {
-        //buffer_size = _device_props.properties.limits.maxUniformBufferRange;
-      //}
-
-      buffer_type_debug = "UNIFORM";
-      break;
-      default:
+        min_block_size = 1ull * MiB;
+        break;
       case DeviceBufferType::STAGING:
-
-        buffer_size = size;
-
-        //if (buffer_size < _device_props.properties.limits.maxStorageBufferRange / _max_staging) {
-        //buffer_size = _device_props.properties.limits.maxStorageBufferRange / _max_staging;
-        //}
-
-        buffer_type_debug = "STAGING";
-      break;
+      default:
+        min_block_size = 16ull * MiB;
+        break;
     }
 
-    /*
-    using MiB = std::ratio<1024 * 1024>;
+    VkDeviceSize const heap_size {
+      _memory_props.memoryHeaps[_memory_props.memoryTypes[memory_type].heapIndex].size
+    };
+    VkDeviceSize const max_alloc_size {
+      (_maintenance_props.maxMemoryAllocationSize > 0)
+        ? std::min(heap_size, _maintenance_props.maxMemoryAllocationSize)
+        : heap_size
+    };
+    VkDeviceSize const requested_block_size { forceNew ? size : std::max(size, min_block_size) };
+    VkDeviceSize const buffer_size {
+      (size > max_alloc_size) ? size : std::min(requested_block_size, max_alloc_size)
+    };
 
-    Logger::debug("type: {} {} allocated size: {}mib size: {}mib buffer size: {}mib max: {}mib",
-                  buffer_type_debug,
-                  memory_type,
-                  _memory_allocation_size.at(memory_type)/MiB::num,
-                  size/MiB::num,
-                  buffer_size/MiB::num,
-                  max_buffer_size/MiB::num);
-    */
-    DeviceMemory* device_memory{};
+    std::lock_guard<std::mutex> lock(_mutex);
 
-    {
-      std::lock_guard<std::mutex> lock(_mutex);
-      auto pool_type { _pool.find(memory_type) };
-
-      if (_pool.end() != pool_type && !forceNew) {
-        auto poolUsage { pool_type->second.find(usage) };
-        if (pool_type->second.end() != poolUsage) {
-          for (std::size_t i{ 0 }; i < poolUsage->second.size(); ++i) {
-            auto& dm { poolUsage->second.at(i) };
+    if (!forceNew) {
+      auto const pool_type { _pool.find(memory_type) };
+      if (pool_type != _pool.end()) {
+        auto const pool_usage { pool_type->second.find(usage) };
+        if (pool_usage != pool_type->second.end()) {
+          for (auto& dm : pool_usage->second) {
             if (!dm->isFull() && dm->hasEnoughSpaceLeft(size, alignment)) {
-              //  Logger::debug("DM REUSE OK: id {}, {}, type {} usage {} size {}/{}",
-              //    dm.get()->getID(), buffer_type_debug, memory_type, usage, size, dm->getSpaceLeft());
-              device_memory = dm.get();
-            } else {
-              //  Logger::debug("DM REUSE KO: id {}, {}, type {} usage {} size {}/{}",
-              //    dm.get()->getID(), buffer_type_debug, memory_type, usage, size, dm->getSpaceLeft());
+              return dm.get();
             }
           }
         }
-
-        if (_memory_allocation_size.at(memory_type) + buffer_size > max_buffer_size) {
-          //Logger::debug("type: {} {} allocated size: {} size: {} buffer size: {} max: {}", buffer_type_debug, memory_type, _memory_allocation_size.at(memory_type), size, buffer_size, max_buffer_size);
-          Logger::error("Max size of memory allocation reached");
-        }
-
-        _pool[memory_type][usage].emplace_back(std::make_unique<DeviceMemory>(
-          device, memory_type, buffer_size, _device_memory_count, alignment));
-        _memory_allocation_count += 1;
-        _memory_allocation_size.at(memory_type) += buffer_size;
-
-          //Logger::debug("DM CREATION: id {}, {}, type {} usage {} size {}", _device_memory_count, buffer_type_debug, memory_type, usage, buffer_size);
-        _device_memory_count += 1;
-        _memory_size_allocated += size;
-        device_memory = _pool[memory_type][usage].back().get();
-      } else {
-
-        if (_memory_allocation_size.at(memory_type) + buffer_size > max_buffer_size) {
-          Logger::error("Max size of memory allocation reached {}", __LINE__);
-        }
-
-          _pool[memory_type][usage].emplace_back(std::make_unique<DeviceMemory>(
-            device, memory_type, buffer_size, _device_memory_count, alignment));
-          device_memory = _pool[memory_type][usage].back().get();
-        }
-        _memory_allocation_count += 1;
-        _memory_allocation_size.at(memory_type) += buffer_size;
-        //Logger::debug("DM CREATION: id {}, {}, type {} usage {} size {}", _device_memory_count, buffer_type_debug, memory_type, usage, buffer_size);
-        _device_memory_count += 1;
-        _memory_size_allocated += size;
       }
-    return device_memory;
+    }
+
+    if (_memory_allocation_count >= _device_props.properties.limits.maxMemoryAllocationCount) {
+      Logger::error("Max number of active allocations reached");
+    }
+
+    if (_memory_allocation_size.at(memory_type) + buffer_size > heap_size) {
+      Logger::error("Max size of memory allocation reached");
+    }
+
+    auto& bucket { _pool[memory_type][usage] };
+    bucket.emplace_back(std::make_unique<DeviceMemory>(
+      device, memory_type, buffer_size, _device_memory_count, alignment));
+
+    _memory_allocation_count += 1;
+    _memory_allocation_size.at(memory_type) += buffer_size;
+    _device_memory_count += 1;
+    _memory_size_allocated += buffer_size;
+
+    return bucket.back().get();
   }
 
   void DeviceMemoryPool::clear()
   {
-    //Logger::warn("MEMORY POOL CLEANING");
+    std::lock_guard<std::mutex> lock(_mutex);
 
     for (auto& memory_type : _pool) {
       for (auto& usage : memory_type.second) {
@@ -153,6 +117,7 @@ namespace Vyroda
     _pool.clear();
 
     _memory_allocation_count = 0; //should be zero anyway
+    _memory_size_allocated = 0;
     _memory_allocation_size.clear();
     _memory_allocation_size.resize(_memory_props.memoryTypeCount);
     _device_memory_count = 0; //should be zero anyway
@@ -160,10 +125,12 @@ namespace Vyroda
 
   void DeviceMemoryPool::clear(DeviceMemory& deviceMemory)
   {
-    _memory_allocation_size.at(deviceMemory.getType()) -= deviceMemory.getSize();
+    auto const block_size { deviceMemory.getSize() };
+    _memory_allocation_size.at(deviceMemory.getType()) -= block_size;
+    _memory_size_allocated -= block_size;
     _memory_allocation_count -= 1;
     _device_memory_count -= 1;
     deviceMemory.clear();
     //Logger::debug("Clearing device memory id {}. {} left", deviceMemory->getID(), _device_memory_count);
-    }
+  }
 }

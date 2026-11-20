@@ -35,77 +35,77 @@ namespace Vyroda
   {
     alignas(16) glm::vec4 tangent;
     alignas(16) glm::vec4 color;
-
-    alignas(16) glm::vec4 pos;
     alignas(16) glm::vec4 normal;
-
     alignas(8) glm::vec2 texture_coord;
 
-    static VkVertexInputBindingDescription getBindingDescription()
+    static VkVertexInputBindingDescription getPositionBindingDescription()
     {
       VkVertexInputBindingDescription bindingDescription{};
       bindingDescription.binding = 0;
-      bindingDescription.stride = sizeof(Vertex);
+      bindingDescription.stride = sizeof(glm::vec4);
       bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
       return bindingDescription;
     }
 
+    static VkVertexInputAttributeDescription getPositionAttributeDescription()
+    {
+      VkVertexInputAttributeDescription attributeDescription{};
+      attributeDescription.binding = 0;
+      attributeDescription.location = 2;
+      attributeDescription.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+      attributeDescription.offset = 0;
+
+      return attributeDescription;
+    }
+
+    static std::array<VkVertexInputBindingDescription, 2> getBindingDescriptions()
+    {
+      std::array<VkVertexInputBindingDescription, 2> bindingDescriptions{};
+      // Binding 0: Position stream (16 bytes per vertex)
+      bindingDescriptions[0].binding = 0;
+      bindingDescriptions[0].stride = sizeof(glm::vec4);
+      bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+      // Binding 1: Shading attribute stream (64 bytes per vertex)
+      bindingDescriptions[1].binding = 1;
+      bindingDescriptions[1].stride = sizeof(Vertex);
+      bindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+      return bindingDescriptions;
+    }
+
     static std::array<VkVertexInputAttributeDescription,  5> getAttributeDescriptions()
     {
       std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions{};
-      attributeDescriptions[0].binding = 0;
+      attributeDescriptions[0].binding = 1;
       attributeDescriptions[0].location = 0;
       attributeDescriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
       attributeDescriptions[0].offset = offsetof(Vertex, tangent);
 
       // Location 1: Color (vec4)
-      attributeDescriptions[1].binding = 0;
+      attributeDescriptions[1].binding = 1;
       attributeDescriptions[1].location = 1;
       attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
       attributeDescriptions[1].offset = offsetof(Vertex, color);
 
-      // Location 2: Position (vec3)
+      // Location 2: Position (vec4, Binding 0)
       attributeDescriptions[2].binding = 0;
       attributeDescriptions[2].location = 2;
       attributeDescriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-      attributeDescriptions[2].offset = offsetof(Vertex, pos);
+      attributeDescriptions[2].offset = 0;
 
-      // Location 3: Normal (vec3)
-      attributeDescriptions[3].binding = 0;
+      // Location 3: Normal (vec4)
+      attributeDescriptions[3].binding = 1;
       attributeDescriptions[3].location = 3;
       attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
       attributeDescriptions[3].offset = offsetof(Vertex, normal);
 
-      // Location 4: Original Position (vec3)
-      // attributeDescriptions[4].binding = 0;
-      // attributeDescriptions[4].location = 4;
-      // attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-      // attributeDescriptions[4].offset = offsetof(Vertex, original_pos);
-
-      // Location 5: Texture Coord (vec2)
-      attributeDescriptions[4].binding = 0;
+      // Location 4: Texture Coord (vec2)
+      attributeDescriptions[4].binding = 1;
       attributeDescriptions[4].location = 4;
       attributeDescriptions[4].format = VK_FORMAT_R32G32_SFLOAT;
       attributeDescriptions[4].offset = offsetof(Vertex, texture_coord);
-
-      // // Location 6: Bone IDs (ivec4) - Note the _SINT format
-      // attributeDescriptions[6].binding = 0;
-      // attributeDescriptions[6].location = 6;
-      // attributeDescriptions[6].format = VK_FORMAT_R32G32B32A32_SINT; 
-      // attributeDescriptions[6].offset = offsetof(Vertex, bone_ids);
-
-      // // Location 7: Bone Weights (vec4)
-      // attributeDescriptions[7].binding = 0;
-      // attributeDescriptions[7].location = 7;
-      // attributeDescriptions[7].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-      // attributeDescriptions[7].offset = offsetof(Vertex, bone_weights);
-
-      // // Location 8: Total Weight (float)
-      // attributeDescriptions[8].binding = 0;
-      // attributeDescriptions[8].location = 8;
-      // attributeDescriptions[8].format = VK_FORMAT_R32_SFLOAT;
-      // attributeDescriptions[8].offset = offsetof(Vertex, total_weight);
 
       return attributeDescriptions;
     }

@@ -27,56 +27,27 @@ namespace Vyroda
     stage_flag_bits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     if (!mesh.isDirty()) return;
-    std::vector<Vertex> const vertices {
-        // 16-byte vec4s | 12-byte vec3s (Pos, Normal, Orig) | 8-byte UV | Bones/Weights/Total
+    std::vector<glm::vec4> const positions {
         // Back face
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f, 1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f,-1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f,-1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f,-1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f, 1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f, 1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-
+        {-1.f, 1.f,-1.f, 0.0f}, {-1.f,-1.f,-1.f, 0.0f}, { 1.f,-1.f,-1.f, 0.0f},
+        { 1.f,-1.f,-1.f, 0.0f}, { 1.f, 1.f,-1.f, 0.0f}, {-1.f, 1.f,-1.f, 0.0f},
         // Left face
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f,-1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f,-1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f, 1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f, 1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f, 1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f,-1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 1.0f}, {1.f,0.f} },
-
+        {-1.f,-1.f, 1.f, 0.0f}, {-1.f,-1.f,-1.f, 0.0f}, {-1.f, 1.f,-1.f, 0.0f},
+        {-1.f, 1.f,-1.f, 0.0f}, {-1.f, 1.f, 1.f, 0.0f}, {-1.f,-1.f, 1.f, 0.0f},
         // Right face
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f,-1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f,-1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f, 1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f, 1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f, 1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f,-1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-
-        // Front face, 0.0f, 0.0f
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f,-1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f, 1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f, 1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f, 1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f,-1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f,-1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-
-        // Top face, 0.0f, 0.0f
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f, 1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f, 1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f, 1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f, 1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f, 1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f, 1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-
-        // Bottom face, 0.0f, 0.0f
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f,-1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f,-1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f,-1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f,-1.f,-1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {-1.f,-1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} },
-        {{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, { 1.f,-1.f, 1.f, 0.0f}, {1.f,0.f,0.f, 0.0f}, {1.f,0.f} }
+        { 1.f,-1.f,-1.f, 0.0f}, { 1.f,-1.f, 1.f, 0.0f}, { 1.f, 1.f, 1.f, 0.0f},
+        { 1.f, 1.f, 1.f, 0.0f}, { 1.f, 1.f,-1.f, 0.0f}, { 1.f,-1.f,-1.f, 0.0f},
+        // Front face
+        {-1.f,-1.f, 1.f, 0.0f}, {-1.f, 1.f, 1.f, 0.0f}, { 1.f, 1.f, 1.f, 0.0f},
+        { 1.f, 1.f, 1.f, 0.0f}, { 1.f,-1.f, 1.f, 0.0f}, {-1.f,-1.f, 1.f, 0.0f},
+        // Top face
+        {-1.f, 1.f,-1.f, 0.0f}, { 1.f, 1.f,-1.f, 0.0f}, { 1.f, 1.f, 1.f, 0.0f},
+        { 1.f, 1.f, 1.f, 0.0f}, {-1.f, 1.f, 1.f, 0.0f}, {-1.f, 1.f,-1.f, 0.0f},
+        // Bottom face
+        {-1.f,-1.f,-1.f, 0.0f}, {-1.f,-1.f, 1.f, 0.0f}, { 1.f,-1.f,-1.f, 0.0f},
+        { 1.f,-1.f,-1.f, 0.0f}, {-1.f,-1.f, 1.f, 0.0f}, { 1.f,-1.f, 1.f, 0.0f}
     };
+    std::vector<Vertex> const vertices(positions.size(), Vertex{{0.f,0.f,0.f,0.f}, {0.f,0.f,0.f,0.f}, {1.f,0.f,0.f,0.f}, {1.f,0.f}});
     auto cmd_pool = renderer.getAPI().createCommandPool();
 
     std::vector<UniformBufferObject> ubos{};
@@ -99,7 +70,11 @@ namespace Vyroda
 
     Data data{};
     data._textures.emplace_back("skybox");
+    data._positions = positions;
     data._vertices = vertices;
+    if (data._position_buffer.buffer == VK_NULL_HANDLE) {
+      data._position_buffer = renderer.getAPI().createPositionBuffer(positions, renderer.getCurrentFrameIndex());
+    }
     if (data._vertex_buffer.buffer == VK_NULL_HANDLE) {
       // Logger::debug("create vertex buffer: {}", "skybox");
       data._vertex_buffer = renderer.getAPI().createVertexBuffer(vertices, renderer.getCurrentFrameIndex());

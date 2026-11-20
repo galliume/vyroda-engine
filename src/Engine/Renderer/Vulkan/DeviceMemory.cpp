@@ -23,7 +23,6 @@ namespace Vyroda
         _max_size = max_size;
         allocateToMemory();
     }
-    _buffer_offsets.emplace_back(0);
   }
 
   VkDeviceMemory* DeviceMemory::getMemory()
@@ -141,29 +140,26 @@ namespace Vyroda
         offset += (alignment - remainder);
       }
 
-      bool has_enough_space_left { (offset + size) <= _max_size };
-
-      if (!has_enough_space_left) _is_full = true;
-
-      return has_enough_space_left;
+      return (offset + size) <= _max_size;
     }
   }
 
   void DeviceMemory::clear()
   {
-    // for (auto buffer : _buffer) {
-    //   if (VK_NULL_HANDLE != buffer) {
-    //     vkDestroyBuffer(_device, buffer, nullptr);
-    //   }
-    // }
+    std::lock_guard<std::mutex> guard(_mutex_memory);
 
-    vkFreeMemory(_device, *_memory.get(), nullptr);
+    if (_memory) {
+      vkFreeMemory(_device, *_memory.get(), nullptr);
+      _memory.reset();
+    }
 
     _max_size = 0;
     _offset = 0;
     _is_full = false;
-
-    _memory.reset();
+    _is_allocated = false;
+    _buffer_count = 0;
+    _buffer_offsets.clear();
+    _buffer.clear();
   }
 
   VkDeviceSize DeviceMemory::getID() const
@@ -208,11 +204,13 @@ namespace Vyroda
 
   VkBuffer DeviceMemory::getBuffer(std::size_t index)
   {
+    std::lock_guard<std::mutex> guard(_mutex_memory);
     return _buffer.at(index);
   }
 
   std::size_t DeviceMemory::getOffset(std::size_t index) const
   {
+    std::lock_guard<std::mutex> guard(_mutex_memory);
     return _buffer_offsets.at(index);
   }
 }

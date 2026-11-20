@@ -33,12 +33,14 @@ namespace Vyroda
     std::string _ao;
     std::string _base_color;
     std::string _transmission;
+    std::vector<glm::vec4> _positions;
     std::vector<Vertex> _vertices;
     std::vector<VertexBones> _vertices_bones;
     std::vector<std::uint32_t> _indices;
     std::vector<std::vector<UniformBufferObject>> _ubos;
     UniformBufferObject _original_ubo;
     std::vector<std::uint32_t> _ubos_offset;
+    Buffer _position_buffer { nullptr, nullptr, 0, 0 };
     Buffer _vertex_buffer { nullptr, nullptr, 0, 0 };
     Buffer _indices_buffer { nullptr, nullptr, 0, 0 };
     std::uint32_t _texture_index { 0 };

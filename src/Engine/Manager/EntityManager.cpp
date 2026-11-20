@@ -289,6 +289,7 @@ namespace Vyroda
       data._ao = name_texture_ao;
       data._base_color = name_texture_base_color;
       data._transmission = name_texture_transmission;
+      data._positions = std::move(_data.positions);
       data._vertices = std::move(_data.vertices);
       data._vertices_bones = std::move(_data.vertices_bones);
       data._indices = _data.indices;

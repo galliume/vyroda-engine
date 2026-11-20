@@ -481,7 +481,9 @@ namespace Vyroda
     VkPipelineVertexInputStateCreateInfo* vertex_input_info{nullptr};
     VkPushConstantRange push_constants{};
 
-    vertex_input_info = getVertexInputState<VertexBindingType::Vertex3D>();
+    vertex_input_info = offscreen
+      ? getVertexInputState<VertexBindingType::PositionOnly>()
+      : getVertexInputState<VertexBindingType::Vertex3D>();
 
     //@todo replace shader_name == with a shader_type ==
     if (shader_name == "text") {
@@ -549,6 +551,9 @@ namespace Vyroda
       pipeline_create_infos.has_dynamic_depth_bias = true;
       pipeline_create_infos.has_depth_test = true;
       pipeline_create_infos.has_depth_write = true;
+      if (shader_name == "csm") {
+        pipeline_create_infos.depth_format = _renderer.getAPI().VYR_VK_FORMAT_CSM_DEPTH;
+      }
 
       descset_layout = createDescriptorSetLayout<DescSetLayoutType::Offscreen>();
       push_constants.offset = 0;
@@ -675,14 +680,23 @@ namespace Vyroda
     VkPipelineVertexInputStateCreateInfo* vertex_input_info = new VkPipelineVertexInputStateCreateInfo();
 
     if constexpr (T == VertexBindingType::Vertex3D) {
-      std::array<VkVertexInputAttributeDescription, 5>* attDesc = new std::array<VkVertexInputAttributeDescription, 5>(Vertex::getAttributeDescriptions());
-      VkVertexInputBindingDescription* bDesc = new VkVertexInputBindingDescription(Vertex::getBindingDescription());
+      auto* attDesc = new std::array<VkVertexInputAttributeDescription, 5>(Vertex::getAttributeDescriptions());
+      auto* bDesc = new std::array<VkVertexInputBindingDescription, 2>(Vertex::getBindingDescriptions());
+
+      vertex_input_info->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+      vertex_input_info->vertexBindingDescriptionCount = static_cast<std::uint32_t>(bDesc->size());
+      vertex_input_info->vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attDesc->size());
+      vertex_input_info->pVertexBindingDescriptions = bDesc->data();
+      vertex_input_info->pVertexAttributeDescriptions = attDesc->data();
+    } else if constexpr (T == VertexBindingType::PositionOnly) {
+      auto* attDesc = new VkVertexInputAttributeDescription(Vertex::getPositionAttributeDescription());
+      auto* bDesc = new VkVertexInputBindingDescription(Vertex::getPositionBindingDescription());
 
       vertex_input_info->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
       vertex_input_info->vertexBindingDescriptionCount = 1;
-      vertex_input_info->vertexAttributeDescriptionCount = static_cast<std::uint32_t>(Vertex::getAttributeDescriptions().size());
+      vertex_input_info->vertexAttributeDescriptionCount = 1;
       vertex_input_info->pVertexBindingDescriptions = bDesc;
-      vertex_input_info->pVertexAttributeDescriptions = attDesc->data();
+      vertex_input_info->pVertexAttributeDescriptions = attDesc;
     } else {
       throw std::runtime_error("unknown vertex input state type");
     }

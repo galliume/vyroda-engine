@@ -34,6 +34,7 @@ namespace Vyroda
     VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     VkPolygonMode polygone_mode = VK_POLYGON_MODE_FILL;
     VkCompareOp compare_op = VK_COMPARE_OP_LESS_OR_EQUAL;
+    std::optional<VkFormat> depth_format{ std::nullopt };
 
     bool has_color_attachment{ false };
     bool has_depth_test{ false };

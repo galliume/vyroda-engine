@@ -13,7 +13,7 @@
       "inherits": [
         "common",
         "GENERATOR_NINJA",
-        "CCACHE_ON"
+        "CCACHE_OFF"
       ],
       "condition": {
         "type": "equals",
@@ -41,7 +41,7 @@
       "inherits": [
         "common",
         "GENERATOR_NINJA",
-        "CCACHE_ON"
+        "CCACHE_OFF"
       ],
       "condition": {
         "type": "equals",

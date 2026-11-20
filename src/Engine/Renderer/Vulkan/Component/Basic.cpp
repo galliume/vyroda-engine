@@ -48,12 +48,16 @@ namespace Vyroda
     auto const& data { mesh.getData() };
     data->_texture_index = 0;
 
+    if (data->_position_buffer.buffer == VK_NULL_HANDLE) {
+      data->_position_buffer = renderer.getAPI().createPositionBuffer(data->_positions, renderer.getCurrentFrameIndex());
+    }
+
     if (data->_vertex_buffer.buffer == VK_NULL_HANDLE) {
       // Logger::debug("create vertex buffer: {}", "basic");
       data->_vertex_buffer = renderer.getAPI().createVertexBuffer(data->_vertices, renderer.getCurrentFrameIndex());
     } else if (!data->_bones.empty()) {
       data->_is_dirty = true;
-      renderer.updateVertexBuffer(data, renderer.getCurrentFrameIndex());
+      renderer.updatePositionBuffer(data, renderer.getCurrentFrameIndex());
     }
 
     if (!data->_indices.empty() && data->_indices_buffer.buffer == VK_NULL_HANDLE) {

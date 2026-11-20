@@ -14,7 +14,7 @@ namespace Vyroda
   {
     _sun.color = glm::vec4(0.5f, 0.7f, 1.0f, 1.0f);//moonish color ?
     _sun.position = glm::vec4(0.f, 500.f, 0.f, 1.0f);
-    _sun.direction =  glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    _sun.direction = glm::vec4(glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f)), 0.0f);
     //ambient diffuse specular
     _sun.ads = glm::vec4(10.f, 0.5f, 1.f, 1.0f);
     _sun.clq = glm::vec4(0.0f);
@@ -362,6 +362,7 @@ namespace Vyroda
     float near_plane = 1.f, far_plane = 7.5f;
     _sun.projection = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, near_plane, far_plane);
 
+    _sun.direction = glm::vec4(glm::normalize(glm::vec3(_sun.direction)), 0.0f);
     _sun.light_space_matrix[0] = _sun.projection * _sun.view;
   }
 }

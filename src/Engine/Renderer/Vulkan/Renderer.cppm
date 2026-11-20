@@ -152,6 +152,10 @@ namespace Vyroda
 
     void clearScreen();
 
+    void updatePositionBuffer(
+      Data * data,
+      std::size_t const image_index);
+
     void updateVertexBuffer(
       Data * data,
       std::size_t const image_index);
@@ -159,10 +163,12 @@ namespace Vyroda
       std::uint32_t getMaxFramesInFlight() const { return _max_frames_in_flight; }
       
       void setShadowMapResolution(std::uint32_t const resolution) { _shadow_map_resolution = resolution; }
+      void setPointShadowMapResolution(std::uint32_t const resolution) { _point_shadow_map_resolution = resolution; }
 
   private:
     std::uint32_t _max_frames_in_flight{ 3 };
     std::uint32_t _shadow_map_resolution { 2048 };
+    std::uint32_t _point_shadow_map_resolution { 512 };
     //const std::size_t _max_render_thread{ 4 };
 
     void nextFrame();

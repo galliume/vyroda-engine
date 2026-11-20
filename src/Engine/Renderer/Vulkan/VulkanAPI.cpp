@@ -24,6 +24,7 @@ module Engine.Renderer.VulkanAPI;
 import std;
 
 import Engine.Core.GLFW;
+import Engine.Core.GLM;
 import Engine.Core.KTX;
 import Engine.Core.Logger;
 import Engine.Core.PlpTypedef;
@@ -1132,7 +1133,7 @@ VkPipeline VulkanAPI::createGraphicsPipeline(PipeLineCreateInfo const& pipeline_
   rendering_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
   rendering_create_info.colorAttachmentCount = pipeline_create_info.has_color_attachment ? 1 : 0;
   rendering_create_info.pColorAttachmentFormats = & format;
-  rendering_create_info.depthAttachmentFormat = VYR_VK_FORMAT_DEPTH; //(VK_FORMAT_D24_UNORM_S8_UINT)
+  rendering_create_info.depthAttachmentFormat = pipeline_create_info.depth_format.value_or(VYR_VK_FORMAT_DEPTH);
   //rendering_create_info.stencilAttachmentFormat = VK_FORMAT_S8_UINT;
 
   pipeline_info.pNext = & rendering_create_info;
@@ -1898,23 +1899,32 @@ void VulkanAPI::draw(
   Data const * data,
   bool const is_indexed,
   std::uint32_t const index,
-  std::uint32_t const instance_count)
+  std::uint32_t const instance_count,
+  bool const only_position)
 {
-  VkBuffer vertex_buffers[] = { data->_vertex_buffer.buffer };
-  VkDeviceSize offsets[] = { 0 };
-
-  if (data->_vertex_buffer.size <= 0) {
-    //Logger::warn("vertex buffer empty!");
+  if (data->_position_buffer.size <= 0) {
+    //Logger::warn("position buffer empty!");
     return;
   }
 
-  vkCmdBindVertexBuffers(cmd_buffer, 0, 1, vertex_buffers, offsets);
+  if (only_position) {
+    VkBuffer const vertex_buffers[] = { data->_position_buffer.buffer };
+    VkDeviceSize const offsets[] = { 0 };
+    vkCmdBindVertexBuffers(cmd_buffer, 0, 1, vertex_buffers, offsets);
+  } else {
+    if (data->_vertex_buffer.size <= 0) {
+      return;
+    }
+    VkBuffer const vertex_buffers[] = { data->_position_buffer.buffer, data->_vertex_buffer.buffer };
+    VkDeviceSize const offsets[] = { 0, 0 };
+    vkCmdBindVertexBuffers(cmd_buffer, 0, 2, vertex_buffers, offsets);
+  }
 
   if (is_indexed && data->_indices_buffer.buffer != VK_NULL_HANDLE) {
     vkCmdBindIndexBuffer(cmd_buffer, data->_indices_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdDrawIndexed(cmd_buffer, static_cast<std::uint32_t>(data->_indices.size()), instance_count, 0, 0, 0);
   } else {
-    vkCmdDraw(cmd_buffer, static_cast<std::uint32_t>(data->_vertices.size()), instance_count, 0, index);
+    vkCmdDraw(cmd_buffer, static_cast<std::uint32_t>(data->_positions.size()), instance_count, 0, index);
   }
 }
 
@@ -2030,6 +2040,50 @@ Buffer VulkanAPI::createIndexBuffer(
     .index = index };
 
   addCopyBufferRequest(staging_buffer, mesh_buffer.buffer, buffer_size, image_index, current_offset, 0);
+
+  return mesh_buffer;
+}
+
+Buffer VulkanAPI::createPositionBuffer(
+  std::vector<glm::vec4> const& positions,
+  std::size_t const image_index)
+{
+  VkDeviceSize const buffer_size { sizeof(glm::vec4) * positions.size() };
+  auto & staging_buffer { _staging_buffer[image_index] };
+  std::size_t const current_offset { reserveStagingMemoryOffset(buffer_size, image_index) };
+
+  std::memcpy(static_cast<char*>(_staging_data_ptr[image_index]) + current_offset, positions.data(), static_cast<std::size_t>(buffer_size));
+
+  VkBuffer buffer { createBuffer(
+    buffer_size,
+    VK_BUFFER_USAGE_TRANSFER_DST_BIT
+    | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) };
+
+  VkMemoryRequirements mem_requirements;
+  vkGetBufferMemoryRequirements(_device, buffer, & mem_requirements);
+
+  auto const memory_type { findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) };
+  VkDeviceSize const size { mem_requirements.size };
+
+  auto device_memory { _device_memory_pool->get(
+    _device,
+    size,
+    memory_type,
+    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    mem_requirements.alignment,
+    DeviceMemoryPool::DeviceBufferType::VERTEX) };
+
+  auto const index { device_memory->bindBufferToMemory(buffer, size, mem_requirements.alignment) };
+  auto const offset { device_memory->getOffset(index) };
+
+  Buffer mesh_buffer {
+    .buffer = std::move(buffer),
+    .memory = device_memory,
+    .offset = offset,
+    .size = size,
+    .index = index };
+
+  addCopyBufferRequest(staging_buffer, mesh_buffer.buffer, buffer_size, image_index, current_offset);
 
   return mesh_buffer;
 }
@@ -2574,7 +2628,8 @@ VkImage VulkanAPI::createImage(
 VkImage VulkanAPI::createDepthMapImage(
   std::uint32_t const shadow_resolution,
   bool const is_cube_map,
-  std::size_t const array_size)
+  std::size_t const array_size,
+  std::optional<VkFormat> const format)
 {
   VkImage image;
   auto const width { shadow_resolution };
@@ -2587,7 +2642,7 @@ VkImage VulkanAPI::createDepthMapImage(
   image_info.extent.depth = 1;
   image_info.mipLevels = 1;
   image_info.arrayLayers = 1;
-  image_info.format = VYR_VK_FORMAT_DEPTH;
+  image_info.format = format.value_or(VYR_VK_FORMAT_DEPTH);
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   image_info.usage =
@@ -2634,7 +2689,8 @@ VkImageView VulkanAPI::createDepthMapImageView(
   VkImage image,
   bool const is_cube_map,
   bool const is_sampling,
-  std::size_t const array_size)
+  std::size_t const array_size,
+  std::optional<VkFormat> const format)
 {
   VkImageView depth_map_imageview{};
 
@@ -2642,7 +2698,7 @@ VkImageView VulkanAPI::createDepthMapImageView(
   create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   create_info.image = image;
   create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  create_info.format = VYR_VK_FORMAT_DEPTH;
+  create_info.format = format.value_or(VYR_VK_FORMAT_DEPTH);
   create_info.subresourceRange = {};
   create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
   create_info.subresourceRange.baseMipLevel = 0;

@@ -18,7 +18,7 @@ namespace Vyroda
   };
   export enum class VertexBindingType : std::uint8_t
   {
-      Vertex2D, Vertex3D
+      Vertex2D, Vertex3D, PositionOnly
   };
 
   export class ShaderManager

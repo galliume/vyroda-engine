@@ -68,17 +68,17 @@ namespace Vyroda
         auto const& root_bone { _data->_bones[_data->_root_bone_name] };
         updateBoneTransforms(anim, root_bone.name, glm::mat4(1.0f), duration, elapsed_time);
 
-        auto* const __restrict vertices { _data->_vertices.data() };
+        auto* const __restrict positions { _data->_positions.data() };
         auto const* const __restrict vertices_bones { _data->_vertices_bones.data() };
         auto const* const __restrict bone_matrices { _bone_matrices.data() };
-        auto const vertex_count { std::min(_data->_vertices.size(), _data->_vertices_bones.size()) };
+        auto const vertex_count { std::min(_data->_positions.size(), _data->_vertices_bones.size()) };
         auto const indices { std::views::iota(std::size_t{ 0 }, vertex_count) };
 
         std::for_each(
           std::execution::par_unseq,
           indices.begin(),
           indices.end(),
-          [vertices, vertices_bones, bone_matrices](std::size_t const idx) {
+          [positions, vertices_bones, bone_matrices](std::size_t const idx) {
             auto const& bone_data { vertices_bones[idx] };
             glm::vec4 const orig_pos { bone_data.original_pos, 1.0f };
 
@@ -88,7 +88,7 @@ namespace Vyroda
               + bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[2])] * bone_data.bone_weights[2]
               + bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[3])] * bone_data.bone_weights[3];
 
-            vertices[idx].pos = skin_matrix * orig_pos;
+            positions[idx] = skin_matrix * orig_pos;
           });
 
       if (!animation_info.looping && duration < elapsed_time + 10) {
