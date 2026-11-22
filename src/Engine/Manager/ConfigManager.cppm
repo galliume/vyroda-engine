@@ -16,11 +16,14 @@ namespace Vyroda
 
     void load();
     bool normalDebug();
+    bool showDebugHud() const;
     std::vector<std::string> listLevels();
     std::vector<std::string> listSkybox();
     bool reload();
     bool reloadShaders();
     void setNormalDebug();
+    void toggleDebugHud();
+    void setShowDebugHud(bool const show);
     void setReload(bool const reload);
     void setReloadShaders(bool const reload);
     void switchCamera();
@@ -48,6 +51,7 @@ namespace Vyroda
     std::string const _level_path{};
     bool _reload_shaders{ false };
     bool _normal_debug{ false };
+    bool _show_debug_hud{ false };
     bool _reload{ false };
     std::uint8_t _camera_index{ 0 };
 

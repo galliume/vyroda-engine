@@ -134,17 +134,33 @@ namespace Vyroda
       std::unordered_map<std::uint32_t, std::vector<std::pair<std::uint32_t, float>>> vertex_weight_map{};
 
       for (std::uint32_t b{ 0 }; b < mesh->mNumBones; ++b) {
-        auto const bone_id { (*global_bone_count)++ };
         aiBone const* bone { mesh->mBones[b] };
         std::string const bone_name { bone->mName.C_Str() };
         aiNode const* bone_node { scene->mRootNode->FindNode(bone_name.c_str()) };
+        if (bone_node == nullptr) {
+          continue;
+        }
+
+        std::string const node_name { bone_node->mName.C_Str() };
+        if (auto const existing { bones_map->find(node_name) }; existing != bones_map->end()) {
+          std::uint32_t const existing_id { existing->second.id };
+          for (std::uint32_t w{ 0 }; w < bone->mNumWeights; ++w) {
+            aiVertexWeight const& aiWeight { bone->mWeights[w] };
+            vertex_weight_map[aiWeight.mVertexId].emplace_back(existing_id, aiWeight.mWeight);
+          }
+          continue;
+        }
+
+        auto const bone_id { (*global_bone_count)++ };
 
         Bone bone_data{};
         bone_data.id = bone_id;
         bone_data.transform = ConvertMatrixToGLMFormat(bone_node->mTransformation);
         bone_data.offset_matrix = ConvertMatrixToGLMFormat(bone->mOffsetMatrix);
-        bone_data.name = bone_node->mName.C_Str();
-        bone_data.parent_name = bone_node->mParent->mName.C_Str();
+        bone_data.name = node_name;
+        if (bone_node->mParent != nullptr) {
+          bone_data.parent_name = bone_node->mParent->mName.C_Str();
+        }
         bone_data.weights.reserve(bone->mNumWeights);
 
         glm::vec3 skew;
@@ -177,7 +193,7 @@ namespace Vyroda
           current = current->mParent;
         }
         bone_data.t_pose = t_pose;
-        (*bones_map)[bone_node->mName.C_Str()] = std::move(bone_data);
+        (*bones_map)[node_name] = std::move(bone_data);
       }
 
       for (auto& [vertex_id, data_vertex] : vertex_weight_map) {

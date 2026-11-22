@@ -15,7 +15,7 @@ namespace Vyroda
   namespace
   {
     constexpr std::array<char, 4> kVMeshMagic { 'V', 'M', 'S', 'H' };
-    constexpr std::uint32_t kVMeshVersion { 1u };
+    constexpr std::uint32_t kVMeshVersion { 2u };
 
     struct VMeshHeader
     {

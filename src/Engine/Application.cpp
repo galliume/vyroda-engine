@@ -83,17 +83,17 @@ namespace Vyroda
     FontManager::Text frame_counter {
       .id = 0,
       .name = "_VYR_frame_counter",
-      .text = "Frame 000000",
+      .text = "Frame 00000000",
       .position = glm::vec3(10.0f, 20.0f, 0.0f),
-      .color = glm::vec3(1.0f, 1.0f, 0.0f),
+      .color = glm::vec3(1.0f, 1.0f, 1.0f),
     };
     _render_manager->addText(frame_counter);
     FontManager::Text elapsed_time {
       .id = 0,
       .name = "_VYR_elapsed_time",
-      .text = "Elapsed time 000000",
+      .text = "Elapsed time 000000.00",
       .position = glm::vec3(200.0f, 20.0f, 0.0f),
-      .color = glm::vec3(1.0f, 1.0f, 0.0f),
+      .color = glm::vec3(1.0f, 1.0f, 1.0f),
     };
     _render_manager->addText(elapsed_time);
     FontManager::Text ms_counter{
@@ -101,7 +101,7 @@ namespace Vyroda
       .name = "_VYR_ms_counter",
       .text = "000.000 ms 000.000 fps",
       .position = glm::vec3(10.0f, 40.0f, 0.0f),
-      .color = glm::vec3(0.5f, 1.0f, 0.0f),
+      .color = glm::vec3(1.0f, 1.0f, 1.0f),
     };
     _render_manager->addText(ms_counter);
     FontManager::Text camera_pos {
@@ -119,6 +119,18 @@ namespace Vyroda
     release_build = false;
   #endif
 
+    auto* const config_manager { ConfigManagerLocator::get() };
+    config_manager->setShowDebugHud(!release_build);
+
+    bool last_show_debug_hud { config_manager->showDebugHud() };
+    auto const apply_debug_hud_visibility = [&](bool const visible) {
+      _render_manager->setTextVisible(frame_counter.id, visible);
+      _render_manager->setTextVisible(elapsed_time.id, visible);
+      _render_manager->setTextVisible(ms_counter.id, visible);
+      _render_manager->setTextVisible(camera_pos.id, visible);
+    };
+    apply_debug_hud_visibility(last_show_debug_hud);
+
     std::string const title { std::format("Vyroda v{}.{} Vulkan version: {} {}",
       Vyroda_VERSION_MAJOR, Vyroda_VERSION_MINOR,
       _render_manager->getRenderer().getAPI().getAPIVersion(),
@@ -128,6 +140,11 @@ namespace Vyroda
 
     double const loaded_time { duration<double>(steady_clock::now() - _start_run).count() };
     Logger::trace("Started in {} seconds", loaded_time);
+
+    constexpr double debug_hud_interval { 0.25 };
+    glm::vec3 last_camera_pos { std::numeric_limits<float>::max() };
+    bool hud_needs_refresh { last_show_debug_hud };
+    std::uint64_t total_frames { 0 };
 
     while (!glfwWindowShouldClose(_render_manager->getWindow().getGlfwWindow())) {
 
@@ -155,32 +172,59 @@ namespace Vyroda
 
       double const alpha { accumulator / dt };
       _render_manager->getCamera().interpolate(alpha);
+
+      bool const show_debug_hud { config_manager->showDebugHud() };
+      if (show_debug_hud != last_show_debug_hud) {
+        apply_debug_hud_visibility(show_debug_hud);
+        last_show_debug_hud = show_debug_hud;
+        if (show_debug_hud) {
+          hud_needs_refresh = true;
+        }
+      }
+
       //Locator::getCommandQueue()->execPreRequest();
       _render_manager->renderScene(frame_time);
       //Locator::getCommandQueue()->execPostRequest();
 
       auto const _elapsed_time{ duration<double>(new_time - _start_run).count() };
-
-      //@todo check if it's correct with accumulator method...
-      if ((duration<double>(new_time - last_time_debug_updated)).count() > 1.0) {
-        fps_count = frame_count;
-        ms_count = 1000.0 / std::max(1.0, static_cast<double>(frame_count));
-        last_time_debug_updated = new_time;
-        frame_count = 0;
-      }
-
-      _render_manager->updateText(ms_counter.id, std::format("{:<.2f}ms {:<.2f}fps", ms_count, fps_count));
-      _render_manager->updateText(frame_counter.id, std::format("Frame {:<}", frame_count));
-      _render_manager->updateText(elapsed_time.id, std::format("Elapsed time {:<.2f}", _elapsed_time));
       _render_manager->setElapsedTime(_elapsed_time);
 
-      auto const& current_camera_pos {  _render_manager->getCamera().getPos() };
-      _render_manager->updateText(
-        camera_pos.id,
-        std::format("Position x: {:<.2f} y: {:<.2f} z: {:<.2f}",
-          current_camera_pos.x, current_camera_pos.y, current_camera_pos.z));
-
       ++frame_count;
+      ++total_frames;
+
+      double const debug_dt { duration<double>(new_time - last_time_debug_updated).count() };
+      bool fps_tick { false };
+      if (debug_dt >= debug_hud_interval) {
+        fps_count = frame_count / debug_dt;
+        ms_count = (debug_dt * 1000.0) / std::max(1.0, frame_count);
+        last_time_debug_updated = new_time;
+        frame_count = 0.0;
+        fps_tick = true;
+      }
+
+      if (show_debug_hud) {
+        if (fps_tick || hud_needs_refresh) {
+          _render_manager->updateText(ms_counter.id, std::format("{:<.2f}ms {:<.2f}fps", ms_count, fps_count));
+          _render_manager->updateText(frame_counter.id, std::format("Frame {:<}", total_frames));
+          _render_manager->updateText(elapsed_time.id, std::format("Elapsed time {:<.2f}", _elapsed_time));
+        }
+
+        auto const& current_camera_pos { _render_manager->getCamera().getPos() };
+        bool const camera_moved {
+          std::abs(current_camera_pos.x - last_camera_pos.x) > 0.005f
+          || std::abs(current_camera_pos.y - last_camera_pos.y) > 0.005f
+          || std::abs(current_camera_pos.z - last_camera_pos.z) > 0.005f
+        };
+        if (camera_moved || hud_needs_refresh) {
+          _render_manager->updateText(
+            camera_pos.id,
+            std::format("Position x: {:<.2f} y: {:<.2f} z: {:<.2f}",
+              current_camera_pos.x, current_camera_pos.y, current_camera_pos.z));
+          last_camera_pos = current_camera_pos;
+        }
+
+        hud_needs_refresh = false;
+      }
 
       current_time = new_time;
 

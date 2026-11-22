@@ -471,9 +471,16 @@ void main() {
     ao = texture(tex_sampler[AO_INDEX], var.texture_coord).r;
   }
 
-  vec4 raw_emissive = vec4(0.0);
+  vec3 raw_emissive = material.emissive_color.rgb;
   if (bool((pc.options >> HAS_EMISSIVE) & 1u)) {
-    raw_emissive = texture(tex_sampler[EMISSIVE_INDEX], emissive_coord);
+    vec3 tex_emissive =
+        texture(tex_sampler[EMISSIVE_INDEX], emissive_coord).rgb;
+    float has_emissive_factor =
+        max(material.emissive_color.r,
+            max(material.emissive_color.g, material.emissive_color.b));
+    raw_emissive = (has_emissive_factor > 0.001)
+                       ? (tex_emissive * material.emissive_color.rgb)
+                       : tex_emissive;
   }
 
   vec3 V = normalize(var.view_pos);
@@ -488,7 +495,7 @@ void main() {
   float metallic = raw_mr.b;
   float roughness = max(raw_mr.g, 0.04);
 
-  vec4 emissive = raw_emissive * (material.mre_factor.z * 10.0);
+  vec3 emissive = raw_emissive * (material.mre_factor.z * 10.0);
 
   vec3 diff_irradiance = vec3(0.0);
   vec3 spec_irradiance = vec3(0.0);
@@ -566,7 +573,7 @@ void main() {
     vec3 l = light_pos - var.frag_pos;
 
     float attenuation = InverseSquareAttenuation(l);
-    vec3 C_light = lightData.lights[i].color.rgb * attenuation * 50;
+    vec3 C_light = lightData.lights[i].color.rgb * attenuation;
 
     vec3 L = normalize(l);
     vec3 H = normalize(L + V);

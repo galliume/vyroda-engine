@@ -321,7 +321,9 @@ namespace Vyroda
     }
 
     ParallelManagerLocator::get()->forEach(frame_context.texts, [&](auto const& text_entity) {
-      drawEntity(text_entity->getID(), frame_context.camera_view_matrix, true);
+      if (text_entity->isVisible()) {
+        drawEntity(text_entity->getID(), frame_context.camera_view_matrix, true);
+      }
     });
 
     _renderer->endRender();
@@ -677,6 +679,16 @@ namespace Vyroda
           text_rdr->setColor(color);
           mesh->setIsDirty(true);
         }
+      }
+    }
+  }
+
+  void RenderManager::setTextVisible(IDType const entity_id, bool const visible)
+  {
+    for (auto const& text_entity : _entity_manager->getTexts()) {
+      if (text_entity->getID() == entity_id) {
+        text_entity->setVisible(visible);
+        return;
       }
     }
   }

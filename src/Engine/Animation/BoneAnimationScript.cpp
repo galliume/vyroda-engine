@@ -48,8 +48,8 @@ namespace Vyroda
       auto const& anim{ _animations[_data->_id].at(_anim_id) };
       double const duration{ (anim.duration / anim.ticks_per_s) * 1000.0 };//ms
 
-      if (!_first_loop_done) {
-        _bone_matrices.resize(_data->_bones.size());
+      if (_bone_matrices.size() < _data->_bones.size()) {
+        _bone_matrices.resize(_data->_bones.size(), glm::mat4(1.0f));
       }
 
       auto & elapsed_time { _elapsed_time[_data->_id] };
@@ -71,6 +71,7 @@ namespace Vyroda
         auto* const __restrict positions { _data->_positions.data() };
         auto const* const __restrict vertices_bones { _data->_vertices_bones.data() };
         auto const* const __restrict bone_matrices { _bone_matrices.data() };
+        auto const bone_matrix_count { _bone_matrices.size() };
         auto const vertex_count { std::min(_data->_positions.size(), _data->_vertices_bones.size()) };
         auto const indices { std::views::iota(std::size_t{ 0 }, vertex_count) };
 
@@ -78,15 +79,21 @@ namespace Vyroda
           std::execution::par_unseq,
           indices.begin(),
           indices.end(),
-          [positions, vertices_bones, bone_matrices](std::size_t const idx) {
+          [positions, vertices_bones, bone_matrices, bone_matrix_count](std::size_t const idx) {
             auto const& bone_data { vertices_bones[idx] };
+            if (bone_data.total_weight <= 0.0f) {
+              return;
+            }
             glm::vec4 const orig_pos { bone_data.original_pos, 1.0f };
 
-            glm::mat4 const skin_matrix =
-                bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[0])] * bone_data.bone_weights[0]
-              + bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[1])] * bone_data.bone_weights[1]
-              + bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[2])] * bone_data.bone_weights[2]
-              + bone_matrices[static_cast<std::size_t>(bone_data.bone_ids[3])] * bone_data.bone_weights[3];
+            glm::mat4 skin_matrix { 0.0f };
+            for (std::size_t k { 0 }; k < 4u; ++k) {
+              float const w { bone_data.bone_weights[k] };
+              auto const id { static_cast<std::size_t>(bone_data.bone_ids[k]) };
+              if (w > 0.0f && id < bone_matrix_count) {
+                skin_matrix += bone_matrices[id] * w;
+              }
+            }
 
             positions[idx] = glm::vec3(skin_matrix * orig_pos);
           });
@@ -154,7 +161,7 @@ namespace Vyroda
 
     glm::mat4 const global { parent_transform * transform };
 
-    if (!bone.is_weightless) {
+    if (!bone.is_weightless && bone.id < _bone_matrices.size()) {
       _bone_matrices[bone.id] = _data->_inverse_transform_matrix * global * bone.offset_matrix;
     }
 

@@ -125,6 +125,21 @@ namespace Vyroda
     _normal_debug = !_normal_debug;
   }
 
+  void ConfigManager::toggleDebugHud()
+  {
+    _show_debug_hud = !_show_debug_hud;
+  }
+
+  void ConfigManager::setShowDebugHud(bool const show)
+  {
+    _show_debug_hud = show;
+  }
+
+  bool ConfigManager::showDebugHud() const
+  {
+    return _show_debug_hud;
+  }
+
   void ConfigManager::setReload(bool const reload)
   {
     _reload = reload;

@@ -130,6 +130,11 @@ namespace Vyroda
         } else if (key == _keyboard_keys[config["normalDebug"]])
         {
           ConfigManagerLocator::get()->setNormalDebug();
+        } else if (action == GLFW_PRESS
+          && config.contains("toggleDebugHud")
+          && key == _keyboard_keys[config["toggleDebugHud"]])
+        {
+          ConfigManagerLocator::get()->toggleDebugHud();
         } else if (key == _keyboard_keys[config["reload"]])
         {
           ConfigManagerLocator::get()->setReload(true);

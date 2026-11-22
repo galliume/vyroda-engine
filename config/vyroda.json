@@ -1,5 +1,5 @@
 {
-  "defaultLevel": "rungholt",
+  "defaultLevel": "sponza",
   "defaultSkybox": "desert_road",
   "ambientMusic": false,
   "fpsLimit": 30,
@@ -24,6 +24,7 @@
       "unlockFPS": "0",
       "reloadShader": "1",
       "normalDebug": "2",
+      "toggleDebugHud": "3",
       "reload": "r",
       "switch_camera": "t"
     }

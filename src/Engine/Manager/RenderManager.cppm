@@ -226,6 +226,14 @@ namespace Vyroda
      */
     void updateTextColor(IDType const entity_id, glm::vec3 const& color);
 
+    /**
+     * Show or hide a text entity
+     *
+     * @param IDType entity_id
+     * @param bool visible
+     */
+    void setTextVisible(IDType const entity_id, bool const visible);
+
     /** 
      * Set elapsed time
      *
